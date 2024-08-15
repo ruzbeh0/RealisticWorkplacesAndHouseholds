@@ -16,13 +16,10 @@
 
 	<ItemGroup>
 		<Reference Include="Colossal.Localization">
-		  <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Cities Skylines II\Cities2_Data\Managed\Colossal.Localization.dll</HintPath>
 		</Reference>
 		<Reference Include="Colossal.Mathematics">
-		  <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Cities Skylines II\Cities2_Data\Managed\Colossal.Mathematics.dll</HintPath>
 		</Reference>
 		<Reference Include="Colossal.PSI.Common">
-		  <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Cities Skylines II\Cities2_Data\Managed\Colossal.PSI.Common.dll</HintPath>
 		</Reference>
 		<Reference Include="Game">
 			<Private>false</Private>
