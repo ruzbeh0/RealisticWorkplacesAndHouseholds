@@ -18,9 +18,9 @@ using Unity.Collections;
 namespace RealisticWorkplacesAndHouseholds
 {
     [BurstCompile]
-    public partial class SchoolUpdateSystem : GameSystemBase
+    public partial class WelfareOfficeUpdateSystem : GameSystemBase
     {
-        private EntityQuery m_UpdateSchoolsJobQuery;
+        private EntityQuery m_UpdateWelfareOfficeJobQuery;
 
         [Preserve]
         protected override void OnCreate()
@@ -28,11 +28,11 @@ namespace RealisticWorkplacesAndHouseholds
             base.OnCreate();
 
             // Job Queries
-            UpdateSchoolsJobQuery UpdateSchoolsJobQuery = new();
-            m_UpdateSchoolsJobQuery = GetEntityQuery(UpdateSchoolsJobQuery.Query);
+            UpdateWelfareOfficeJobQuery UpdateWelfareOfficeJobQuery = new();
+            m_UpdateWelfareOfficeJobQuery = GetEntityQuery(UpdateWelfareOfficeJobQuery.Query);
 
             RequireAnyForUpdate(
-                m_UpdateSchoolsJobQuery
+                m_UpdateWelfareOfficeJobQuery
             );
         }
 
@@ -44,7 +44,7 @@ namespace RealisticWorkplacesAndHouseholds
                 return;
             }
 
-            UpdateSchools();
+            UpdateWelfareOffice();
         }
 
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
@@ -55,7 +55,7 @@ namespace RealisticWorkplacesAndHouseholds
         [Preserve]
         protected override void OnUpdate()
         {
-            
+
         }
 
         protected override void OnDestroy()
@@ -64,27 +64,21 @@ namespace RealisticWorkplacesAndHouseholds
 
         }
 
-        private void UpdateSchools()
+        private void UpdateWelfareOffice()
         {
-            //Mod.log.Info("Starting School Update");
 
-            UpdateSchoolsJob updateSchoolJob = new UpdateSchoolsJob
+            UpdateWelfareOfficeJob updateWelfareOfficeJob = new UpdateWelfareOfficeJob
             {
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
                 BuildingDataLookup = SystemAPI.GetComponentTypeHandle<BuildingData>(true),
                 WorkplaceDataLookup = SystemAPI.GetComponentTypeHandle<WorkplaceData>(false),
-                SchoolDataLookup = SystemAPI.GetComponentTypeHandle<SchoolData>(false),
+                WelfareOfficeDataLookup = SystemAPI.GetComponentTypeHandle<WelfareOfficeData>(true),
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
                 subMeshHandle = SystemAPI.GetBufferTypeHandle<SubMesh>(true),
-                studentPerTeacher = Mod.m_Setting.students_per_teacher,
-                sqm_per_student = Mod.m_Setting.sqm_per_student,
-                support_staff = Mod.m_Setting.support_staff/100f,
-                sqm_per_student_college_factor = Mod.m_Setting.sqm_college_adjuster,
-                sqm_per_student_university_factor = Mod.m_Setting.sqm_univ_adjuster,
+                sqm_per_employee_office = Mod.m_Setting.office_sqm_per_worker,
                 commercial_avg_floor_height = Mod.m_Setting.commercial_avg_floor_height
             };
-            updateSchoolJob.ScheduleParallel(m_UpdateSchoolsJobQuery, this.Dependency).Complete();
-            //Mod.log.Info("Finished School Update");
+            updateWelfareOfficeJob.ScheduleParallel(m_UpdateWelfareOfficeJobQuery, this.Dependency).Complete();
         }
     }
 }

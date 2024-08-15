@@ -41,6 +41,7 @@ namespace RealisticWorkplacesAndHouseholds
             updateSystem.UpdateAt<HospitalUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateAt<PowerPlantUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateAt<AdminBuildingUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
+            updateSystem.UpdateAt<WelfareOfficeUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateAt<PoliceStationUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateAt<FireStationUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateAt<UpdateWorkplaceSystem>(SystemUpdatePhase.GameSimulation);

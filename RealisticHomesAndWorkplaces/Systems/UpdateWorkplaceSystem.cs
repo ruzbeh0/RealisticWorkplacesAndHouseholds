@@ -69,22 +69,22 @@ namespace RealisticWorkplacesAndHouseholds
             {
                 ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
-                PropertyRenterLookup = SystemAPI.GetComponentTypeHandle<PropertyRenter>(true),
-                CompanyDataLookup = SystemAPI.GetComponentTypeHandle<CompanyData>(true),
+                PropertyRenterHandle = SystemAPI.GetComponentTypeHandle<PropertyRenter>(true),
+                CompanyDataHandle = SystemAPI.GetComponentTypeHandle<CompanyData>(true),
                 SpawnableBuildingDataLookup = SystemAPI.GetComponentLookup<SpawnableBuildingData>(true),
                 ZoneDataLookup = SystemAPI.GetComponentLookup<ZoneData>(true),
-                WorkProviderLookup = SystemAPI.GetComponentTypeHandle<WorkProvider>(true),
+                WorkProviderHandle = SystemAPI.GetComponentTypeHandle<WorkProvider>(false),
                 PrefabRefLookup = SystemAPI.GetComponentLookup<PrefabRef>(true),
                 PrefabSubMeshesLookup = SystemAPI.GetBufferLookup<SubMesh>(true),
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
-                BuildingPropertyDataLookup = SystemAPI.GetComponentLookup<BuildingPropertyData>(true),
+                BuildingPropertyDataLookup = SystemAPI.GetComponentLookup<BuildingPropertyData>(false),
                 commercial_sqm_per_employee = Mod.m_Setting.commercial_sqm_per_worker,
                 office_sqm_per_employee = Mod.m_Setting.office_sqm_per_worker,
                 commercial_avg_floor_height = Mod.m_Setting.commercial_avg_floor_height,
                 industry_avg_floor_height = Mod.m_Setting.industry_avg_floor_height,
                 industry_sqm_per_employee = Mod.m_Setting.industry_sqm_per_worker
             };
-            this.Dependency = updateZonableWorkplace.Schedule(m_UpdateCommercialWorkplaceJobQuery, this.Dependency);
+            this.Dependency = updateZonableWorkplace.ScheduleParallel(m_UpdateCommercialWorkplaceJobQuery, this.Dependency);
             m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
         }
     }

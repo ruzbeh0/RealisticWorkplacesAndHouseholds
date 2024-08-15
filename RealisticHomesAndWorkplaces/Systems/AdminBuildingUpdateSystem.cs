@@ -71,7 +71,7 @@ namespace RealisticWorkplacesAndHouseholds
             {
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
                 BuildingDataLookup = SystemAPI.GetComponentTypeHandle<BuildingData>(true),
-                WorkplaceDataLookup = SystemAPI.GetComponentTypeHandle<WorkplaceData>(true),
+                WorkplaceDataLookup = SystemAPI.GetComponentTypeHandle<WorkplaceData>(false),
                 AdminBuildingDataLookup = SystemAPI.GetComponentTypeHandle<AdminBuildingData>(true),
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
                 subMeshHandle = SystemAPI.GetBufferTypeHandle<SubMesh>(true),

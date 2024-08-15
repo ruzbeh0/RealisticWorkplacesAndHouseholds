@@ -122,6 +122,7 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionTabLocaleID(Setting.SchoolSection), "School" },
                 { m_Setting.GetOptionTabLocaleID(Setting.ResidentialSection), "Residential" },
                 { m_Setting.GetOptionTabLocaleID(Setting.CommercialSection), "Commercial" },
+                { m_Setting.GetOptionTabLocaleID(Setting.IndustrySection), "Industry" },
                 { m_Setting.GetOptionTabLocaleID(Setting.OfficeSection), "Office" },
                 { m_Setting.GetOptionTabLocaleID(Setting.CityServicesSection), "City Services" },
 

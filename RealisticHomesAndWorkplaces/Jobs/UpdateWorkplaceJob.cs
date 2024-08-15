@@ -55,21 +55,31 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public EntityTypeHandle EntityTypeHandle;
         public EntityCommandBuffer.ParallelWriter ecb;
 
-        public ComponentTypeHandle<CompanyData> CompanyDataLookup;
-        public ComponentTypeHandle<PropertyRenter> PropertyRenterLookup;
-        public ComponentTypeHandle<CommercialCompanyData> CommercialCompanyDataLookup;
-        public ComponentTypeHandle<WorkProvider> WorkProviderLookup;
+        [ReadOnly]
+        public ComponentTypeHandle<CompanyData> CompanyDataHandle;
+        [ReadOnly]
+        public ComponentTypeHandle<PropertyRenter> PropertyRenterHandle;
+        public ComponentTypeHandle<WorkProvider> WorkProviderHandle;
+        [ReadOnly]
         public ComponentLookup<PrefabRef> PrefabRefLookup;
+        [ReadOnly]
         public BufferLookup<SubMesh> PrefabSubMeshesLookup;
+        [ReadOnly]
         public ComponentLookup<MeshData> meshDataLookup;
-
+        [ReadOnly]
         public ComponentLookup<SpawnableBuildingData> SpawnableBuildingDataLookup;
+        [ReadOnly]
         public ComponentLookup<ZoneData> ZoneDataLookup;
         public ComponentLookup<BuildingPropertyData> BuildingPropertyDataLookup;
+        [ReadOnly]
         public float commercial_sqm_per_employee;
+        [ReadOnly]
         public float office_sqm_per_employee;
+        [ReadOnly]
         public float commercial_avg_floor_height;
+        [ReadOnly]
         public float industry_sqm_per_employee;
+        [ReadOnly]
         public float industry_avg_floor_height;
 
         public UpdateWorkplaceJob()
@@ -82,53 +92,50 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             bool useEnabledMask,
             in v128 chunkEnabledMask)
         {
-            ChunkEntityEnumerator enumerator = new(useEnabledMask, chunkEnabledMask, chunk.Count);
-            if(chunk != null)
+            var entities = chunk.GetNativeArray(EntityTypeHandle);
+            var workProviderArr = chunk.GetNativeArray(ref WorkProviderHandle);
+            var propertyRenterArr = chunk.GetNativeArray(ref PropertyRenterHandle);
+
+            for (int i = 0; i < workProviderArr.Length; i++)
             {
-                var entities = chunk.GetNativeArray(EntityTypeHandle);
-                var workProviderArr = chunk.GetNativeArray(ref WorkProviderLookup);
-                var propertyRenterArr = chunk.GetNativeArray(ref PropertyRenterLookup);
+                var entity = entities[i];
+                PropertyRenter propertyRenter = propertyRenterArr[i];
+                WorkProvider workProvider = workProviderArr[i];
+                PrefabRef prefabData;
 
-                for (int i = 0; i < workProviderArr.Length; i++)
+                if (PrefabRefLookup.TryGetComponent(propertyRenter.m_Property, out prefabData))
                 {
-                    var entity = entities[i];
-                    PropertyRenter propertyRenter = propertyRenterArr[i];
-                    WorkProvider workProvider = workProviderArr[i];
-                    PrefabRef prefabData;
-
-                    if (PrefabRefLookup.TryGetComponent(propertyRenter.m_Property, out prefabData))
+                    if (SpawnableBuildingDataLookup.TryGetComponent(prefabData.m_Prefab, out var spawnBuildingData))
                     {
-                        if (SpawnableBuildingDataLookup.TryGetComponent(prefabData.m_Prefab, out var spawnBuildingData))
+                        if (spawnBuildingData.m_ZonePrefab != Entity.Null)
                         {
-                            if (spawnBuildingData.m_ZonePrefab != Entity.Null)
+                            if (ZoneDataLookup.TryGetComponent(spawnBuildingData.m_ZonePrefab, out var zonedata))
                             {
-                                if (ZoneDataLookup.TryGetComponent(spawnBuildingData.m_ZonePrefab, out var zonedata))
+                                if (PrefabSubMeshesLookup.TryGetBuffer(prefabData.m_Prefab, out var subMeshes))
                                 {
-                                    if (PrefabSubMeshesLookup.TryGetBuffer(prefabData.m_Prefab, out var subMeshes))
+                                    var dimensions = BuildingUtils.GetBuildingDimensions(subMeshes, meshDataLookup);
+                                    var size = ObjectUtils.GetSize(dimensions);
+                                    float width = size.x;
+                                    float length = size.z;
+                                    float height = size.y;
+
+                                    int original_workers = workProvider.m_MaxWorkers;
+                                    int new_workers = original_workers;
+
+                                    bool lowDensity = true;
+                                    if (zonedata.m_MaxHeight > 25)
                                     {
-                                        var dimensions = BuildingUtils.GetBuildingDimensions(subMeshes, meshDataLookup);
-                                        var size = ObjectUtils.GetSize(dimensions);
-                                        float width = size.x;
-                                        float length = size.z;
-                                        float height = size.y;
+                                        lowDensity = false;
+                                    }
 
-                                        int original_workers = workProvider.m_MaxWorkers;
-                                        int new_workers = original_workers;
+                                    if (zonedata.m_AreaType != Game.Zones.AreaType.Residential)
+                                    {
 
-                                        bool lowDensity = true;
-                                        if (zonedata.m_MaxHeight > 25)
+                                        if (zonedata.m_AreaType == Game.Zones.AreaType.Commercial)
                                         {
-                                            lowDensity = false;
+                                            new_workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, commercial_sqm_per_employee, false);
                                         }
-
-                                        if (zonedata.m_AreaType != Game.Zones.AreaType.Residential)
-                                        {
-
-                                            if (zonedata.m_AreaType == Game.Zones.AreaType.Commercial)
-                                            {
-                                                new_workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, commercial_sqm_per_employee, false);
-                                            }
-                                            else
+                                        else
                                             {
                                                 //Office
                                                 if ((zonedata.m_ZoneFlags & ZoneFlags.Office) != 0)
@@ -144,34 +151,33 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                                 }
                                             }
 
-                                            if (new_workers != original_workers)
+                                        if (new_workers != original_workers)
+                                        {
+                                            RealisticWorkplaceData realisticWorkplaceData = new();
+                                            realisticWorkplaceData.max_workers = new_workers;
+
+                                            workProvider.m_MaxWorkers = new_workers;
+                                            workProviderArr[i] = workProvider;
+
+                                            if (BuildingPropertyDataLookup.TryGetComponent(prefabData.m_Prefab, out var buildingPropertyData))
                                             {
-                                                RealisticWorkplaceData realisticWorkplaceData = new();
-                                                realisticWorkplaceData.max_workers = new_workers;
+                                                float factor = new_workers / original_workers;
+                                                buildingPropertyData.m_SpaceMultiplier *= factor;
+                                                realisticWorkplaceData.space_multiplier = buildingPropertyData.m_SpaceMultiplier;
 
-                                                workProvider.m_MaxWorkers = new_workers;
-                                                workProviderArr[i] = workProvider;
+                                                ecb.SetComponent(unfilteredChunkIndex, prefabData.m_Prefab, buildingPropertyData);
+                                                ecb.AddComponent(unfilteredChunkIndex, entity, realisticWorkplaceData);
 
-                                                if (BuildingPropertyDataLookup.TryGetComponent(prefabData.m_Prefab, out var buildingPropertyData))
-                                                {
-                                                    float factor = new_workers / original_workers;
-                                                    buildingPropertyData.m_SpaceMultiplier *= factor;
-                                                    realisticWorkplaceData.space_multiplier = buildingPropertyData.m_SpaceMultiplier;
-
-                                                    ecb.SetComponent(i, prefabData.m_Prefab, buildingPropertyData);
-                                                    ecb.AddComponent(i, entity, realisticWorkplaceData);
-                                                }
-                                            } 
-                                        }
-                                    }                                  
-                                }
+                                            }
+                                        } 
+                                    }
+                                }                                  
                             }
-                        } 
-                    }
-
+                        }
+                    } 
                 }
-            }
-            
+
+            }   
         }
     }
 }

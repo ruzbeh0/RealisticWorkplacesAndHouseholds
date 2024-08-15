@@ -71,8 +71,8 @@ namespace RealisticWorkplacesAndHouseholds
             {
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
                 BuildingDataLookup = SystemAPI.GetComponentTypeHandle<BuildingData>(true),
-                WorkplaceDataLookup = SystemAPI.GetComponentTypeHandle<WorkplaceData>(true),
-                HospitalDataLookup = SystemAPI.GetComponentTypeHandle<HospitalData>(true),
+                WorkplaceDataLookup = SystemAPI.GetComponentTypeHandle<WorkplaceData>(false),
+                HospitalDataLookup = SystemAPI.GetComponentTypeHandle<HospitalData>(false),
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
                 subMeshHandle = SystemAPI.GetBufferTypeHandle<SubMesh>(true),
                 sqm_per_employee_hospital = Mod.m_Setting.hospital_sqm_per_worker,
