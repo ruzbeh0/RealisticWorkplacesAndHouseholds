@@ -14,13 +14,14 @@ using RealisticWorkplacesAndHouseholds.Jobs;
 using Game.Buildings;
 using Game.Companies;
 using Unity.Collections;
+using Game.UI.Menu;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
     [BurstCompile]
-    public partial class AdminBuildingUpdateSystem : GameSystemBase
+    public partial class HouseholdUpdateSystem : GameSystemBase
     {
-        private EntityQuery m_UpdateAdminBuildingJobQuery;
+        private EntityQuery m_UpdateHouseholdJobQuery;
 
         EndFrameBarrier m_EndFrameBarrier;
 
@@ -32,12 +33,13 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 
             // Job Queries
-            UpdateAdminBuildingJobQuery UpdateAdminBuildingJobQuery = new();
-            m_UpdateAdminBuildingJobQuery = GetEntityQuery(UpdateAdminBuildingJobQuery.Query);
+            UpdateHouseholdJobQuery updateHouseholdJobQuery = new();
+            m_UpdateHouseholdJobQuery = GetEntityQuery(updateHouseholdJobQuery.Query);
 
-            RequireAnyForUpdate(
-                m_UpdateAdminBuildingJobQuery
-            );
+            this.RequireAnyForUpdate(m_UpdateHouseholdJobQuery);
+
+            RequireForUpdate(m_UpdateHouseholdJobQuery);
+
         }
 
         protected override void OnGamePreload(Purpose purpose, GameMode mode)
@@ -47,8 +49,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             {
                 return;
             }
-
-            
         }
 
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
@@ -59,7 +59,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         [Preserve]
         protected override void OnUpdate()
         {
-            UpdateAdminBuilding();
+            UpdateHouseholds();
         }
 
         protected override void OnDestroy()
@@ -68,23 +68,27 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
         }
 
-        private void UpdateAdminBuilding()
+        private void UpdateHouseholds()
         {
 
-            UpdateAdminBuildingJob updateAdminBuildingJob = new UpdateAdminBuildingJob
+            UpdateHouseholdJob updateHouseholdJob = new UpdateHouseholdJob
             {
                 ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
-                BuildingDataLookup = SystemAPI.GetComponentTypeHandle<BuildingData>(true),
-                WorkplaceDataLookup = SystemAPI.GetComponentTypeHandle<WorkplaceData>(false),
-                AdminBuildingDataLookup = SystemAPI.GetComponentTypeHandle<AdminBuildingData>(true),
+                BuildingDataHandle = SystemAPI.GetComponentTypeHandle<BuildingData>(true),
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
-                subMeshHandle = SystemAPI.GetBufferTypeHandle<SubMesh>(true),
-                sqm_per_employee_office = Mod.m_Setting.office_sqm_per_worker,
-                commercial_avg_floor_height = Mod.m_Setting.commercial_avg_floor_height,
-                office_sqm_per_elevator = Mod.m_Setting.office_elevators_per_sqm
+                SubMeshHandle = SystemAPI.GetBufferTypeHandle<SubMesh>(true),
+                SpawnableBuildingHandle = SystemAPI.GetComponentTypeHandle<SpawnableBuildingData>(true),
+                BuildingPropertyDataHandle = SystemAPI.GetComponentTypeHandle<BuildingPropertyData>(false),
+                ZoneDataLookup = SystemAPI.GetComponentLookup<ZoneData>(true),
+                sqm_per_apartment = Mod.m_Setting.residential_sqm_per_apartment,
+                residential_avg_floor_height = Mod.m_Setting.residential_avg_floor_height,
+                rowhome_apt_per_floor = Mod.m_Setting.rowhomes_apt_per_floor,
+                rowhome_basement = Mod.m_Setting.rowhomes_basement,
+                units_per_elevator = Mod.m_Setting.residential_units_per_elevator,
+                single_family = Mod.m_Setting.single_household_low_density
             };
-            this.Dependency = updateAdminBuildingJob.ScheduleParallel(m_UpdateAdminBuildingJobQuery, this.Dependency);
+            this.Dependency = updateHouseholdJob.ScheduleParallel(m_UpdateHouseholdJobQuery, this.Dependency);
             m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
         }
     }

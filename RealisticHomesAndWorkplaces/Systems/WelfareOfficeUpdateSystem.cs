@@ -15,17 +15,21 @@ using Game.Buildings;
 using Game.Companies;
 using Unity.Collections;
 
-namespace RealisticWorkplacesAndHouseholds
+namespace RealisticWorkplacesAndHouseholds.Systems
 {
     [BurstCompile]
     public partial class WelfareOfficeUpdateSystem : GameSystemBase
     {
         private EntityQuery m_UpdateWelfareOfficeJobQuery;
 
+        EndFrameBarrier m_EndFrameBarrier;
+
         [Preserve]
         protected override void OnCreate()
         {
             base.OnCreate();
+
+            m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 
             // Job Queries
             UpdateWelfareOfficeJobQuery UpdateWelfareOfficeJobQuery = new();
@@ -43,8 +47,6 @@ namespace RealisticWorkplacesAndHouseholds
             {
                 return;
             }
-
-            UpdateWelfareOffice();
         }
 
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
@@ -55,7 +57,7 @@ namespace RealisticWorkplacesAndHouseholds
         [Preserve]
         protected override void OnUpdate()
         {
-
+            UpdateWelfareOffice();
         }
 
         protected override void OnDestroy()
@@ -69,6 +71,7 @@ namespace RealisticWorkplacesAndHouseholds
 
             UpdateWelfareOfficeJob updateWelfareOfficeJob = new UpdateWelfareOfficeJob
             {
+                ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
                 BuildingDataLookup = SystemAPI.GetComponentTypeHandle<BuildingData>(true),
                 WorkplaceDataLookup = SystemAPI.GetComponentTypeHandle<WorkplaceData>(false),
@@ -76,9 +79,11 @@ namespace RealisticWorkplacesAndHouseholds
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
                 subMeshHandle = SystemAPI.GetBufferTypeHandle<SubMesh>(true),
                 sqm_per_employee_office = Mod.m_Setting.office_sqm_per_worker,
-                commercial_avg_floor_height = Mod.m_Setting.commercial_avg_floor_height
+                commercial_avg_floor_height = Mod.m_Setting.commercial_avg_floor_height,
+                office_sqm_per_elevator = Mod.m_Setting.office_elevators_per_sqm
             };
-            updateWelfareOfficeJob.ScheduleParallel(m_UpdateWelfareOfficeJobQuery, this.Dependency).Complete();
+            this.Dependency = updateWelfareOfficeJob.ScheduleParallel(m_UpdateWelfareOfficeJobQuery, this.Dependency);
+            m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
         }
     }
 }

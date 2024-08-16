@@ -11,6 +11,7 @@ using Unity.Entities;
 using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
 using RealisticWorkplacesAndHouseholds;
+using RealisticWorkplacesAndHouseholds.Components;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
@@ -39,6 +40,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     ],
                     None =
                     [
+                        ComponentType.Exclude<RealisticWorkplaceData>(),
                         ComponentType.Exclude<Deleted>(),
                         ComponentType.Exclude<Temp>()
                     ],
@@ -51,13 +53,20 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
     public struct UpdateFireStationJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
+        public EntityCommandBuffer.ParallelWriter ecb;
 
+        [ReadOnly]
         public ComponentTypeHandle<BuildingData> BuildingDataLookup;
         public ComponentTypeHandle<WorkplaceData> WorkplaceDataLookup;
+        [ReadOnly]
         public ComponentTypeHandle<FireStationData> FireStationDataLookup;
+        [ReadOnly]
         public BufferTypeHandle<SubMesh> subMeshHandle;
+        [ReadOnly]
         public ComponentLookup<MeshData> meshDataLookup;
+        [ReadOnly]
         public float sqm_per_employee_police;
+        [ReadOnly]
         public float commercial_avg_floor_height;
         public UpdateFireStationJob()
         {
@@ -90,10 +99,13 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 float height = size.y;
 
                 //Skipping lobby because usually in fire stations the ground floor is the fire truck garage
-                workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_police, true);
+                workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_police, true, 0);
 
                 workplaceDataArr[i] = workplaceData;
-                FireStationDataArr[i] = FireStationData;
+                RealisticWorkplaceData realisticWorkplaceData = new();
+                realisticWorkplaceData.max_workers = workplaceData.m_MaxWorkers;
+                ecb.AddComponent(unfilteredChunkIndex, entity, realisticWorkplaceData);
+
             }
         }
     }

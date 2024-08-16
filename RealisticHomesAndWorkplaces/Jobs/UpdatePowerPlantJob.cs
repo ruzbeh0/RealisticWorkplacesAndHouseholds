@@ -11,6 +11,8 @@ using Unity.Entities;
 using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
 using RealisticWorkplacesAndHouseholds;
+using RealisticWorkplacesAndHouseholds.Components;
+using System;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
@@ -39,6 +41,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     ],
                     None =
                     [
+                        ComponentType.Exclude<RealisticWorkplaceData>(),
                         ComponentType.Exclude<Deleted>(),
                         ComponentType.Exclude<Temp>()
                     ],
@@ -51,15 +54,24 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
     public struct UpdatePowerPlantJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
+        public EntityCommandBuffer.ParallelWriter ecb;
 
+        [ReadOnly]
         public ComponentTypeHandle<BuildingData> BuildingDataLookup;
         public ComponentTypeHandle<WorkplaceData> WorkplaceDataLookup;
+        [ReadOnly]
         public ComponentTypeHandle<PowerPlantData> PowerPlantDataLookup;
+        [ReadOnly]
         public BufferTypeHandle<SubMesh> subMeshHandle;
+        [ReadOnly]
         public ComponentLookup<MeshData> meshDataLookup;
+        [ReadOnly]
         public float sqm_per_employee_industry;
+        [ReadOnly]
         public float industry_avg_floor_height;
         public const int POWER_PLANT_FLOOR_LIMIT = 2; //Use a floor limit for power plant since they tend to be very tall but it's mostly the chimmenies
+        [ReadOnly]
+        public int office_sqm_per_elevator;
 
         public UpdatePowerPlantJob()
         {
@@ -91,10 +103,12 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 float length = size.z;
                 float height = size.y;
 
-                workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, sqm_per_employee_industry, false, POWER_PLANT_FLOOR_LIMIT);
+                workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, sqm_per_employee_industry, false, 0, POWER_PLANT_FLOOR_LIMIT);
 
                 workplaceDataArr[i] = workplaceData;
-                PowerPlantDataArr[i] = PowerPlantData;
+                RealisticWorkplaceData realisticWorkplaceData = new();
+                realisticWorkplaceData.max_workers = workplaceData.m_MaxWorkers;
+                ecb.AddComponent(unfilteredChunkIndex, entity, realisticWorkplaceData);
             }
         }
     }

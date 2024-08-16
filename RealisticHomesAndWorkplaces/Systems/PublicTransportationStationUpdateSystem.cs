@@ -18,9 +18,9 @@ using Unity.Collections;
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
     [BurstCompile]
-    public partial class AdminBuildingUpdateSystem : GameSystemBase
+    public partial class PublicTransportStationUpdateSystem : GameSystemBase
     {
-        private EntityQuery m_UpdateAdminBuildingJobQuery;
+        private EntityQuery m_UpdatePublicTransportStationJobQuery;
 
         EndFrameBarrier m_EndFrameBarrier;
 
@@ -32,11 +32,11 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 
             // Job Queries
-            UpdateAdminBuildingJobQuery UpdateAdminBuildingJobQuery = new();
-            m_UpdateAdminBuildingJobQuery = GetEntityQuery(UpdateAdminBuildingJobQuery.Query);
+            UpdatePublicTransportStationJobQuery UpdatePublicTransportStationJobQuery = new();
+            m_UpdatePublicTransportStationJobQuery = GetEntityQuery(UpdatePublicTransportStationJobQuery.Query);
 
             RequireAnyForUpdate(
-                m_UpdateAdminBuildingJobQuery
+                m_UpdatePublicTransportStationJobQuery
             );
         }
 
@@ -59,7 +59,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         [Preserve]
         protected override void OnUpdate()
         {
-            UpdateAdminBuilding();
+            UpdatePublicTransportStation();
         }
 
         protected override void OnDestroy()
@@ -68,23 +68,23 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
         }
 
-        private void UpdateAdminBuilding()
+        private void UpdatePublicTransportStation()
         {
 
-            UpdateAdminBuildingJob updateAdminBuildingJob = new UpdateAdminBuildingJob
+            UpdatePublicTransportStationJob updatePublicTransportStationJob = new UpdatePublicTransportStationJob
             {
                 ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
                 BuildingDataLookup = SystemAPI.GetComponentTypeHandle<BuildingData>(true),
                 WorkplaceDataLookup = SystemAPI.GetComponentTypeHandle<WorkplaceData>(false),
-                AdminBuildingDataLookup = SystemAPI.GetComponentTypeHandle<AdminBuildingData>(true),
+                PublicTransportStationDataLookup = SystemAPI.GetComponentTypeHandle<PublicTransportStationData>(true),
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
                 subMeshHandle = SystemAPI.GetBufferTypeHandle<SubMesh>(true),
-                sqm_per_employee_office = Mod.m_Setting.office_sqm_per_worker,
+                sqm_per_employee_transit = Mod.m_Setting.transit_station_sqm_per_worker,
                 commercial_avg_floor_height = Mod.m_Setting.commercial_avg_floor_height,
                 office_sqm_per_elevator = Mod.m_Setting.office_elevators_per_sqm
             };
-            this.Dependency = updateAdminBuildingJob.ScheduleParallel(m_UpdateAdminBuildingJobQuery, this.Dependency);
+            this.Dependency = updatePublicTransportStationJob.ScheduleParallel(m_UpdatePublicTransportStationJobQuery, this.Dependency);
             m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
         }
     }

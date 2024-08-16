@@ -11,6 +11,8 @@ using Unity.Entities;
 using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
 using RealisticWorkplacesAndHouseholds;
+using RealisticWorkplacesAndHouseholds.Components;
+using System;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
@@ -39,6 +41,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     ],
                     None =
                     [
+                        ComponentType.Exclude<RealisticWorkplaceData>(),
                         ComponentType.Exclude<Deleted>(),
                         ComponentType.Exclude<Temp>()
                     ],
@@ -51,15 +54,24 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
     public struct UpdateHospitalJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
+        public EntityCommandBuffer.ParallelWriter ecb;
 
+        [ReadOnly]
         public ComponentTypeHandle<BuildingData> BuildingDataLookup;
         public ComponentTypeHandle<WorkplaceData> WorkplaceDataLookup;
         public ComponentTypeHandle<HospitalData> HospitalDataLookup;
+        [ReadOnly]
         public BufferTypeHandle<SubMesh> subMeshHandle;
+        [ReadOnly]
         public ComponentLookup<MeshData> meshDataLookup;
-        public float sqm_per_employee_patient;
+        [ReadOnly]
+        public float sqm_per_patient_hospital;
+        [ReadOnly]
         public float sqm_per_employee_hospital;
+        [ReadOnly]
         public float commercial_avg_floor_height;
+        [ReadOnly]
+        public int office_sqm_per_elevator;
 
         public UpdateHospitalJob()
         {
@@ -91,13 +103,18 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 float length = size.z;
                 float height = size.y;
 
-                int new_capacity = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_patient, false);
+                int new_capacity = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_patient_hospital, false, office_sqm_per_elevator);
                 hospitalData.m_PatientCapacity = new_capacity;
 
-                workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_hospital, false);
+                workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_hospital, false, office_sqm_per_elevator);
+                //Mod.log.Info($"new_capacity: {new_capacity}, sqm_per_patient_hospital: {sqm_per_patient_hospital}, workplaceData.m_MaxWorkers {workplaceData.m_MaxWorkers}");
 
                 workplaceDataArr[i] = workplaceData;
                 hospitalDataArr[i] = hospitalData;
+
+                RealisticWorkplaceData realisticWorkplaceData = new();
+                realisticWorkplaceData.max_workers = workplaceData.m_MaxWorkers;
+                ecb.AddComponent(unfilteredChunkIndex, entity, realisticWorkplaceData);
             }
         }
     }

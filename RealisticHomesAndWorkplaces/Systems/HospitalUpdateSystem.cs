@@ -15,17 +15,21 @@ using Game.Buildings;
 using Game.Companies;
 using Unity.Collections;
 
-namespace RealisticWorkplacesAndHouseholds
+namespace RealisticWorkplacesAndHouseholds.Systems
 {
     [BurstCompile]
     public partial class HospitalUpdateSystem : GameSystemBase
     {
         private EntityQuery m_UpdateHospitalJobQuery;
 
+        EndFrameBarrier m_EndFrameBarrier;
+
         [Preserve]
         protected override void OnCreate()
         {
             base.OnCreate();
+
+            m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 
             // Job Queries
             UpdateHospitalJobQuery UpdateHospitalJobQuery = new();
@@ -44,7 +48,7 @@ namespace RealisticWorkplacesAndHouseholds
                 return;
             }
 
-            UpdateHospital();
+            
         }
 
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
@@ -55,7 +59,7 @@ namespace RealisticWorkplacesAndHouseholds
         [Preserve]
         protected override void OnUpdate()
         {
-            
+            UpdateHospital();
         }
 
         protected override void OnDestroy()
@@ -69,6 +73,7 @@ namespace RealisticWorkplacesAndHouseholds
 
             UpdateHospitalJob updateHospitalJob = new UpdateHospitalJob
             {
+                ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
                 BuildingDataLookup = SystemAPI.GetComponentTypeHandle<BuildingData>(true),
                 WorkplaceDataLookup = SystemAPI.GetComponentTypeHandle<WorkplaceData>(false),
@@ -76,10 +81,12 @@ namespace RealisticWorkplacesAndHouseholds
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
                 subMeshHandle = SystemAPI.GetBufferTypeHandle<SubMesh>(true),
                 sqm_per_employee_hospital = Mod.m_Setting.hospital_sqm_per_worker,
-                sqm_per_employee_patient = Mod.m_Setting.hospital_sqm_per_patient,
-                commercial_avg_floor_height = Mod.m_Setting.commercial_avg_floor_height
+                sqm_per_patient_hospital = Mod.m_Setting.hospital_sqm_per_patient,
+                commercial_avg_floor_height = Mod.m_Setting.commercial_avg_floor_height,
+                office_sqm_per_elevator = Mod.m_Setting.office_elevators_per_sqm
             };
-            updateHospitalJob.ScheduleParallel(m_UpdateHospitalJobQuery, this.Dependency).Complete();
+            this.Dependency = updateHospitalJob.ScheduleParallel(m_UpdateHospitalJobQuery, this.Dependency);
+            m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
         }
     }
 }

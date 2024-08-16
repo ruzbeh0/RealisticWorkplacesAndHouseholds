@@ -11,6 +11,7 @@ using Unity.Entities;
 using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
 using RealisticWorkplacesAndHouseholds;
+using RealisticWorkplacesAndHouseholds.Components;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
@@ -39,6 +40,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     ],
                     None =
                     [
+                        ComponentType.Exclude<RealisticWorkplaceData>(),
                         ComponentType.Exclude<Deleted>(),
                         ComponentType.Exclude<Temp>()
                     ],
@@ -51,17 +53,27 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
     public struct UpdateSchoolsJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
+        public EntityCommandBuffer.ParallelWriter ecb;
 
+        [ReadOnly]
         public ComponentTypeHandle<BuildingData> BuildingDataLookup;
         public ComponentTypeHandle<WorkplaceData> WorkplaceDataLookup;
         public ComponentTypeHandle<SchoolData> SchoolDataLookup;
+        [ReadOnly]
         public BufferTypeHandle<SubMesh> subMeshHandle;
+        [ReadOnly]
         public ComponentLookup<MeshData> meshDataLookup;
+        [ReadOnly]
         public float studentPerTeacher;
+        [ReadOnly]
         public float sqm_per_student;
+        [ReadOnly]
         public float support_staff;
+        [ReadOnly]
         public float sqm_per_student_university_factor;
+        [ReadOnly]
         public float sqm_per_student_college_factor;
+        [ReadOnly]
         public float commercial_avg_floor_height;
 
         public UpdateSchoolsJob()
@@ -111,7 +123,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     }
                 }
 
-                int new_capacity = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_student_t, false);
+                int new_capacity = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_student_t, false, 0);
                 //Mod.log.Info($"Level:{level}, Previous Students:{schoolData.m_StudentCapacity} New:{new_capacity}");
                 schoolData.m_StudentCapacity = new_capacity;
 
@@ -124,6 +136,9 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 
                 workplaceDataArr[i] = workplaceData;
                 schoolDataArr[i] = schoolData;
+                RealisticWorkplaceData realisticWorkplaceData = new();
+                realisticWorkplaceData.max_workers = workplaceData.m_MaxWorkers;
+                ecb.AddComponent(unfilteredChunkIndex, entity, realisticWorkplaceData);
 
             }
         }

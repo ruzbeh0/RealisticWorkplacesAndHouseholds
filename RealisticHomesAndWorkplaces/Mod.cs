@@ -5,6 +5,8 @@ using Game;
 using Game.Modding;
 using Game.SceneFlow;
 using Game.Settings;
+using RealisticWorkplacesAndHouseholds.Jobs;
+using RealisticWorkplacesAndHouseholds.Systems;
 using System.IO;
 
 namespace RealisticWorkplacesAndHouseholds
@@ -37,15 +39,18 @@ namespace RealisticWorkplacesAndHouseholds
 
             AssetDatabase.global.LoadSettings(nameof(RealisticWorkplacesAndHouseholds), m_Setting, new Setting(this));
 
-            updateSystem.UpdateAt<SchoolUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
-            updateSystem.UpdateAt<HospitalUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
-            updateSystem.UpdateAt<PowerPlantUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
-            updateSystem.UpdateAt<AdminBuildingUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
-            updateSystem.UpdateAt<WelfareOfficeUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
-            updateSystem.UpdateAt<PoliceStationUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
-            updateSystem.UpdateAt<FireStationUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
-            updateSystem.UpdateAt<UpdateWorkplaceSystem>(SystemUpdatePhase.GameSimulation);
-
+            updateSystem.UpdateAt<SchoolUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<HospitalUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<PowerPlantUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<AdminBuildingUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<WelfareOfficeUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<PoliceStationUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<FireStationUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<PublicTransportStationUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<WorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<HouseholdUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
         }
 
         public void OnDispose()

@@ -15,17 +15,21 @@ using Game.Buildings;
 using Game.Companies;
 using Unity.Collections;
 
-namespace RealisticWorkplacesAndHouseholds
+namespace RealisticWorkplacesAndHouseholds.Systems
 {
     [BurstCompile]
     public partial class SchoolUpdateSystem : GameSystemBase
     {
         private EntityQuery m_UpdateSchoolsJobQuery;
 
+        EndFrameBarrier m_EndFrameBarrier;
+
         [Preserve]
         protected override void OnCreate()
         {
             base.OnCreate();
+
+            m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 
             // Job Queries
             UpdateSchoolsJobQuery UpdateSchoolsJobQuery = new();
@@ -43,8 +47,6 @@ namespace RealisticWorkplacesAndHouseholds
             {
                 return;
             }
-
-            UpdateSchools();
         }
 
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
@@ -55,7 +57,7 @@ namespace RealisticWorkplacesAndHouseholds
         [Preserve]
         protected override void OnUpdate()
         {
-            
+            UpdateSchools();
         }
 
         protected override void OnDestroy()
@@ -66,10 +68,9 @@ namespace RealisticWorkplacesAndHouseholds
 
         private void UpdateSchools()
         {
-            //Mod.log.Info("Starting School Update");
-
             UpdateSchoolsJob updateSchoolJob = new UpdateSchoolsJob
             {
+                ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
                 BuildingDataLookup = SystemAPI.GetComponentTypeHandle<BuildingData>(true),
                 WorkplaceDataLookup = SystemAPI.GetComponentTypeHandle<WorkplaceData>(false),
@@ -83,8 +84,8 @@ namespace RealisticWorkplacesAndHouseholds
                 sqm_per_student_university_factor = Mod.m_Setting.sqm_univ_adjuster,
                 commercial_avg_floor_height = Mod.m_Setting.commercial_avg_floor_height
             };
-            updateSchoolJob.ScheduleParallel(m_UpdateSchoolsJobQuery, this.Dependency).Complete();
-            //Mod.log.Info("Finished School Update");
+            this.Dependency = updateSchoolJob.ScheduleParallel(m_UpdateSchoolsJobQuery, this.Dependency);
+            m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
         }
     }
 }

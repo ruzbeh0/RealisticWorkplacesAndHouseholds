@@ -15,11 +15,11 @@ using RealisticWorkplacesAndHouseholds.Components;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
-    public struct UpdateAdminBuildingJobQuery
+    public struct UpdatePublicTransportStationJobQuery
     {
         public EntityQueryDesc[] Query;
 
-        public UpdateAdminBuildingJobQuery()
+        public UpdatePublicTransportStationJobQuery()
         {
             Query =
             [
@@ -30,13 +30,13 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         ComponentType.ReadWrite<WorkplaceData>(),
                         ComponentType.ReadOnly<BuildingData>(),
                         ComponentType.ReadOnly<ServiceObjectData>(),
-                        ComponentType.ReadWrite<AdminBuildingData>(),
+                        ComponentType.ReadWrite<PublicTransportStationData>(),
                         ComponentType.ReadOnly<SubMesh>()
 
                     ],
-                    Any = 
+                    Any =
                     [
-                        
+
                     ],
                     None =
                     [
@@ -50,7 +50,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
     }
 
     [BurstCompile]
-    public struct UpdateAdminBuildingJob : IJobChunk
+    public struct UpdatePublicTransportStationJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
         public EntityCommandBuffer.ParallelWriter ecb;
@@ -59,19 +59,20 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ComponentTypeHandle<BuildingData> BuildingDataLookup;
         public ComponentTypeHandle<WorkplaceData> WorkplaceDataLookup;
         [ReadOnly]
-        public ComponentTypeHandle<AdminBuildingData> AdminBuildingDataLookup;
+        public ComponentTypeHandle<PublicTransportStationData> PublicTransportStationDataLookup;
         [ReadOnly]
         public BufferTypeHandle<SubMesh> subMeshHandle;
         [ReadOnly]
         public ComponentLookup<MeshData> meshDataLookup;
         [ReadOnly]
-        public float sqm_per_employee_office;
+        public float sqm_per_employee_transit;
         [ReadOnly]
         public float commercial_avg_floor_height;
         [ReadOnly]
         public int office_sqm_per_elevator;
+        const float reduction_factor = 0.9f;
 
-        public UpdateAdminBuildingJob()
+        public UpdatePublicTransportStationJob()
         {
         }
 
@@ -84,15 +85,15 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             ChunkEntityEnumerator enumerator = new(useEnabledMask, chunkEnabledMask, chunk.Count);
             var buildingDataArr = chunk.GetNativeArray(ref BuildingDataLookup);
             var workplaceDataArr = chunk.GetNativeArray(ref WorkplaceDataLookup);
-            var AdminBuildingDataArr = chunk.GetNativeArray(ref AdminBuildingDataLookup);
+            var PublicTransportStationDataArr = chunk.GetNativeArray(ref PublicTransportStationDataLookup);
             var subMeshBufferAccessor = chunk.GetBufferAccessor(ref subMeshHandle);
-            
+
             for (int i = 0; i < workplaceDataArr.Length; i++)
             {
                 Entity entity = entities[i];
                 WorkplaceData workplaceData = workplaceDataArr[i];
                 BuildingData buildingData = buildingDataArr[i];
-                AdminBuildingData AdminBuildingData = AdminBuildingDataArr[i];
+                PublicTransportStationData PublicTransportStationData = PublicTransportStationDataArr[i];
                 DynamicBuffer<SubMesh> subMeshes = subMeshBufferAccessor[i];
 
                 var dimensions = BuildingUtils.GetBuildingDimensions(subMeshes, meshDataLookup);
@@ -101,11 +102,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 float length = size.z;
                 float height = size.y;
 
-                //Using same attributes as offices for admin buildings
-                workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, sqm_per_employee_office, sqm_per_employee_office, false, office_sqm_per_elevator);
+                //Apply reduction factor because stations have a lot of empty space
+                workplaceData.m_MaxWorkers = (int)(reduction_factor*BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_transit, false, office_sqm_per_elevator));
 
                 workplaceDataArr[i] = workplaceData;
-
                 RealisticWorkplaceData realisticWorkplaceData = new();
                 realisticWorkplaceData.max_workers = workplaceData.m_MaxWorkers;
                 ecb.AddComponent(unfilteredChunkIndex, entity, realisticWorkplaceData);

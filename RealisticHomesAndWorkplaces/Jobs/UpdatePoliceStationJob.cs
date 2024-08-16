@@ -11,6 +11,7 @@ using Unity.Entities;
 using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
 using RealisticWorkplacesAndHouseholds;
+using RealisticWorkplacesAndHouseholds.Components;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
@@ -39,6 +40,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     ],
                     None =
                     [
+                        ComponentType.Exclude<RealisticWorkplaceData>(),
                         ComponentType.Exclude<Deleted>(),
                         ComponentType.Exclude<Temp>()
                     ],
@@ -51,14 +53,23 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
     public struct UpdatePoliceStationJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
+        public EntityCommandBuffer.ParallelWriter ecb;
 
+        [ReadOnly]
         public ComponentTypeHandle<BuildingData> BuildingDataLookup;
         public ComponentTypeHandle<WorkplaceData> WorkplaceDataLookup;
+        [ReadOnly]
         public ComponentTypeHandle<PoliceStationData> PoliceStationDataLookup;
+        [ReadOnly]
         public BufferTypeHandle<SubMesh> subMeshHandle;
+        [ReadOnly]
         public ComponentLookup<MeshData> meshDataLookup;
+        [ReadOnly]
         public float sqm_per_employee_police;
+        [ReadOnly]
         public float commercial_avg_floor_height;
+        [ReadOnly]
+        public int office_sqm_per_elevator;
         public UpdatePoliceStationJob()
         {
         }
@@ -89,10 +100,13 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 float length = size.z;
                 float height = size.y;
 
-                workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_police, false);
+                workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_police, false, office_sqm_per_elevator);
 
                 workplaceDataArr[i] = workplaceData;
-                PoliceStationDataArr[i] = PoliceStationData;
+                RealisticWorkplaceData realisticWorkplaceData = new();
+                realisticWorkplaceData.max_workers = workplaceData.m_MaxWorkers;
+                ecb.AddComponent(unfilteredChunkIndex, entity, realisticWorkplaceData);
+
             }
         }
     }

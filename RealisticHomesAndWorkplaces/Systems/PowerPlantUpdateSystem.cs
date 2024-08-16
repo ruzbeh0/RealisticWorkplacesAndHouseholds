@@ -15,17 +15,21 @@ using Game.Buildings;
 using Game.Companies;
 using Unity.Collections;
 
-namespace RealisticWorkplacesAndHouseholds
+namespace RealisticWorkplacesAndHouseholds.Systems
 {
     [BurstCompile]
     public partial class PowerPlantUpdateSystem : GameSystemBase
     {
         private EntityQuery m_UpdatePowerPlantJobQuery;
 
+        EndFrameBarrier m_EndFrameBarrier;
+
         [Preserve]
         protected override void OnCreate()
         {
             base.OnCreate();
+
+            m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 
             // Job Queries
             UpdatePowerPlantJobQuery UpdatePowerPlantJobQuery = new();
@@ -44,7 +48,7 @@ namespace RealisticWorkplacesAndHouseholds
                 return;
             }
 
-            UpdatePowerPlant();
+            
         }
 
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
@@ -55,7 +59,7 @@ namespace RealisticWorkplacesAndHouseholds
         [Preserve]
         protected override void OnUpdate()
         {
-
+            UpdatePowerPlant();
         }
 
         protected override void OnDestroy()
@@ -69,6 +73,7 @@ namespace RealisticWorkplacesAndHouseholds
 
             UpdatePowerPlantJob updatePowerPlantJob = new UpdatePowerPlantJob
             {
+                ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
                 BuildingDataLookup = SystemAPI.GetComponentTypeHandle<BuildingData>(true),
                 WorkplaceDataLookup = SystemAPI.GetComponentTypeHandle<WorkplaceData>(false),
@@ -76,9 +81,11 @@ namespace RealisticWorkplacesAndHouseholds
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
                 subMeshHandle = SystemAPI.GetBufferTypeHandle<SubMesh>(true),
                 sqm_per_employee_industry = Mod.m_Setting.industry_sqm_per_worker,
-                industry_avg_floor_height = Mod.m_Setting.industry_avg_floor_height
+                industry_avg_floor_height = Mod.m_Setting.industry_avg_floor_height,
+                office_sqm_per_elevator = Mod.m_Setting.office_elevators_per_sqm
             };
-            updatePowerPlantJob.ScheduleParallel(m_UpdatePowerPlantJobQuery, this.Dependency).Complete();
+            this.Dependency = updatePowerPlantJob.ScheduleParallel(m_UpdatePowerPlantJobQuery, this.Dependency);
+            m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
         }
     }
 }

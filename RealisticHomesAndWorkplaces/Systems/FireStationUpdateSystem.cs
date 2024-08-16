@@ -15,17 +15,21 @@ using Game.Buildings;
 using Game.Companies;
 using Unity.Collections;
 
-namespace RealisticWorkplacesAndHouseholds
+namespace RealisticWorkplacesAndHouseholds.Systems
 {
     [BurstCompile]
     public partial class FireStationUpdateSystem : GameSystemBase
     {
         private EntityQuery m_UpdateFireStationJobQuery;
 
+        EndFrameBarrier m_EndFrameBarrier;
+
         [Preserve]
         protected override void OnCreate()
         {
             base.OnCreate();
+
+            m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 
             // Job Queries
             UpdateFireStationJobQuery UpdateFireStationJobQuery = new();
@@ -44,7 +48,7 @@ namespace RealisticWorkplacesAndHouseholds
                 return;
             }
 
-            UpdateFireStation();
+            
         }
 
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
@@ -55,7 +59,7 @@ namespace RealisticWorkplacesAndHouseholds
         [Preserve]
         protected override void OnUpdate()
         {
-
+            UpdateFireStation();
         }
 
         protected override void OnDestroy()
@@ -69,6 +73,7 @@ namespace RealisticWorkplacesAndHouseholds
 
             UpdateFireStationJob updateFireStationJob = new UpdateFireStationJob
             {
+                ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
                 BuildingDataLookup = SystemAPI.GetComponentTypeHandle<BuildingData>(true),
                 WorkplaceDataLookup = SystemAPI.GetComponentTypeHandle<WorkplaceData>(false),
@@ -78,7 +83,8 @@ namespace RealisticWorkplacesAndHouseholds
                 sqm_per_employee_police = Mod.m_Setting.police_fire_sqm_per_worker,
                 commercial_avg_floor_height = Mod.m_Setting.commercial_avg_floor_height
             };
-            updateFireStationJob.ScheduleParallel(m_UpdateFireStationJobQuery, this.Dependency).Complete();
+            this.Dependency = updateFireStationJob.ScheduleParallel(m_UpdateFireStationJobQuery, this.Dependency);
+            m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
         }
     }
 }

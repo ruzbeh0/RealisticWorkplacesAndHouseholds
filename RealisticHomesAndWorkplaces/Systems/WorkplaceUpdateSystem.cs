@@ -22,12 +22,12 @@ using Game.Simulation;
 using Game.Triggers;
 using static Colossal.IO.AssetDatabase.AssetDatabase;
 
-namespace RealisticWorkplacesAndHouseholds
+namespace RealisticWorkplacesAndHouseholds.Systems
 {
     [BurstCompile]
-    public partial class UpdateWorkplaceSystem : GameSystemBase
+    public partial class WorkplaceUpdateSystem : GameSystemBase
     {
-        private EntityQuery m_UpdateCommercialWorkplaceJobQuery;
+        private EntityQuery m_UpdateWorkplaceJobQuery;
 
         EndFrameBarrier m_EndFrameBarrier;
 
@@ -39,10 +39,10 @@ namespace RealisticWorkplacesAndHouseholds
             m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 
             // Job Queries
-            UpdateCommercialWorkplaceJobQuery updateCommercialWorkplaceJobQuery = new();
-            m_UpdateCommercialWorkplaceJobQuery = GetEntityQuery(updateCommercialWorkplaceJobQuery.Query);
+            UpdateWorkplaceJobQuery updateWorkplaceJobQuery = new();
+            m_UpdateWorkplaceJobQuery = GetEntityQuery(updateWorkplaceJobQuery.Query);
 
-            this.RequireAnyForUpdate(m_UpdateCommercialWorkplaceJobQuery);
+            this.RequireAnyForUpdate(m_UpdateWorkplaceJobQuery);
 
         }
 
@@ -54,7 +54,7 @@ namespace RealisticWorkplacesAndHouseholds
         [Preserve]
         protected override void OnUpdate()
         {
-            UpdateCommercialWorkplace();
+            UpdateWorkplace();
         }
 
         protected override void OnDestroy()
@@ -63,14 +63,18 @@ namespace RealisticWorkplacesAndHouseholds
 
         }
 
-        private void UpdateCommercialWorkplace()
+        private void UpdateWorkplace()
         {
             UpdateWorkplaceJob updateZonableWorkplace = new UpdateWorkplaceJob
             {
                 ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
+                PrefabRefHandle = SystemAPI.GetComponentTypeHandle<PrefabRef>(true),
                 PropertyRenterHandle = SystemAPI.GetComponentTypeHandle<PropertyRenter>(true),
                 CompanyDataHandle = SystemAPI.GetComponentTypeHandle<CompanyData>(true),
+                ServiceCompanyDataLookup = SystemAPI.GetComponentLookup<ServiceCompanyData>(false),
+                IndustrialProcessDataLookup = SystemAPI.GetComponentLookup<IndustrialProcessData>(false),
+                WorkplaceDataLookup = SystemAPI.GetComponentLookup<WorkplaceData>(false),
                 SpawnableBuildingDataLookup = SystemAPI.GetComponentLookup<SpawnableBuildingData>(true),
                 ZoneDataLookup = SystemAPI.GetComponentLookup<ZoneData>(true),
                 WorkProviderHandle = SystemAPI.GetComponentTypeHandle<WorkProvider>(false),
@@ -82,9 +86,10 @@ namespace RealisticWorkplacesAndHouseholds
                 office_sqm_per_employee = Mod.m_Setting.office_sqm_per_worker,
                 commercial_avg_floor_height = Mod.m_Setting.commercial_avg_floor_height,
                 industry_avg_floor_height = Mod.m_Setting.industry_avg_floor_height,
-                industry_sqm_per_employee = Mod.m_Setting.industry_sqm_per_worker
+                industry_sqm_per_employee = Mod.m_Setting.industry_sqm_per_worker,
+                office_sqm_per_elevator = Mod.m_Setting.office_elevators_per_sqm
             };
-            this.Dependency = updateZonableWorkplace.ScheduleParallel(m_UpdateCommercialWorkplaceJobQuery, this.Dependency);
+            this.Dependency = updateZonableWorkplace.ScheduleParallel(m_UpdateWorkplaceJobQuery, this.Dependency);
             m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
         }
     }
