@@ -1,0 +1,68 @@
+﻿<Publish>
+	<!--Id must be set in order to update existed mod. it is not required for publishing mod for the first time-->
+	<ModId Value="87755" />
+	<!--Name of the mod to display to players-->
+	<DisplayName Value="Realistic Workplaces And Households" />
+	<!--Short description of the mod-->
+	<ShortDescription Value="This is a short description" />
+	<!--Long description of the mod. Single line or multi line. Supports minimal markdown subset-->
+	<!--LongDescription Value="This is a long description" /-->
+	<LongDescription>
+This mod updates the number of households and workplaces in buildings by calculating the building dimensions. It uses several parameters to estimate a realistic number of households or workers for each building. Several of these parameters can be changed in the Mod's menu.
+
+## **This Mod is in Beta!** Backup up your saves before using and please report any bug or suggestion in the forum or on Discord
+
+These are the current supported building types:
+
+* Residential Zones
+* Commercial Zones
+* Industry Zones
+* Office Zones
+* Mixed Use Zones
+* Admin Buildings
+* Fire and Police Stations
+* Hospital and Medical Clinics
+* Post Facilities (Except Post Sorting Facility)
+* Power Stations
+* Schools
+* Welfare Office
+
+## Calculations
+
+Different types of buildings will have their capacity calculated differently. In summary, all of them will use the buildings dimensions to estimate the number of floors and the area of each floor. For each type of building it is possible to customize for the number of workers or apartments per area (sq meter). This will be used to calculate the total number of households or workers. There are special considerations, for example, space for stairs, elevators, lobbys (for some cases) will be removed from the usable area. Also, mixed used buildings will only consider the first floor to calculate workers and the rest for households. And for Schools the number of teachers and students will be calculated similary, but also using a teacher to student ratio. These are just a few examples, each building type listed above have their own formula and set of parameters.
+
+This mod was inspired by the **Population Rebalance** from CS1 and from **Realistic Building Occupancy** and **Realistic Density** from CS2. Thank you for to the authors of Realistic Building Occupancy and Realistic Density. I studied their code and it was very useful to create this mod. I tried to create a mod that joined the best qualities of both of them. Also, because this mod is similar to them, it should not be used with them.
+
+	</LongDescription>
+	<!--Thumbnail-->
+	<Thumbnail Value="Properties/Thumbnail.jpg" />
+	<Screenshot Value="Properties/screenshot1.jpg" />
+	<Screenshot Value="Properties/screenshot2.jpg" />
+	<Screenshot Value="Properties/screenshot3.jpg" />
+	<Screenshot Value="Properties/screenshot34.jpg" />
+	<!--Screenshot, can be set multiple times-->
+	<Screenshot Value="" />
+	<!--Tag, can be set multiple times-->
+	<Tag Value="" />
+	<!--Link to the forum post where the mod can be discussed-->
+	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/realistic-workplaces-and-households.1699586/" />
+	<!--Version of the mod-->
+	<ModVersion Value="0.1.1" />
+	<!--Recommended version of the base game to use the mod-->
+	<GameVersion Value="1.1.*" />
+	<!--Dependency for the mod, can be set multiple times-->
+	<Dependency Id="" />
+	<ChangeLog>
+		* Fixed Entity Command Buffer error
+		* Fixed calculations for Mixed Use Zones (including Signature Buildings)
+		* Added Post Offices to City Services
+		* Added an option to configure the number of employees per sq meter for Power Plants 
+		* Recalculated Power Plant workers formula to reduce the total number of employees
+		* Added an option to reduce the amount on households in buildings that have level 4 or 5
+	</ChangeLog>
+	<!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon-->
+	<ExternalLink Type="github" Url="https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/" />
+	<ExternalLink Type="discord" Url="https://discord.com/channels/1024242828114673724/1273862795020206144" />
+	<ExternalLink Type="paypal" Url="https://www.paypal.com/paypalme/ruzbeh0" />
+	<ExternalLink Type="kofi" Url="https://ko-fi.com/ruzbeh0" />
+</Publish>

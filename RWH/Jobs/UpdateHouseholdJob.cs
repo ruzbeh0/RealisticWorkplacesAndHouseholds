@@ -18,6 +18,7 @@ using UnityEngine;
 using Game.Citizens;
 using static Game.Input.InputRecorder;
 using System;
+using Game.Economy;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
@@ -84,6 +85,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public int units_per_elevator;
         [ReadOnly]
         public bool single_family;
+        [ReadOnly]
+        public bool luxury_highrise_less_apt;
 
         public UpdateHouseholdJob()
         {
@@ -127,15 +130,31 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                 {
                                     height += residential_avg_floor_height;
                                 }
-                                property.m_ResidentialProperties = BuildingUtils.GetPeople(width, length, height, residential_avg_floor_height, width*length/ rowhome_apt_per_floor + HALLWAY_BUFFER, false, 0);
+                                property.m_ResidentialProperties = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, width*length/ rowhome_apt_per_floor + HALLWAY_BUFFER, 0, 0);
                             } else
                             {
                                 //Checking for single family homes
                                 if(!single_family || property.m_ResidentialProperties > 1)
                                 {
-                                    property.m_ResidentialProperties = BuildingUtils.GetPeople(width, length, height, residential_avg_floor_height, sqm_per_apartment + HALLWAY_BUFFER, false, units_per_elevator * (int)sqm_per_apartment);
+                                    int floorOffset = 0;
+                                    if(luxury_highrise_less_apt && height/residential_avg_floor_height > 10 && spawnBuildingData.m_Level >= 4)
+                                    {
+                                        //High rise buildings that are level 4 or 5 will have less apartments
+                                        //Removing a floor every 15 floors
+                                        floorOffset = (int)(height / residential_avg_floor_height) / 15;
+                                    }
+
+                                    //Checking if it is Mixed Use
+                                    if(property.m_AllowedSold != Resource.NoResource)
+                                    {
+                                        //remove one floor
+                                        floorOffset++;
+                                    }
+                                    property.m_ResidentialProperties = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, sqm_per_apartment + HALLWAY_BUFFER, floorOffset, units_per_elevator * (int)sqm_per_apartment);
                                 } 
                             }
+                            
+                            //Mod.log.Info($"Residential: x{width},y{length},z{height},zoneflag{zonedata.m_ZoneFlags}, Households:{property.m_ResidentialProperties}, Sold:{property.m_AllowedSold}");
 
                             buildingPropertyDataArr[i] = property;
                             RealisticHouseholdData realisticHouseholdData = new();

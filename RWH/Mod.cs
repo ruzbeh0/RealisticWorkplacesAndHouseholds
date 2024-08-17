@@ -39,18 +39,12 @@ namespace RealisticWorkplacesAndHouseholds
 
             AssetDatabase.global.LoadSettings(nameof(RealisticWorkplacesAndHouseholds), m_Setting, new Setting(this));
 
-            updateSystem.UpdateAt<SchoolUpdateSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAt<HospitalUpdateSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAt<PowerPlantUpdateSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAt<AdminBuildingUpdateSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAt<WelfareOfficeUpdateSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAt<PoliceStationUpdateSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAt<FireStationUpdateSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAt<PublicTransportStationUpdateSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAt<WorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAt<HouseholdUpdateSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
+
+            updateSystem.UpdateAt<CityServicesUpdateSystem>(SystemUpdatePhase.ModificationEnd);
+            updateSystem.UpdateAt<WorkplaceUpdateSystem>(SystemUpdatePhase.ModificationEnd);
+            updateSystem.UpdateAt<HouseholdUpdateSystem>(SystemUpdatePhase.ModificationEnd);
+            //updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
+            //updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
         }
 
         public void OnDispose()

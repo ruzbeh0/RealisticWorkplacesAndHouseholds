@@ -23,22 +23,20 @@ namespace RealisticWorkplacesAndHouseholds.Systems
     {
         private EntityQuery m_UpdateHouseholdJobQuery;
 
-        EndFrameBarrier m_EndFrameBarrier;
+        ModificationEndBarrier m_EndFrameBarrier;
 
         [Preserve]
         protected override void OnCreate()
         {
             base.OnCreate();
 
-            m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
+            m_EndFrameBarrier = World.GetOrCreateSystemManaged<ModificationEndBarrier>();
 
             // Job Queries
             UpdateHouseholdJobQuery updateHouseholdJobQuery = new();
             m_UpdateHouseholdJobQuery = GetEntityQuery(updateHouseholdJobQuery.Query);
 
             this.RequireAnyForUpdate(m_UpdateHouseholdJobQuery);
-
-            RequireForUpdate(m_UpdateHouseholdJobQuery);
 
         }
 
@@ -54,12 +52,19 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
+            //UpdateHouseholds();
         }
 
         [Preserve]
         protected override void OnUpdate()
         {
             UpdateHouseholds();
+        }
+
+        public override int GetUpdateInterval(SystemUpdatePhase phase)
+        {
+            // One day (or month) in-game is '262144' ticks
+            return 262144 / 8;
         }
 
         protected override void OnDestroy()
@@ -86,7 +91,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 rowhome_apt_per_floor = Mod.m_Setting.rowhomes_apt_per_floor,
                 rowhome_basement = Mod.m_Setting.rowhomes_basement,
                 units_per_elevator = Mod.m_Setting.residential_units_per_elevator,
-                single_family = Mod.m_Setting.single_household_low_density
+                single_family = Mod.m_Setting.single_household_low_density,
+                luxury_highrise_less_apt = Mod.m_Setting.high_level_less_floors
             };
             this.Dependency = updateHouseholdJob.ScheduleParallel(m_UpdateHouseholdJobQuery, this.Dependency);
             m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);

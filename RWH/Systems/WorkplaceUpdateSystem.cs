@@ -29,14 +29,14 @@ namespace RealisticWorkplacesAndHouseholds.Systems
     {
         private EntityQuery m_UpdateWorkplaceJobQuery;
 
-        EndFrameBarrier m_EndFrameBarrier;
+        ModificationEndBarrier m_EndFrameBarrier;
 
         [Preserve]
         protected override void OnCreate()
         {
             base.OnCreate();
 
-            m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
+            m_EndFrameBarrier = World.GetOrCreateSystemManaged<ModificationEndBarrier>();
 
             // Job Queries
             UpdateWorkplaceJobQuery updateWorkplaceJobQuery = new();
@@ -49,12 +49,19 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
+            //UpdateWorkplace();
         }
 
         [Preserve]
         protected override void OnUpdate()
         {
             UpdateWorkplace();
+        }
+
+        public override int GetUpdateInterval(SystemUpdatePhase phase)
+        {
+            // One day (or month) in-game is '262144' ticks
+            return 262144 / 8;
         }
 
         protected override void OnDestroy()

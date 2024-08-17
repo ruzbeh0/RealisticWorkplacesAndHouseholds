@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.35122.118
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RealisticWorkplacesAndHouseholds", "RealisticHomesAndWorkplaces\RealisticWorkplacesAndHouseholds.csproj", "{45C6DBBE-F8D2-4A44-AE08-CBAE1EC68277}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RealisticWorkplacesAndHouseholds", "RWH\RWH.csproj", "{45C6DBBE-F8D2-4A44-AE08-CBAE1EC68277}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

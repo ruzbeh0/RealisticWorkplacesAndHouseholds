@@ -5,6 +5,8 @@
 		<TargetFramework>net472</TargetFramework>
 		<Configurations>Debug;Release</Configurations>
 		<LangVersion>12.0</LangVersion>
+
+		<PDXAccountDataPath>C:\Users\12249\Documents\pdx_account.txt</PDXAccountDataPath>
 		
 		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
 		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
@@ -16,7 +18,6 @@
 
 	<ItemGroup>
 		<Reference Include="Colossal.Collections">
-		  <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Cities Skylines II\Cities2_Data\Managed\Colossal.Collections.dll</HintPath>
 		</Reference>
 		<Reference Include="Colossal.Localization">
 		</Reference>
