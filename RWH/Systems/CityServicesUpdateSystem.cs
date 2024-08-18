@@ -106,7 +106,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 sqm_per_employee_hospital = Mod.m_Setting.hospital_sqm_per_worker,
                 sqm_per_patient_hospital = Mod.m_Setting.hospital_sqm_per_patient,
                 powerplant_sqm_per_employee = Mod.m_Setting.powerplant_sqm_per_worker,
-                sqm_per_employee_transit = 1 //TODO
+                sqm_per_employee_transit = 1, //TODO
+                non_usable_space_pct = Mod.m_Setting.office_non_usable_space/100f
             };
             this.Dependency = updateCityServicesJob.ScheduleParallel(m_UpdateCityServicesJobQuery, this.Dependency);
             m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);

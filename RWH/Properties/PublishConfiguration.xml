@@ -33,6 +33,12 @@ Different types of buildings will have their capacity calculated differently. In
 
 This mod was inspired by the **Population Rebalance** from CS1 and from **Realistic Building Occupancy** and **Realistic Density** from CS2. Thank you for to the authors of Realistic Building Occupancy and Realistic Density. I studied their code and it was very useful to create this mod. I tried to create a mod that joined the best qualities of both of them. Also, because this mod is similar to them, it should not be used with them.
 
+## Known Issues
+
+There are a few bus that have been reported that are still being investigated. These include:
+
+* Excessive noise on Mixed Use buildings
+* Certain buildings and Zones in existing cities don't get updated when the settings change.
 	</LongDescription>
 	<!--Thumbnail-->
 	<Thumbnail Value="Properties/Thumbnail.jpg" />
@@ -47,18 +53,25 @@ This mod was inspired by the **Population Rebalance** from CS1 and from **Realis
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/realistic-workplaces-and-households.1699586/" />
 	<!--Version of the mod-->
-	<ModVersion Value="0.1.1" />
+	<ModVersion Value="0.2" />
 	<!--Recommended version of the base game to use the mod-->
 	<GameVersion Value="1.1.*" />
 	<!--Dependency for the mod, can be set multiple times-->
 	<Dependency Id="" />
 	<ChangeLog>
-		* Fixed Entity Command Buffer error
-		* Fixed calculations for Mixed Use Zones (including Signature Buildings)
-		* Added Post Offices to City Services
-		* Added an option to configure the number of employees per sq meter for Power Plants 
-		* Recalculated Power Plant workers formula to reduce the total number of employees
-		* Added an option to reduce the amount on households in buildings that have level 4 or 5
+* Fixed calculations for Commercial Zones
+* Removed lobby from Industrial zone calculations
+* Recalculated Power Plant workers formula to reduce the total number of employees in bigger Power Plants
+* Reconfigured industry worker calculations to be non-linear with increase in industry building area
+* Added more options to configure reduction in households in buildings that have level 4 or 5
+* Reconfigured hallway parameter for Residential household calculations
+* Added options to customize non-usable space in Office Buildings
+* Updated Hospital sqm per employee parameter to reduce number of employees in medical facilities
+* Fixed bug with number of stairs calculation
+* Added Service Upkeep reduction slider
+* Reduced amount of workers in Admin buildings and welfare office
+* Added options to configure workers of specific type of comercial companies (Gas Stations, Supermarkets and Restaurants)
+* Added reset settings button
 	</ChangeLog>
 	<!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon-->
 	<ExternalLink Type="github" Url="https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/" />

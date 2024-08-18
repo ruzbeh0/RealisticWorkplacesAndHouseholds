@@ -12,6 +12,7 @@ using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
 using RealisticWorkplacesAndHouseholds;
 using RealisticWorkplacesAndHouseholds.Components;
+using Game.Areas;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
@@ -134,6 +135,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public float postoffice_sqm_per_employee;
         [ReadOnly]
         public float powerplant_sqm_per_employee;
+        [ReadOnly]
+        public float non_usable_space_pct;
 
         public const int POWER_PLANT_FLOOR_LIMIT = 2; //Use a floor limit for power plant since they tend to be very tall but it's mostly the chimmenies
 
@@ -154,7 +157,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             var workplaceDataArr = chunk.GetNativeArray(ref WorkplaceDataLookup);
             //var CityServicesDataArr = chunk.GetNativeArray(ref CityServicesDataLookup);
             var subMeshBufferAccessor = chunk.GetBufferAccessor(ref subMeshHandle);
-
+            //Mod.log.Info($"Length: {workplaceDataArr.Length}");
             for (int i = 0; i < workplaceDataArr.Length; i++)
             {
                 Entity entity = entities[i];
@@ -168,6 +171,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 float length = size.z;
                 float height = size.y;
 
+                int oldworkers = workplaceData.m_MaxWorkers;
                 if (PublicTransportStationDataLookup.HasComponent(entity))
                 {
                     //Apply reduction factor because stations have a lot of empty space
@@ -175,12 +179,17 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 }
                 if (PowerPlantDataLookup.HasComponent(entity))
                 {
+                    //Mod.log.Info($"PP");
                     //Apply floor limit because power plants have huge chimney 
-                    workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, powerplant_sqm_per_employee, 0, 0, POWER_PLANT_FLOOR_LIMIT);
+                    //Smooth the employees per sqm for bigger powerplants
+                    float base_area = 120 * 120;
+                    float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
+                    workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, powerplant_sqm_per_employee*area_factor, 0, 0, POWER_PLANT_FLOOR_LIMIT);
 
                 }
                 if (HospitalDataLookup.HasComponent(entity))
                 {
+                    //Mod.log.Info($"H");
                     if (HospitalDataLookup.TryGetComponent(entity, out HospitalData hospitalData))
                     {
                         int new_capacity = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_patient_hospital, office_sqm_per_elevator);
@@ -207,33 +216,56 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 //    }
                 //
                 //}
-                if (AdminBuildingDataLookup.HasComponent(entity) || WelfareOfficeDataLookup.HasComponent(entity))
+                if (WelfareOfficeDataLookup.HasComponent(entity))
                 {
+                    //Mod.log.Info($"W");
                     //Using same attributes as offices for admin buildings
-                    workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_office, office_sqm_per_elevator);
+                    //Smooth the employees per sqm for bigger buildings
+                    float base_area = 50 * 50;
+                    float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
+                    float area = sqm_per_employee_office * (1 + non_usable_space_pct);
+                    workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area* area_factor, office_sqm_per_elevator);
+                }
+                if (AdminBuildingDataLookup.HasComponent(entity))
+                {
+                    //Mod.log.Info($"A");
+                    //Using double sqm per employee as office for admin buildings
+                    //Smooth the employees per sqm for bigger buildings
+                    float base_area = 50 * 50;
+                    float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
+                    float area = 2*sqm_per_employee_office * (1 + non_usable_space_pct);
+                    workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area * area_factor, office_sqm_per_elevator);
                 }
                 if (ResearchFacilityDataLookup.HasComponent(entity))
                 {
+                    //Mod.log.Info($"R");
+                    float area = sqm_per_employee_office * (1 + non_usable_space_pct);
                     //Using university factor because they also do research
-                    workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_office * sqm_per_student_university_factor, office_sqm_per_elevator);
+                    workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area * sqm_per_student_university_factor, office_sqm_per_elevator);
                 }
                 if (PostFacilityDataLookup.HasComponent(entity))
                 {
+                    //Mod.log.Info($"PF");
                     workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, postoffice_sqm_per_employee, office_sqm_per_elevator);
-                    //TODO post sorting facility
+                    //post sorting facility
                     if(workplaceData.m_MaxWorkers > 500)
                     {
-                        continue;
+                        float base_area = 120 * 120;
+                        float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
+                        workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 0, 0);
+
                     }
                 }
                 else if(FireStationDataLookup.HasComponent(entity) || PoliceStationDataLookup.HasComponent(entity))
                 {
+                    //Mod.log.Info($"FSPS");
                     //Skipping lobby because usually in fire stations the ground floor is the fire truck garage
                     workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_police, 1, 0);
 
                 }
                 else if (SchoolDataLookup.HasComponent(entity))
                 {
+                    //Mod.log.Info($"S");
                     if (SchoolDataLookup.TryGetComponent(entity, out SchoolData schoolData))
                     {
                         int level = schoolData.m_EducationLevel;
@@ -267,6 +299,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         ecb.SetComponent(unfilteredChunkIndex, entity, schoolData);
                     }
                 }
+
+                //Mod.log.Info($"old workers:{oldworkers}, Workers: {workplaceData.m_MaxWorkers}");
 
                 workplaceDataArr[i] = workplaceData;
                 RealisticWorkplaceData realisticWorkplaceData = new();

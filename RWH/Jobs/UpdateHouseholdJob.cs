@@ -87,6 +87,12 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public bool single_family;
         [ReadOnly]
         public bool luxury_highrise_less_apt;
+        [ReadOnly]
+        public float lv4_increase;
+        [ReadOnly]
+        public float lv5_increase;
+        [ReadOnly]
+        public float hallway_pct;
 
         public UpdateHouseholdJob()
         {
@@ -104,7 +110,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             var subMeshBufferAccessor = chunk.GetBufferAccessor(ref SubMeshHandle);
             var buildingPropertyDataArr = chunk.GetNativeArray(ref BuildingPropertyDataHandle);
             var entityArr = chunk.GetNativeArray(EntityTypeHandle);
-
+            //Mod.log.Info($"Length: {buildingDataArr.Length}");
             for (int i = 0; i < buildingDataArr.Length; i++)
             {
                 SpawnableBuildingData spawnBuildingData = spawnBuildingDataArr[i];
@@ -137,11 +143,19 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                 if(!single_family || property.m_ResidentialProperties > 1)
                                 {
                                     int floorOffset = 0;
-                                    if(luxury_highrise_less_apt && height/residential_avg_floor_height > 10 && spawnBuildingData.m_Level >= 4)
+                                    //Adding hallway area to apt area
+                                    float apt_area = sqm_per_apartment*(1+hallway_pct);
+                                    if (luxury_highrise_less_apt)
                                     {
                                         //High rise buildings that are level 4 or 5 will have less apartments
-                                        //Removing a floor every 15 floors
-                                        floorOffset = (int)(height / residential_avg_floor_height) / 15;
+                                        if(spawnBuildingData.m_Level == 4) 
+                                        {
+                                            apt_area *= (1 + lv4_increase);
+                                        }
+                                        if (spawnBuildingData.m_Level == 5)
+                                        {
+                                            apt_area *= (1 + lv5_increase);
+                                        }
                                     }
 
                                     //Checking if it is Mixed Use
@@ -150,7 +164,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                         //remove one floor
                                         floorOffset++;
                                     }
-                                    property.m_ResidentialProperties = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, sqm_per_apartment + HALLWAY_BUFFER, floorOffset, units_per_elevator * (int)sqm_per_apartment);
+                                    property.m_ResidentialProperties = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, apt_area, floorOffset, units_per_elevator * (int)sqm_per_apartment);
                                 } 
                             }
                             

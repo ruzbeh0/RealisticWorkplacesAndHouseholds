@@ -44,7 +44,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         ComponentType.Exclude<Deleted>(),
                         ComponentType.Exclude<Temp>()
                     ],
-                }
+                },
             ];
         }
     }
@@ -88,6 +88,14 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public float industry_avg_floor_height;
         [ReadOnly]
         public int office_sqm_per_elevator;
+        [ReadOnly]
+        public bool commercial_self_service_gas;
+        [ReadOnly]
+        public float non_usable_space_pct;
+        [ReadOnly]
+        public float commercial_sqm_per_worker_restaurants;
+        [ReadOnly]
+        public float commercial_sqm_per_worker_supermarket;
 
         public UpdateWorkplaceJob()
         {
@@ -103,7 +111,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             var workProviderArr = chunk.GetNativeArray(ref WorkProviderHandle);
             var propertyRenterArr = chunk.GetNativeArray(ref PropertyRenterHandle);
             var prefabRefArr = chunk.GetNativeArray(ref PrefabRefHandle);
-
+            
             for (int i = 0; i < workProviderArr.Length; i++)
             {
                 var entity = entities[i];
@@ -146,19 +154,63 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     }
                                      else
                                          {
-                                             //Office
-                                             if ((zonedata.m_ZoneFlags & ZoneFlags.Office) != 0)
-                                             {
-                                                 new_workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, office_sqm_per_employee, floor_offset, office_sqm_per_elevator);
-                                                 //Mod.log.Info($"Original number of Workers:{original_workers}, New:{new_workers}");
-                                             }
-                                             else
-                                             {
-                                                 //Industry
-                                                 new_workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee, floor_offset, office_sqm_per_elevator);
-                                                 //Mod.log.Info($"Original number of Workers:{original_workers}, New:{new_workers}");
-                                             }
-                                         }
+                                        if (zonedata.m_AreaType == Game.Zones.AreaType.Commercial)
+                                        {
+                                            if (BuildingPropertyDataLookup.TryGetComponent(prefab2.m_Prefab, out var buildingPropertyData))
+                                            {
+                                                float area = commercial_sqm_per_employee;
+                                                Game.Economy.Resource resource = buildingPropertyData.m_AllowedSold;
+                                                //Commercial
+                                                if (resource == Game.Economy.Resource.Petrochemicals)
+                                                {
+                                                    //Gas Stations
+                                                    if (commercial_self_service_gas)
+                                                    {
+                                                        area *= 1.8f;
+                                                    }
+                                                }
+                                                //Restaurants
+                                                else if (resource == Game.Economy.Resource.Meals)
+                                                {
+                                                    area = commercial_sqm_per_worker_restaurants;
+                                                }
+                                                //Cinema/Bars
+                                                //else if (resource == Game.Economy.Resource.Entertainment)
+                                                //{
+                                                //}
+                                                //Supermarket
+                                                else if (resource == Game.Economy.Resource.Beverages || resource == Game.Economy.Resource.ConvenienceFood || resource == Game.Economy.Resource.Food)
+                                                {
+                                                    area = commercial_sqm_per_worker_supermarket;
+                                                }
+                                                new_workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area, 0, office_sqm_per_elevator);
+                                            } 
+                                            
+                                            
+                                        } 
+                                        else
+                                        {
+                                            //Office
+                                            if ((zonedata.m_ZoneFlags & ZoneFlags.Office) != 0)
+                                            {
+                                                //Adding hallway area to apt area
+                                                float area = office_sqm_per_employee * (1 + non_usable_space_pct);
+                                                new_workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area, floor_offset, office_sqm_per_elevator);
+                                                //Mod.log.Info($"Original number of Workers:{original_workers}, New:{new_workers}");
+                                            }
+                                            else
+                                            {
+                                                //Industry
+                                                //Smooth the employees per sqm for bigger industries
+                                                float base_area = 80 * 80;
+                                                float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
+
+                                                new_workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 0, 0);
+                                                //Mod.log.Info($"Original number of Workers:{original_workers}, New:{new_workers}");
+                                            }
+                                        }
+                                            
+                                     }
 
                                      if (new_workers != original_workers)
                                      {
@@ -177,10 +229,14 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                                          if (BuildingPropertyDataLookup.TryGetComponent(prefab2.m_Prefab, out var buildingPropertyData))
                                          {
-                                             buildingPropertyData.m_SpaceMultiplier *= factor;
-                                             realisticWorkplaceData.space_multiplier = buildingPropertyData.m_SpaceMultiplier;
+                                            //Only for office
+                                            //if((zonedata.m_ZoneFlags & ZoneFlags.Office) != 0)
+                                            //{
+                                                buildingPropertyData.m_SpaceMultiplier *= factor;
+                                                realisticWorkplaceData.space_multiplier = buildingPropertyData.m_SpaceMultiplier;
 
-                                             ecb.SetComponent(unfilteredChunkIndex, prefab2.m_Prefab, buildingPropertyData);
+                                                ecb.SetComponent(unfilteredChunkIndex, prefab2.m_Prefab, buildingPropertyData);
+                                            //}
                                          }
 
                                          if (WorkplaceDataLookup.TryGetComponent(prefab1.m_Prefab, out var workplaceData))

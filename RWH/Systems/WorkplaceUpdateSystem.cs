@@ -21,13 +21,17 @@ using Game.Objects;
 using Game.Simulation;
 using Game.Triggers;
 using static Colossal.IO.AssetDatabase.AssetDatabase;
+using Game.UI.Menu;
+using Game.Tools;
+using RealisticWorkplacesAndHouseholds.Components;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
     [BurstCompile]
     public partial class WorkplaceUpdateSystem : GameSystemBase
     {
-        private EntityQuery m_UpdateWorkplaceJobQuery;
+        private EntityQuery m_UpdateWorkplaceJobQuery1;
+        private EntityQuery m_UpdateWorkplaceJobQuery2;
 
         ModificationEndBarrier m_EndFrameBarrier;
 
@@ -40,28 +44,31 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
             // Job Queries
             UpdateWorkplaceJobQuery updateWorkplaceJobQuery = new();
-            m_UpdateWorkplaceJobQuery = GetEntityQuery(updateWorkplaceJobQuery.Query);
+            m_UpdateWorkplaceJobQuery1 = GetEntityQuery(updateWorkplaceJobQuery.Query);
 
-            this.RequireAnyForUpdate(m_UpdateWorkplaceJobQuery);
+            this.RequireAnyForUpdate(m_UpdateWorkplaceJobQuery1);
+
+            //EntityQueryBuilder builder = new EntityQueryBuilder(Allocator.Temp);
+            //m_UpdateWorkplaceJobQuery2 = builder.WithAll<CompanyData, PropertyRenter, WorkProvider>()
+            //    .Build(this.EntityManager);
+            //builder.Reset();
+            //
+            //RequireForUpdate(m_UpdateWorkplaceJobQuery2);
 
         }
 
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
+            //Mod.log.Info($"OnGameLoadingComplete");
             //UpdateWorkplace();
         }
 
         [Preserve]
         protected override void OnUpdate()
         {
+            //Mod.log.Info($"OnUpdate");
             UpdateWorkplace();
-        }
-
-        public override int GetUpdateInterval(SystemUpdatePhase phase)
-        {
-            // One day (or month) in-game is '262144' ticks
-            return 262144 / 8;
         }
 
         protected override void OnDestroy()
@@ -94,9 +101,14 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 commercial_avg_floor_height = Mod.m_Setting.commercial_avg_floor_height,
                 industry_avg_floor_height = Mod.m_Setting.industry_avg_floor_height,
                 industry_sqm_per_employee = Mod.m_Setting.industry_sqm_per_worker,
-                office_sqm_per_elevator = Mod.m_Setting.office_elevators_per_sqm
+                office_sqm_per_elevator = Mod.m_Setting.office_elevators_per_sqm,
+                commercial_self_service_gas = Mod.m_Setting.commercial_self_service_gas,
+                non_usable_space_pct = Mod.m_Setting.office_non_usable_space/100f,
+                commercial_sqm_per_worker_restaurants = Mod.m_Setting.commercial_sqm_per_worker_restaurants,
+                commercial_sqm_per_worker_supermarket = Mod.m_Setting.commercial_sqm_per_worker_supermarket
             };
-            this.Dependency = updateZonableWorkplace.ScheduleParallel(m_UpdateWorkplaceJobQuery, this.Dependency);
+            this.Dependency = updateZonableWorkplace.ScheduleParallel(m_UpdateWorkplaceJobQuery1, this.Dependency);
+            
             m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
         }
     }

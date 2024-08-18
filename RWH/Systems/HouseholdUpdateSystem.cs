@@ -61,12 +61,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             UpdateHouseholds();
         }
 
-        public override int GetUpdateInterval(SystemUpdatePhase phase)
-        {
-            // One day (or month) in-game is '262144' ticks
-            return 262144 / 8;
-        }
-
         protected override void OnDestroy()
         {
             base.OnDestroy();
@@ -92,7 +86,10 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 rowhome_basement = Mod.m_Setting.rowhomes_basement,
                 units_per_elevator = Mod.m_Setting.residential_units_per_elevator,
                 single_family = Mod.m_Setting.single_household_low_density,
-                luxury_highrise_less_apt = Mod.m_Setting.high_level_less_floors
+                luxury_highrise_less_apt = Mod.m_Setting.disable_high_level_less_apt,
+                lv4_increase = Mod.m_Setting.residential_l4_reduction/100f,
+                lv5_increase = Mod.m_Setting.residential_l5_reduction/100f,
+                hallway_pct = Mod.m_Setting.residential_hallway_space/100f
             };
             this.Dependency = updateHouseholdJob.ScheduleParallel(m_UpdateHouseholdJobQuery, this.Dependency);
             m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);

@@ -57,8 +57,9 @@ namespace RealisticWorkplacesAndHouseholds
 
             //If few elevators one stair, if more than 4 elevators two stairs 
             int number_of_stairs = 1;
-            if (number_of_stairs >= 4)
+            if (floorCount >= 7 || width > 100 || length > 100)
             {
+                //More stairs for tall or long bulidings
                 number_of_stairs++;
             }
             float total_stair_area = number_of_stairs * STAIRS_SPACE * floorCount;
@@ -113,6 +114,20 @@ namespace RealisticWorkplacesAndHouseholds
             // If no floor offset is specified use zero
             // If residential not specified, false
             return GetPeople(false, width, length, height, floor_height, sqm_per_unit, 0, sqm_per_elevator, MAX_FLOORS);
+        }
+
+        //Smooths area factor. This is useful for building types that have a good employee per sqm at small buildings but them it is too much for big buildings
+        public static float smooth_area_factor(float base_area, float x, float y)
+        {
+            float area = x * y;
+            if (area < base_area)
+            {
+                return 1;
+            }
+            else
+            {
+                return (float)Math.Sqrt(area / base_area);
+            }
         }
     }
 }

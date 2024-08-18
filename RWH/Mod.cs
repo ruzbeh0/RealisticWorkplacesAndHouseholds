@@ -5,9 +5,11 @@ using Game;
 using Game.Modding;
 using Game.SceneFlow;
 using Game.Settings;
+using HarmonyLib;
 using RealisticWorkplacesAndHouseholds.Jobs;
 using RealisticWorkplacesAndHouseholds.Systems;
 using System.IO;
+using System.Linq;
 
 namespace RealisticWorkplacesAndHouseholds
 {
@@ -15,6 +17,7 @@ namespace RealisticWorkplacesAndHouseholds
     {
         public static ILog log = LogManager.GetLogger($"{nameof(RealisticWorkplacesAndHouseholds)}.{nameof(Mod)}").SetShowsErrorsInUI(false);
         public static Setting m_Setting;
+        public static readonly string harmonyID = "RWH";
 
         // Mods Settings Folder
         public static string SettingsFolder = Path.Combine(EnvPath.kUserDataPath, "ModsSettings", nameof(RealisticWorkplacesAndHouseholds));
@@ -45,6 +48,17 @@ namespace RealisticWorkplacesAndHouseholds
             updateSystem.UpdateAt<HouseholdUpdateSystem>(SystemUpdatePhase.ModificationEnd);
             //updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
             //updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
+
+            //Harmony
+            var harmony = new Harmony(harmonyID);
+            //Harmony.DEBUG = true;
+            harmony.PatchAll(typeof(Mod).Assembly);
+            var patchedMethods = harmony.GetPatchedMethods().ToArray();
+            log.Info($"Plugin {harmonyID} made patches! Patched methods: " + patchedMethods);
+            foreach (var patchedMethod in patchedMethods)
+            {
+                log.Info($"Patched method: {patchedMethod.Module.Name}:{patchedMethod.Name}");
+            }
         }
 
         public void OnDispose()
