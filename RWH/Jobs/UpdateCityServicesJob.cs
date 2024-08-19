@@ -66,7 +66,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         }
     }
 
-    //[BurstCompile]
+    [BurstCompile]
     public struct UpdateCityServicesJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
@@ -174,10 +174,12 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 float height = size.y;
 
                 int oldworkers = workplaceData.m_MaxWorkers;
+                int workers = oldworkers;
+
                 if (PublicTransportStationDataLookup.HasComponent(entity))
                 {
                     //Apply reduction factor because stations have a lot of empty space
-                    workplaceData.m_MaxWorkers = math.max(1, (int)(reduction_factor * BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_transit, office_sqm_per_elevator)));
+                    workers = math.max(1, (int)(reduction_factor * BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_transit, office_sqm_per_elevator)));
                 }
                 if (PowerPlantDataLookup.HasComponent(entity))
                 {
@@ -186,7 +188,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     //Smooth the employees per sqm for bigger powerplants
                     float base_area = 120 * 120;
                     float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
-                    workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, powerplant_sqm_per_employee*area_factor, 0, 0, POWER_PLANT_FLOOR_LIMIT);
+                    workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, powerplant_sqm_per_employee*area_factor, 0, 0, POWER_PLANT_FLOOR_LIMIT);
 
                 }
                 if (HospitalDataLookup.HasComponent(entity))
@@ -198,9 +200,9 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         float base_area = 50 * 50;
                         float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
                         int new_capacity = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_patient_hospital*area_factor, office_sqm_per_elevator);
-                        hospitalData.m_PatientCapacity = new_capacity;
+                        hospitalData.m_PatientCapacity = (int)(new_capacity * (1f - global_reduction));
 
-                        workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area_factor*sqm_per_employee_hospital, office_sqm_per_elevator);
+                        workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area_factor*sqm_per_employee_hospital, office_sqm_per_elevator);
                         //Mod.log.Info($"new_capacity: {new_capacity}, sqm_per_patient_hospital: {sqm_per_patient_hospital}, workplaceData.m_MaxWorkers {workplaceData.m_MaxWorkers}");
 
                         ecb.SetComponent(unfilteredChunkIndex, entity, hospitalData);
@@ -229,36 +231,35 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     float base_area = 50 * 50;
                     float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
                     float area = sqm_per_employee_office * (1 + non_usable_space_pct);
-                    workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area* area_factor, office_sqm_per_elevator);
+                    workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area* area_factor, office_sqm_per_elevator);
                 }
                 if (AdminBuildingDataLookup.HasComponent(entity))
                 {
-                    //Mod.log.Info($"A");
                     //Using double sqm per employee as office for admin buildings
                     //Smooth the employees per sqm for bigger buildings
                     float base_area = 50 * 50;
                     float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
                     float area = 2*sqm_per_employee_office * (1 + non_usable_space_pct);
-                    workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area * area_factor, office_sqm_per_elevator);
+                    workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area * area_factor, office_sqm_per_elevator);
                 }
                 if (ResearchFacilityDataLookup.HasComponent(entity))
                 {
                     //Mod.log.Info($"R");
                     float area = sqm_per_employee_office * (1 + non_usable_space_pct);
                     //Using university factor because they also do research
-                    workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area * sqm_per_student_university_factor, office_sqm_per_elevator);
+                    workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area * sqm_per_student_university_factor, office_sqm_per_elevator);
                 }
                 if (PostFacilityDataLookup.HasComponent(entity))
                 {
                     //Mod.log.Info($"PF");
-                    workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, postoffice_sqm_per_employee, office_sqm_per_elevator);
+                    workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, postoffice_sqm_per_employee, office_sqm_per_elevator);
                     //post sorting facility
-                    if(workplaceData.m_MaxWorkers > 500)
+                    if(workers > 500)
                     {
                         float base_area = 60 * 60;
                         float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
                         //Removing one floor for trucks and mail storage
-                        workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 1, 0);
+                        workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 1, 0);
 
                     }
                 }
@@ -266,7 +267,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 {
                     //Mod.log.Info($"FSPS");
                     //Skipping lobby because usually in fire stations the ground floor is the fire truck garage
-                    workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_police, 1, 0);
+                    workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_police, 1, 0);
 
                 }
                 else if (SchoolDataLookup.HasComponent(entity))
@@ -293,21 +294,21 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                         int new_capacity = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_student_t, 0);
                         //Mod.log.Info($"Level:{level}, Previous Students:{schoolData.m_StudentCapacity} New:{new_capacity}");
-                        schoolData.m_StudentCapacity = new_capacity;
+                        schoolData.m_StudentCapacity = (int)(new_capacity * (1f - global_reduction));
 
                         float teacherAmount = schoolData.m_StudentCapacity / studentPerTeacher;
 
                         //Support staff adjuster
                         float supportStaffAdjuster = support_staff;
                         //Mod.log.Info($"Previous Teachers:{workplaceData.m_MaxWorkers} New:{(int)(teacherAmount * (1f + supportStaffAdjuster))}");
-                        workplaceData.m_MaxWorkers = (int)(teacherAmount / (1f - supportStaffAdjuster));
+                        workers = (int)(teacherAmount / (1f - supportStaffAdjuster));
 
                         ecb.SetComponent(unfilteredChunkIndex, entity, schoolData);
                     }
                 }
 
                 //Apply global reduction factor
-                workplaceData.m_MaxWorkers = (int)(workplaceData.m_MaxWorkers * (1f - global_reduction));
+                workplaceData.m_MaxWorkers = (int)(workers * (1f - global_reduction));
 
                 workplaceDataArr[i] = workplaceData;
                 RealisticWorkplaceData realisticWorkplaceData = new();

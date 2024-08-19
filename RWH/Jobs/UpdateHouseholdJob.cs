@@ -54,7 +54,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         }
     }
 
-    //[BurstCompile]
+    [BurstCompile]
     public struct UpdateHouseholdJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
@@ -95,6 +95,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public float hallway_pct;
         [ReadOnly]
         public float global_reduction;
+        [ReadOnly]
+        public int sqm_per_apartment_lowdensity;
 
         public UpdateHouseholdJob()
         {
@@ -123,22 +125,23 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 {
                     if (ZoneDataLookup.TryGetComponent(spawnBuildingData.m_ZonePrefab, out var zonedata))
                     {
-                        if(zonedata.m_AreaType == Game.Zones.AreaType.Residential)
+                        if (zonedata.m_AreaType == Game.Zones.AreaType.Residential)
                         {
                             var dimensions = BuildingUtils.GetBuildingDimensions(subMeshes, meshDataLookup);
                             var size = ObjectUtils.GetSize(dimensions);
                             float width = size.x;
                             float length = size.z;
                             float height = size.y;
+                            int households = property.m_ResidentialProperties;
 
                             //Check if it is a row home
-                            if((zonedata.m_ZoneFlags & ZoneFlags.SupportNarrow) == ZoneFlags.SupportNarrow)
+                            if ((zonedata.m_ZoneFlags & ZoneFlags.SupportNarrow) == ZoneFlags.SupportNarrow)
                             {
                                 if (rowhome_basement)
                                 {
                                     height += residential_avg_floor_height;
                                 }
-                                property.m_ResidentialProperties = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, width*length/ rowhome_apt_per_floor + HALLWAY_BUFFER, 0, 0);
+                                households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, width*length/ rowhome_apt_per_floor + HALLWAY_BUFFER, 0, 0);
                             } else
                             {
                                 //Checking for single family homes
@@ -166,12 +169,20 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                         //remove one floor
                                         floorOffset++;
                                     }
-                                    property.m_ResidentialProperties = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, apt_area, floorOffset, units_per_elevator * (int)sqm_per_apartment);
+
+                                    //If less than 3 floors, assuming low density
+                                    if(height/ residential_avg_floor_height < 3)
+                                    {
+                                        households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, sqm_per_apartment_lowdensity * (1 + hallway_pct), 0, 0);
+                                    } else
+                                    {
+                                        households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, apt_area, floorOffset, units_per_elevator * (int)sqm_per_apartment);
+                                    }
                                 } 
                             }
 
                             //Apply global reduction factor
-                            property.m_ResidentialProperties = (int)(property.m_ResidentialProperties * (1f - global_reduction));
+                            property.m_ResidentialProperties = Math.Max(1,(int)(households * (1f - global_reduction)));
 
                             buildingPropertyDataArr[i] = property;
                             RealisticHouseholdData realisticHouseholdData = new();

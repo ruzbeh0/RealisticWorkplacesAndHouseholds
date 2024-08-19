@@ -18,7 +18,7 @@ using Game.UI.Menu;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
-    //[BurstCompile]
+    [BurstCompile]
     public partial class HouseholdUpdateSystem : GameSystemBase
     {
         private EntityQuery m_UpdateHouseholdJobQuery;
@@ -86,11 +86,12 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 rowhome_basement = Mod.m_Setting.rowhomes_basement,
                 units_per_elevator = Mod.m_Setting.residential_units_per_elevator,
                 single_family = Mod.m_Setting.single_household_low_density,
-                luxury_highrise_less_apt = Mod.m_Setting.disable_high_level_less_apt,
+                luxury_highrise_less_apt = !Mod.m_Setting.disable_high_level_less_apt,
                 lv4_increase = Mod.m_Setting.residential_l4_reduction/100f,
                 lv5_increase = Mod.m_Setting.residential_l5_reduction/100f,
                 hallway_pct = Mod.m_Setting.residential_hallway_space/100f,
-                global_reduction = Mod.m_Setting.results_reduction/100f
+                global_reduction = Mod.m_Setting.results_reduction/100f,
+                sqm_per_apartment_lowdensity = Mod.m_Setting.residential_lowdensity_sqm_per_apartment
             };
             this.Dependency = updateHouseholdJob.ScheduleParallel(m_UpdateHouseholdJobQuery, this.Dependency);
             m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);

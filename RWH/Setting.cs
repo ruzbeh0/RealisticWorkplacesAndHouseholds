@@ -12,12 +12,13 @@ using static Game.Simulation.TerrainSystem;
 namespace RealisticWorkplacesAndHouseholds
 {
     [FileLocation($"ModsSettings\\{nameof(RealisticWorkplacesAndHouseholds)}\\{nameof(RealisticWorkplacesAndHouseholds)}")]
-    [SettingsUIGroupOrder(ResidentialGroup, ResidentialHighDensityGroup, RowHomesGroup, CommercialGroup, OfficeGroup, IndustryGroup, SchoolGroup, HospitalGroup, PowerPlantGroup, AdminGroup, PoliceFireGroup, PostOfficeGroup, OtherGroup)]
-    [SettingsUIShowGroupName(RowHomesGroup, ResidentialHighDensityGroup, HospitalGroup, PowerPlantGroup, AdminGroup, PoliceFireGroup, PostOfficeGroup)]
+    [SettingsUIGroupOrder(ResidentialGroup, ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, RowHomesGroup, CommercialGroup, OfficeGroup, IndustryGroup, SchoolGroup, HospitalGroup, PowerPlantGroup, AdminGroup, PoliceFireGroup, PostOfficeGroup, OtherGroup)]
+    [SettingsUIShowGroupName(ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, HospitalGroup, PowerPlantGroup, AdminGroup, PoliceFireGroup, PostOfficeGroup)]
     public class Setting : ModSetting
     {
         public const string ResidentialSection = "Residential";
         public const string ResidentialGroup = "ResidentialGroup";
+        public const string ResidentialLowDensityGroup = "ResidentialLowDensityGroup";
         public const string ResidentialHighDensityGroup = "ResidentialHighDensityGroup";
         public const string RowHomesGroup = "RowHomesGroup";
         public const string CommercialSection = "Commercial";
@@ -64,7 +65,7 @@ namespace RealisticWorkplacesAndHouseholds
             //transit_station_sqm_per_worker = 42;
             industry_avg_floor_height = 4.5f;
             residential_avg_floor_height = 3;
-            residential_sqm_per_apartment = 85;
+            residential_sqm_per_apartment = 120;
             rowhomes_apt_per_floor = 1;
             rowhomes_basement = true;
             residential_units_per_elevator = 70;
@@ -78,10 +79,16 @@ namespace RealisticWorkplacesAndHouseholds
             commercial_sqm_per_worker_restaurants = 28;
             service_upkeep_reduction = 70;
             results_reduction = 0;
+            residential_lowdensity_sqm_per_apartment = 150;
         }
 
-        [SettingsUISection(ResidentialSection, ResidentialGroup)]
+        [SettingsUISection(ResidentialSection, ResidentialLowDensityGroup)]
         public bool single_household_low_density { get; set; }
+
+        [SettingsUISlider(min = 60, max = 500, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(ResidentialSection, ResidentialLowDensityGroup)]
+        //[SettingsUIHideByCondition(typeof(Setting), nameof(single_household_low_density))]
+        public int residential_lowdensity_sqm_per_apartment { get; set; }
 
         [SettingsUISlider(min = 2f, max = 5f, step = 1, scalarMultiplier = 1, unit = Unit.kFloatSingleFraction)]
         [SettingsUISection(ResidentialSection, ResidentialGroup)]
@@ -206,7 +213,7 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(OtherSection, OtherGroup)]
         public int service_upkeep_reduction { get; set; }
 
-        [SettingsUISlider(min = 0, max = 500, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISlider(min = 0, max = 90, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
         [SettingsUISection(OtherSection, OtherGroup)]
         public int results_reduction { get; set; }
 
@@ -246,6 +253,7 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionGroupLocaleID(Setting.SchoolGroup), "School" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.ResidentialGroup), "Residential" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.RowHomesGroup), "Row Homes" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.ResidentialLowDensityGroup), "Low Density" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.ResidentialHighDensityGroup), "Medium and High Density" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.CommercialGroup), "Commercial Settings" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.OfficeGroup), "Office Settings" },
@@ -266,6 +274,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_avg_floor_height)), $"Average Floor Height for residential buildings." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_sqm_per_apartment)), "Average Apartment Size (Square Meters)" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_sqm_per_apartment)), $"Average Apartment Size in Square Meters." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_lowdensity_sqm_per_apartment)), "Average Apartment Size (Square Meters)" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_lowdensity_sqm_per_apartment)), $"Average Apartment Size in Square Meters." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_units_per_elevator)), "Number of Apartments per Elevator" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_units_per_elevator)), $"Number of Apartments per Elevator. The Elevator area will be subtracted and reduce the space available for apartments in the building." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_hallway_space)), "Percentage of floor space for hallways" },

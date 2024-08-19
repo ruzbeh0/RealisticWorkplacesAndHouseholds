@@ -18,7 +18,7 @@ using Unity.Entities;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
-    //[BurstCompile]
+    [BurstCompile]
     public partial struct ResetResidencesJob : IJobChunk
     {
 

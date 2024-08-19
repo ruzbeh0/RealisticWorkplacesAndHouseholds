@@ -16,13 +16,13 @@ These are the current supported building types:
 
 * Residential Zones
 * Commercial Zones
-* Industry Zones
+* Industry Zones (Except farming specialized industries)
 * Office Zones
 * Mixed Use Zones
 * Admin Buildings
 * Fire and Police Stations
 * Hospital and Medical Clinics
-* Post Facilities (Except Post Sorting Facility)
+* Post Facilities
 * Power Stations
 * Schools
 * Welfare Office
@@ -39,7 +39,6 @@ This mod was inspired by the **Realistic Population** from CS1 and from **Realis
 
 There are a few bus that have been reported that are still being investigated. These include:
 
-* Excessive noise on Mixed Use buildings
 * Certain buildings and Zones in existing cities don't get updated when the settings change.
 	</LongDescription>
 	<!--Thumbnail-->
@@ -61,8 +60,10 @@ There are a few bus that have been reported that are still being investigated. T
 	<!--Dependency for the mod, can be set multiple times-->
 	<Dependency Id="" />
 	<ChangeLog>
-* Removed farming specialized industries
-* Added global reduction parameter
+* Removed all industry specialized industries from the mod
+* Added specific average apartment size for residential low density
+* Updated default residential average apartment size
+* Fixed less apartments on luxury high rise feature
 	</ChangeLog>
 	<!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon-->
 	<ExternalLink Type="github" Url="https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/" />

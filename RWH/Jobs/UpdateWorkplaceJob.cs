@@ -50,7 +50,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         }
     }
 
-    //[BurstCompile]
+    [BurstCompile]
     public struct UpdateWorkplaceJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
@@ -211,7 +211,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                                 {
                                                     Resource resource = industrialProcessData.m_Output.m_Resource;
                                                     //Skipping farm industry
-                                                    if (!(resource.Equals(Resource.Wood) || resource.Equals(Resource.Vegetables) || resource.Equals(Resource.Cotton) || resource.Equals(Resource.Grain) || resource.Equals(Resource.Livestock)))
+                                                    if (!(resource==Resource.Wood || resource==Resource.Vegetables || resource==Resource.Cotton || resource==Resource.Grain || resource==Resource.Livestock || resource == Resource.Oil || resource == Resource.Ore || resource == Resource.Coal || resource == Resource.Stone))
                                                     {
                                                         //Smooth the employees per sqm for bigger industries
                                                         float base_area = 80 * 80;
@@ -221,6 +221,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                                         //Mod.log.Info($"Original number of Workers:{original_workers}, New:{new_workers}");
                                                     } else
                                                     {
+                                                        //Mod.log.Info($"Original number of Workers:{original_workers}, resource:{resource}");
                                                         new_workers = original_workers;
                                                     }
 
