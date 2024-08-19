@@ -56,7 +56,7 @@ namespace RealisticWorkplacesAndHouseholds
             police_fire_sqm_per_worker = 47;
             office_sqm_per_worker = 23;
             office_elevators_per_sqm = 4180;
-            hospital_sqm_per_worker = 40;
+            hospital_sqm_per_worker = 100;
             hospital_sqm_per_patient = 50;
             industry_sqm_per_worker = 50;
             powerplant_sqm_per_worker = 200;
@@ -77,6 +77,7 @@ namespace RealisticWorkplacesAndHouseholds
             commercial_sqm_per_worker_supermarket = 65;
             commercial_sqm_per_worker_restaurants = 28;
             service_upkeep_reduction = 70;
+            results_reduction = 0;
         }
 
         [SettingsUISection(ResidentialSection, ResidentialGroup)]
@@ -205,6 +206,10 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(OtherSection, OtherGroup)]
         public int service_upkeep_reduction { get; set; }
 
+        [SettingsUISlider(min = 0, max = 500, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(OtherSection, OtherGroup)]
+        public int results_reduction { get; set; }
+
         [SettingsUIButton]
         [SettingsUISection(OtherSection, OtherGroup)]
         public bool Button
@@ -315,6 +320,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.sqm_univ_adjuster)), $"This factor will be applied to the base square meters per student for Universities." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.service_upkeep_reduction)), "Service Upkeep Cost Reduction" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.service_upkeep_reduction)), $"Reduce the cost of service upkeep. Use this to compensate for the extra cost due to more workers at service buildings." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.results_reduction)), "Global Workplace/Households reduction" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.results_reduction)), $"Reduce all workplace and househols results by this percentage. Note that some buildings need to have a minimum of 1 worker or household and those might not be reduced." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.Button)), "Reset Settings" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.Button)), $"Reset settings to default values" },
             };

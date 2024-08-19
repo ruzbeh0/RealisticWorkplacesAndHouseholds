@@ -16,6 +16,7 @@ using Game.Buildings;
 using RealisticWorkplacesAndHouseholds.Components;
 using UnityEngine;
 using Game.Citizens;
+using Game.Economy;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
@@ -49,7 +50,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         }
     }
 
-    [BurstCompile]
+    //[BurstCompile]
     public struct UpdateWorkplaceJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
@@ -77,6 +78,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ComponentLookup<ZoneData> ZoneDataLookup;
         public ComponentLookup<BuildingPropertyData> BuildingPropertyDataLookup;
         [ReadOnly]
+        public ComponentLookup<ExtractorCompanyData> ExtractorCompanyDataLookup;
+        [ReadOnly]
         public float commercial_sqm_per_employee;
         [ReadOnly]
         public float office_sqm_per_employee;
@@ -96,6 +99,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public float commercial_sqm_per_worker_restaurants;
         [ReadOnly]
         public float commercial_sqm_per_worker_supermarket;
+        [ReadOnly]
+        public float global_reduction;
 
         public UpdateWorkplaceJob()
         {
@@ -201,16 +206,34 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                             else
                                             {
                                                 //Industry
-                                                //Smooth the employees per sqm for bigger industries
-                                                float base_area = 80 * 80;
-                                                float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
+                                                //Check if it is extractor company
+                                                if (IndustrialProcessDataLookup.TryGetComponent(prefab1.m_Prefab, out var industrialProcessData))
+                                                {
+                                                    Resource resource = industrialProcessData.m_Output.m_Resource;
+                                                    //Skipping farm industry
+                                                    if (!(resource.Equals(Resource.Wood) || resource.Equals(Resource.Vegetables) || resource.Equals(Resource.Cotton) || resource.Equals(Resource.Grain) || resource.Equals(Resource.Livestock)))
+                                                    {
+                                                        //Smooth the employees per sqm for bigger industries
+                                                        float base_area = 80 * 80;
+                                                        float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
+                                                        
+                                                        new_workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 0, 0);
+                                                        //Mod.log.Info($"Original number of Workers:{original_workers}, New:{new_workers}");
+                                                    } else
+                                                    {
+                                                        new_workers = original_workers;
+                                                    }
 
-                                                new_workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 0, 0);
-                                                //Mod.log.Info($"Original number of Workers:{original_workers}, New:{new_workers}");
+                                                    //new_workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee, 0, 0);
+                                                    //Mod.log.Info($"Extractor: Original number of Workers:{original_workers}, New:{new_workers},resource in:{industrialProcessData.m_Input1.m_Resource}, resource out:{industrialProcessData.m_Output.m_Resource}");
+                                                } 
                                             }
                                         }
                                             
                                      }
+
+                                    //Apply global reduction factor
+                                    new_workers = (int)(new_workers*(1f - global_reduction));
 
                                      if (new_workers != original_workers)
                                      {
@@ -229,14 +252,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                                          if (BuildingPropertyDataLookup.TryGetComponent(prefab2.m_Prefab, out var buildingPropertyData))
                                          {
-                                            //Only for office
-                                            //if((zonedata.m_ZoneFlags & ZoneFlags.Office) != 0)
-                                            //{
                                                 buildingPropertyData.m_SpaceMultiplier *= factor;
                                                 realisticWorkplaceData.space_multiplier = buildingPropertyData.m_SpaceMultiplier;
 
                                                 ecb.SetComponent(unfilteredChunkIndex, prefab2.m_Prefab, buildingPropertyData);
-                                            //}
                                          }
 
                                          if (WorkplaceDataLookup.TryGetComponent(prefab1.m_Prefab, out var workplaceData))

@@ -27,7 +27,7 @@ using RealisticWorkplacesAndHouseholds.Components;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
-    [BurstCompile]
+    //[BurstCompile]
     public partial class WorkplaceUpdateSystem : GameSystemBase
     {
         private EntityQuery m_UpdateWorkplaceJobQuery1;
@@ -96,6 +96,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 PrefabSubMeshesLookup = SystemAPI.GetBufferLookup<SubMesh>(true),
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
                 BuildingPropertyDataLookup = SystemAPI.GetComponentLookup<BuildingPropertyData>(false),
+                ExtractorCompanyDataLookup = SystemAPI.GetComponentLookup<ExtractorCompanyData>(true),
                 commercial_sqm_per_employee = Mod.m_Setting.commercial_sqm_per_worker,
                 office_sqm_per_employee = Mod.m_Setting.office_sqm_per_worker,
                 commercial_avg_floor_height = Mod.m_Setting.commercial_avg_floor_height,
@@ -105,7 +106,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 commercial_self_service_gas = Mod.m_Setting.commercial_self_service_gas,
                 non_usable_space_pct = Mod.m_Setting.office_non_usable_space/100f,
                 commercial_sqm_per_worker_restaurants = Mod.m_Setting.commercial_sqm_per_worker_restaurants,
-                commercial_sqm_per_worker_supermarket = Mod.m_Setting.commercial_sqm_per_worker_supermarket
+                commercial_sqm_per_worker_supermarket = Mod.m_Setting.commercial_sqm_per_worker_supermarket,
+                global_reduction = Mod.m_Setting.results_reduction/100f
             };
             this.Dependency = updateZonableWorkplace.ScheduleParallel(m_UpdateWorkplaceJobQuery1, this.Dependency);
             

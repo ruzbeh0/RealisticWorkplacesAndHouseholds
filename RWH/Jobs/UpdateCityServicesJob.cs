@@ -66,7 +66,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         }
     }
 
-    [BurstCompile]
+    //[BurstCompile]
     public struct UpdateCityServicesJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
@@ -137,6 +137,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public float powerplant_sqm_per_employee;
         [ReadOnly]
         public float non_usable_space_pct;
+        [ReadOnly]
+        public float global_reduction;
 
         public const int POWER_PLANT_FLOOR_LIMIT = 2; //Use a floor limit for power plant since they tend to be very tall but it's mostly the chimmenies
 
@@ -192,10 +194,13 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     //Mod.log.Info($"H");
                     if (HospitalDataLookup.TryGetComponent(entity, out HospitalData hospitalData))
                     {
-                        int new_capacity = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_patient_hospital, office_sqm_per_elevator);
+                        //Smooth the employees per sqm for bigger hospitals
+                        float base_area = 50 * 50;
+                        float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
+                        int new_capacity = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_patient_hospital*area_factor, office_sqm_per_elevator);
                         hospitalData.m_PatientCapacity = new_capacity;
 
-                        workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_hospital, office_sqm_per_elevator);
+                        workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area_factor*sqm_per_employee_hospital, office_sqm_per_elevator);
                         //Mod.log.Info($"new_capacity: {new_capacity}, sqm_per_patient_hospital: {sqm_per_patient_hospital}, workplaceData.m_MaxWorkers {workplaceData.m_MaxWorkers}");
 
                         ecb.SetComponent(unfilteredChunkIndex, entity, hospitalData);
@@ -250,9 +255,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     //post sorting facility
                     if(workplaceData.m_MaxWorkers > 500)
                     {
-                        float base_area = 120 * 120;
+                        float base_area = 60 * 60;
                         float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
-                        workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 0, 0);
+                        //Removing one floor for trucks and mail storage
+                        workplaceData.m_MaxWorkers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 1, 0);
 
                     }
                 }
@@ -300,7 +306,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     }
                 }
 
-                //Mod.log.Info($"old workers:{oldworkers}, Workers: {workplaceData.m_MaxWorkers}");
+                //Apply global reduction factor
+                workplaceData.m_MaxWorkers = (int)(workplaceData.m_MaxWorkers * (1f - global_reduction));
 
                 workplaceDataArr[i] = workplaceData;
                 RealisticWorkplaceData realisticWorkplaceData = new();

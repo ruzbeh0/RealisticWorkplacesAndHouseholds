@@ -31,7 +31,9 @@ These are the current supported building types:
 
 Different types of buildings will have their capacity calculated differently. In summary, all of them will use the buildings dimensions to estimate the number of floors and the area of each floor. For each type of building it is possible to customize for the number of workers or apartments per area (sq meter). This will be used to calculate the total number of households or workers. There are special considerations, for example, space for stairs, elevators, lobbys (for some cases) will be removed from the usable area. Also, mixed used buildings will only consider the first floor to calculate workers and the rest for households. And for Schools the number of teachers and students will be calculated similary, but also using a teacher to student ratio. These are just a few examples, each building type listed above have their own formula and set of parameters.
 
-This mod was inspired by the **Population Rebalance** from CS1 and from **Realistic Building Occupancy** and **Realistic Density** from CS2. Thank you for to the authors of Realistic Building Occupancy and Realistic Density. I studied their code and it was very useful to create this mod. I tried to create a mod that joined the best qualities of both of them. Also, because this mod is similar to them, it should not be used with them.
+## Credits
+
+This mod was inspired by the **Realistic Population** from CS1 and from **Realistic Building Occupancy** and **Realistic Density** from CS2. Thank you for to the authors of Realistic Building Occupancy and Realistic Density. I studied their code and it was very useful to create this mod. I tried to create a mod that joined the best qualities of both of them. Also, because this mod is similar to them, it should not be used with them.
 
 ## Known Issues
 
@@ -53,25 +55,14 @@ There are a few bus that have been reported that are still being investigated. T
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/realistic-workplaces-and-households.1699586/" />
 	<!--Version of the mod-->
-	<ModVersion Value="0.2" />
+	<ModVersion Value="0.2.1" />
 	<!--Recommended version of the base game to use the mod-->
 	<GameVersion Value="1.1.*" />
 	<!--Dependency for the mod, can be set multiple times-->
 	<Dependency Id="" />
 	<ChangeLog>
-* Fixed calculations for Commercial Zones
-* Removed lobby from Industrial zone calculations
-* Recalculated Power Plant workers formula to reduce the total number of employees in bigger Power Plants
-* Reconfigured industry worker calculations to be non-linear with increase in industry building area
-* Added more options to configure reduction in households in buildings that have level 4 or 5
-* Reconfigured hallway parameter for Residential household calculations
-* Added options to customize non-usable space in Office Buildings
-* Updated Hospital sqm per employee parameter to reduce number of employees in medical facilities
-* Fixed bug with number of stairs calculation
-* Added Service Upkeep reduction slider
-* Reduced amount of workers in Admin buildings and welfare office
-* Added options to configure workers of specific type of comercial companies (Gas Stations, Supermarkets and Restaurants)
-* Added reset settings button
+* Removed farming specialized industries
+* Added global reduction parameter
 	</ChangeLog>
 	<!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon-->
 	<ExternalLink Type="github" Url="https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/" />

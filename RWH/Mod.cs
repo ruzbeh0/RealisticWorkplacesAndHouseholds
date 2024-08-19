@@ -8,8 +8,10 @@ using Game.Settings;
 using HarmonyLib;
 using RealisticWorkplacesAndHouseholds.Jobs;
 using RealisticWorkplacesAndHouseholds.Systems;
+using RWH.Systems;
 using System.IO;
 using System.Linq;
+using Unity.Entities;
 
 namespace RealisticWorkplacesAndHouseholds
 {
@@ -42,10 +44,16 @@ namespace RealisticWorkplacesAndHouseholds
 
             AssetDatabase.global.LoadSettings(nameof(RealisticWorkplacesAndHouseholds), m_Setting, new Setting(this));
 
+            // Disable original systems
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.BuildingPollutionAddSystem>().Enabled = false;
+            //World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.UI.InGame.PollutionSection>().Enabled = false;
 
+            updateSystem.UpdateAt<RWHBuildingPollutionAddSystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAt<CityServicesUpdateSystem>(SystemUpdatePhase.ModificationEnd);
             updateSystem.UpdateAt<WorkplaceUpdateSystem>(SystemUpdatePhase.ModificationEnd);
             updateSystem.UpdateAt<HouseholdUpdateSystem>(SystemUpdatePhase.ModificationEnd);
+            updateSystem.UpdateAfter<NoisePollutionParameterUpdaterSystem>(SystemUpdatePhase.PrefabUpdate);
+            updateSystem.UpdateBefore<NoisePollutionParameterUpdaterSystem>(SystemUpdatePhase.PrefabReferences);
             //updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
             //updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
 

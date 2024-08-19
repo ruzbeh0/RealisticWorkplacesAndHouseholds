@@ -12,6 +12,7 @@ using Unity.Collections;
 using Unity.Entities;
 using RWH;
 using RealisticWorkplacesAndHouseholds;
+using Game.UI.InGame;
 
 namespace RWH.Patches
 {

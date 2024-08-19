@@ -54,7 +54,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         }
     }
 
-    [BurstCompile]
+    //[BurstCompile]
     public struct UpdateHouseholdJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
@@ -93,6 +93,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public float lv5_increase;
         [ReadOnly]
         public float hallway_pct;
+        [ReadOnly]
+        public float global_reduction;
 
         public UpdateHouseholdJob()
         {
@@ -167,8 +169,9 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     property.m_ResidentialProperties = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, apt_area, floorOffset, units_per_elevator * (int)sqm_per_apartment);
                                 } 
                             }
-                            
-                            //Mod.log.Info($"Residential: x{width},y{length},z{height},zoneflag{zonedata.m_ZoneFlags}, Households:{property.m_ResidentialProperties}, Sold:{property.m_AllowedSold}");
+
+                            //Apply global reduction factor
+                            property.m_ResidentialProperties = (int)(property.m_ResidentialProperties * (1f - global_reduction));
 
                             buildingPropertyDataArr[i] = property;
                             RealisticHouseholdData realisticHouseholdData = new();
