@@ -16,7 +16,7 @@ These are the current supported building types:
 
 * Residential Zones
 * Commercial Zones
-* Industry Zones (Except farming specialized industries)
+* Industry Zones (Except specialized industries)
 * Office Zones
 * Mixed Use Zones
 * Admin Buildings
@@ -26,6 +26,13 @@ These are the current supported building types:
 * Power Stations
 * Schools
 * Welfare Office
+* Prisons
+* Transport and Maintenace Depots
+* Garbage Facilities
+* Cargo Stations
+* Research Facilities
+* Transportation Stations and Airports
+* Telecom Facilities
 
 ## Calculations
 
@@ -35,11 +42,7 @@ Different types of buildings will have their capacity calculated differently. In
 
 This mod was inspired by the **Realistic Population** from CS1 and from **Realistic Building Occupancy** and **Realistic Density** from CS2. Thank you for to the authors of Realistic Building Occupancy and Realistic Density. I studied their code and it was very useful to create this mod. I tried to create a mod that joined the best qualities of both of them. Also, because this mod is similar to them, it should not be used with them.
 
-## Known Issues
-
-There are a few bus that have been reported that are still being investigated. These include:
-
-* Certain buildings and Zones in existing cities don't get updated when the settings change.
+* City service buldings in an existing city don't get updated when the settings change.
 	</LongDescription>
 	<!--Thumbnail-->
 	<Thumbnail Value="Properties/Thumbnail.jpg" />
@@ -54,16 +57,15 @@ There are a few bus that have been reported that are still being investigated. T
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/realistic-workplaces-and-households.1699586/" />
 	<!--Version of the mod-->
-	<ModVersion Value="0.2.1" />
+	<ModVersion Value="0.4" />
 	<!--Recommended version of the base game to use the mod-->
 	<GameVersion Value="1.1.*" />
 	<!--Dependency for the mod, can be set multiple times-->
 	<Dependency Id="" />
 	<ChangeLog>
-* Removed all industry specialized industries from the mod
-* Added specific average apartment size for residential low density
-* Updated default residential average apartment size
-* Fixed less apartments on luxury high rise feature
+* Added Research Facilities, Telecom Facilities, and Transportation Stations (including Airports)
+* Existing City Services now will be updated with current settings
+* Added option to increase power plant electricity production based on increase of employees
 	</ChangeLog>
 	<!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon-->
 	<ExternalLink Type="github" Url="https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/" />

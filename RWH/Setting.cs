@@ -12,8 +12,8 @@ using static Game.Simulation.TerrainSystem;
 namespace RealisticWorkplacesAndHouseholds
 {
     [FileLocation($"ModsSettings\\{nameof(RealisticWorkplacesAndHouseholds)}\\{nameof(RealisticWorkplacesAndHouseholds)}")]
-    [SettingsUIGroupOrder(ResidentialGroup, ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, RowHomesGroup, CommercialGroup, OfficeGroup, IndustryGroup, SchoolGroup, HospitalGroup, PowerPlantGroup, AdminGroup, PoliceFireGroup, PostOfficeGroup, OtherGroup)]
-    [SettingsUIShowGroupName(ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, HospitalGroup, PowerPlantGroup, AdminGroup, PoliceFireGroup, PostOfficeGroup)]
+    [SettingsUIGroupOrder(ResidentialGroup, ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, RowHomesGroup, CommercialGroup, OfficeGroup, IndustryGroup, SchoolGroup, HospitalGroup, PowerPlantGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, DepotGroup, GarbageGroup, PublicTransportGroup, AirportGroup, OtherGroup)]
+    [SettingsUIShowGroupName(ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, HospitalGroup, PowerPlantGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, GarbageGroup, DepotGroup, PublicTransportGroup, AirportGroup)]
     public class Setting : ModSetting
     {
         public const string ResidentialSection = "Residential";
@@ -33,9 +33,13 @@ namespace RealisticWorkplacesAndHouseholds
         public const string HospitalGroup = "HospitalGroup";
         public const string PowerPlantGroup = "PowerPlantGroup";
         public const string AdminGroup = "AdminGroup";
-        public const string PoliceFireGroup = "PoliceFireGroup";
-        //public const string PublicTransportGroup = "PublicTransportGroup";
-        public const string PostOfficeGroup = "PublicTransportGroup";
+        public const string PoliceGroup = "PoliceGroup";
+        public const string FireGroup = "FireGroup";
+        public const string DepotGroup = "DepotGroup";
+        public const string GarbageGroup = "GarbageGroup";
+        public const string PublicTransportGroup = "PublicTransportGroup";
+        public const string PostOfficeGroup = "PostOfficeGroup";
+        public const string AirportGroup = "AirportGroup";
         public const string OtherSection = "Other";
         public const string OtherGroup = "OtherGroup";
 
@@ -54,7 +58,8 @@ namespace RealisticWorkplacesAndHouseholds
             commercial_avg_floor_height = 3.05f;
             commercial_sqm_per_worker = 37;
             commercial_self_service_gas = false;
-            police_fire_sqm_per_worker = 47;
+            police_sqm_per_worker = 60;
+            fire_sqm_per_worker = 85;
             office_sqm_per_worker = 23;
             office_elevators_per_sqm = 4180;
             hospital_sqm_per_worker = 100;
@@ -62,7 +67,8 @@ namespace RealisticWorkplacesAndHouseholds
             industry_sqm_per_worker = 50;
             powerplant_sqm_per_worker = 200;
             postoffice_sqm_per_worker = 46;
-            //transit_station_sqm_per_worker = 42;
+            transit_station_sqm_per_worker = 60;
+            airport_sqm_per_worker = 70;
             industry_avg_floor_height = 4.5f;
             residential_avg_floor_height = 3;
             residential_sqm_per_apartment = 120;
@@ -80,6 +86,12 @@ namespace RealisticWorkplacesAndHouseholds
             service_upkeep_reduction = 70;
             results_reduction = 0;
             residential_lowdensity_sqm_per_apartment = 150;
+            prison_sqm_per_prisoner = 4;
+            prisoners_per_officer = 4;
+            prison_non_usable_space = 40;
+            depot_sqm_per_worker = 65;
+            garbage_sqm_per_worker = 95;
+            increase_power_production = false;
         }
 
         [SettingsUISection(ResidentialSection, ResidentialLowDensityGroup)]
@@ -87,7 +99,7 @@ namespace RealisticWorkplacesAndHouseholds
 
         [SettingsUISlider(min = 60, max = 500, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(ResidentialSection, ResidentialLowDensityGroup)]
-        //[SettingsUIHideByCondition(typeof(Setting), nameof(single_household_low_density))]
+        [SettingsUIHideByCondition(typeof(Setting), nameof(single_household_low_density))]
         public int residential_lowdensity_sqm_per_apartment { get; set; }
 
         [SettingsUISlider(min = 2f, max = 5f, step = 1, scalarMultiplier = 1, unit = Unit.kFloatSingleFraction)]
@@ -165,17 +177,37 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(CityServicesSection, HospitalGroup)]
         public int hospital_sqm_per_worker { get; set; }
 
-        //[SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
-        //[SettingsUISection(CityServicesSection, PublicTransportGroup)]
-        //public int transit_station_sqm_per_worker { get; set; }
+        [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(CityServicesSection, PublicTransportGroup)]
+        public int transit_station_sqm_per_worker { get; set; }
+
+        [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(CityServicesSection, AirportGroup)]
+        public int airport_sqm_per_worker { get; set; }
 
         [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(CityServicesSection, PostOfficeGroup)]
         public int postoffice_sqm_per_worker { get; set; }
 
         [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
-        [SettingsUISection(CityServicesSection, PoliceFireGroup)]
-        public int police_fire_sqm_per_worker { get; set; }
+        [SettingsUISection(CityServicesSection, PoliceGroup)]
+        public int police_sqm_per_worker { get; set; }
+
+        [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(CityServicesSection, FireGroup)]
+        public int fire_sqm_per_worker { get; set; }
+
+        [SettingsUISlider(min = 2, max = 30, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(CityServicesSection, PoliceGroup)]
+        public int prison_sqm_per_prisoner { get; set; }
+
+        [SettingsUISlider(min = 2, max = 10, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(CityServicesSection, PoliceGroup)]
+        public int prisoners_per_officer { get; set; }
+
+        [SettingsUISlider(min = 10, max = 70, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(CityServicesSection, PoliceGroup)]
+        public int prison_non_usable_space { get; set; }
 
         [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(IndustrySection, IndustryGroup)]
@@ -184,6 +216,9 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISlider(min = 1, max = 400, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(CityServicesSection, PowerPlantGroup)]
         public int powerplant_sqm_per_worker { get; set; }
+
+        [SettingsUISection(CityServicesSection, PowerPlantGroup)]
+        public bool increase_power_production { get; set; }
 
         [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(CityServicesSection, HospitalGroup)]
@@ -200,6 +235,14 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISlider(min = 1, max = 50, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(SchoolSection, SchoolGroup)]
         public int sqm_per_student { get; set; }
+
+        [SettingsUISlider(min = 1, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(CityServicesSection, DepotGroup)]
+        public int depot_sqm_per_worker { get; set; }
+
+        [SettingsUISlider(min = 1, max = 150, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(CityServicesSection, GarbageGroup)]
+        public int garbage_sqm_per_worker { get; set; }
 
         [SettingsUISlider(min = 0.1f, max = 5f, step = 1, scalarMultiplier = 1, unit = Unit.kFloatSingleFraction)]
         [SettingsUISection(SchoolSection, SchoolGroup)]
@@ -260,14 +303,18 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionGroupLocaleID(Setting.HospitalGroup), "Hospital" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.PowerPlantGroup), "Power Plant" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.AdminGroup), "Admin Buildings" },
-                { m_Setting.GetOptionGroupLocaleID(Setting.PoliceFireGroup), "Police and Fire Stations" },
-                //{ m_Setting.GetOptionGroupLocaleID(Setting.PublicTransportGroup), "Public Transport Settings" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.PoliceGroup), "Police Stations" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.FireGroup), "Fire Stations" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.DepotGroup), "Depots And Cargo" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.GarbageGroup), "Garbage Facilities" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.PublicTransportGroup), "Transportation Stations" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.AirportGroup), "Airports" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.PostOfficeGroup), "Post Office Settings" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.commercial_avg_floor_height)), "Average Floor Height (meters)" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_avg_floor_height)), $"Average Floor Height for commercial, office, and city services buildings." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.commercial_self_service_gas)), "Self Service Gas Stations" },
-                { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_self_service_gas)), $"If selected, gas stations will have less workers" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_self_service_gas)), $"If selected, gas stations will have fewer workers" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.single_household_low_density)), "Single Household for Low Density" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.single_household_low_density)), $"If true, low density houses will only have one household" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_avg_floor_height)), "Average Floor Height (meters)" },
@@ -292,8 +339,14 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.rowhomes_basement)), $"If set to true, Row Homes will have an extra floor in the basement." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.industry_avg_floor_height)), "Average Floor Height (meters)" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.industry_avg_floor_height)), $"Average Floor Height for industry buildings." },
-                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.police_fire_sqm_per_worker)), "Square Meters per Worker" },
-                { m_Setting.GetOptionDescLocaleID(nameof(Setting.police_fire_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.police_sqm_per_worker)), "Square Meters per Worker" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.police_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.fire_sqm_per_worker)), "Square Meters per Worker" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.fire_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.garbage_sqm_per_worker)), "Square Meters per Worker" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.garbage_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.depot_sqm_per_worker)), "Square Meters per Worker" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.depot_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.commercial_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.commercial_sqm_per_worker_supermarket)), "Supermarkets: Square Meters per Worker" },
@@ -304,10 +357,14 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.industry_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.powerplant_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.powerplant_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.increase_power_production)), "Increase Power Production" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.increase_power_production)), $"Increases the amount of electricity produced based on the increase of employees compared to the vanilla game. If there is a decrease of employees, power production will not change." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.hospital_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.hospital_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
-                //{ m_Setting.GetOptionDescLocaleID(nameof(Setting.transit_station_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
-                //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.transit_station_sqm_per_worker)), "Square Meters per Worker" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.transit_station_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.transit_station_sqm_per_worker)), "Square Meters per Worker" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.airport_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.airport_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.postoffice_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.postoffice_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.hospital_sqm_per_patient)), $"Number of square meters per patient. Higher numbers will decrease the hospital capacity." },
@@ -332,8 +389,15 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.service_upkeep_reduction)), $"Reduce the cost of service upkeep. Use this to compensate for the extra cost due to more workers at service buildings." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.results_reduction)), "Global Workplace/Households reduction" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.results_reduction)), $"Reduce all workplace and househols results by this percentage. Note that some buildings need to have a minimum of 1 worker or household and those might not be reduced." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.prison_sqm_per_prisoner)), "Square Meters per Prisoner" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.prison_sqm_per_prisoner)), $"Number of square meters per prisoner. Higher numbers will decrease the number of prisoners." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.prisoners_per_officer)), "Number of Prisoners per Correctional Officer" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.prisoners_per_officer)), $"Number of Prisoners per Correctional Officer. This will be used to calculate the number of workers required at prisons." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.Button)), "Reset Settings" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.Button)), $"Reset settings to default values" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.prison_non_usable_space)), $"Percentage of Non-usable Area" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.prison_non_usable_space)), "Percentage of area in Prison Buildings that are as living quarters for prisoners. This include hallways, cafeterias, medical facilities, offices, etc." },
+
             };
         }
 

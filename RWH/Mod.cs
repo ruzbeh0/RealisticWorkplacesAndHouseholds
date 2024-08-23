@@ -46,16 +46,15 @@ namespace RealisticWorkplacesAndHouseholds
 
             // Disable original systems
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.BuildingPollutionAddSystem>().Enabled = false;
-            //World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.UI.InGame.PollutionSection>().Enabled = false;
 
-            updateSystem.UpdateAt<RWHBuildingPollutionAddSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAt<CityServicesUpdateSystem>(SystemUpdatePhase.ModificationEnd);
-            updateSystem.UpdateAt<WorkplaceUpdateSystem>(SystemUpdatePhase.ModificationEnd);
-            updateSystem.UpdateAt<HouseholdUpdateSystem>(SystemUpdatePhase.ModificationEnd);
+            updateSystem.UpdateAt<CityServicesWorkplaceUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
+            updateSystem.UpdateAt<HouseholdUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateAfter<NoisePollutionParameterUpdaterSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateBefore<NoisePollutionParameterUpdaterSystem>(SystemUpdatePhase.PrefabReferences);
-            //updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
-            //updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<WorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<CityServicesWorkproviderUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
 
             //Harmony
             var harmony = new Harmony(harmonyID);

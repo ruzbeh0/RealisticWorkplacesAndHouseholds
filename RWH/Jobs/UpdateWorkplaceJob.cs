@@ -41,9 +41,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     ],
                     None =
                     [
-                        ComponentType.Exclude<RealisticWorkplaceData>(),
-                        ComponentType.Exclude<Deleted>(),
-                        ComponentType.Exclude<Temp>()
+
                     ],
                 },
             ];
@@ -155,7 +153,6 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                      {
                                         //Assuming this is mixed zone, max 1 floor of commercial
                                         new_workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, commercial_sqm_per_employee, 0, 0, 1);
-                                        //Mod.log.Info($"Mixed, workers:{new_workers},x:{width},y:{length},h:{height}");
                                     }
                                      else
                                          {
@@ -198,10 +195,21 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                             //Office
                                             if ((zonedata.m_ZoneFlags & ZoneFlags.Office) != 0)
                                             {
-                                                //Adding hallway area to apt area
-                                                float area = office_sqm_per_employee * (1 + non_usable_space_pct);
-                                                new_workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area, floor_offset, office_sqm_per_elevator);
-                                                //Mod.log.Info($"Original number of Workers:{original_workers}, New:{new_workers}");
+                                                //if (IndustrialProcessDataLookup.TryGetComponent(prefab1.m_Prefab, out var industrialProcessData))
+                                                {
+                                                    float employee_area = office_sqm_per_employee;
+                                                    //Resource resource = industrialProcessData.m_Output.m_Resource;
+                                                    ////Finacial
+                                                    //if (resource == Resource.Financial)
+                                                    //{
+                                                    //    
+                                                    //}
+
+                                                    //Adding hallway area to apt area
+                                                    float area = employee_area * (1 + non_usable_space_pct);
+                                                    new_workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area, floor_offset, office_sqm_per_elevator);
+                                                    //Mod.log.Info($"Original number of Workers:{original_workers}, New:{new_workers}");
+                                                }
                                             }
                                             else
                                             {
@@ -211,23 +219,17 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                                 {
                                                     Resource resource = industrialProcessData.m_Output.m_Resource;
                                                     //Skipping farm industry
-                                                    if (!(resource==Resource.Wood || resource==Resource.Vegetables || resource==Resource.Cotton || resource==Resource.Grain || resource==Resource.Livestock || resource == Resource.Oil || resource == Resource.Ore || resource == Resource.Coal || resource == Resource.Stone))
+                                                    if ((resource==Resource.Wood || resource==Resource.Vegetables || resource==Resource.Cotton || resource==Resource.Grain || resource==Resource.Livestock || resource == Resource.Oil || resource == Resource.Ore || resource == Resource.Coal || resource == Resource.Stone))
                                                     {
-                                                        //Smooth the employees per sqm for bigger industries
-                                                        float base_area = 80 * 80;
-                                                        float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
-                                                        
-                                                        new_workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 0, 0);
-                                                        //Mod.log.Info($"Original number of Workers:{original_workers}, New:{new_workers}");
-                                                    } else
-                                                    {
-                                                        //Mod.log.Info($"Original number of Workers:{original_workers}, resource:{resource}");
-                                                        new_workers = original_workers;
-                                                    }
+                                                        continue;
+                                                    } 
+                                                }
 
-                                                    //new_workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee, 0, 0);
-                                                    //Mod.log.Info($"Extractor: Original number of Workers:{original_workers}, New:{new_workers},resource in:{industrialProcessData.m_Input1.m_Resource}, resource out:{industrialProcessData.m_Output.m_Resource}");
-                                                } 
+                                                //Smooth the employees per sqm for bigger industries
+                                                float base_area = 80 * 80;
+                                                float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
+
+                                                new_workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 0, 0);
                                             }
                                         }
                                             
@@ -236,34 +238,38 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     //Apply global reduction factor
                                     new_workers = (int)(new_workers*(1f - global_reduction));
 
-                                     if (new_workers != original_workers)
-                                     {
-                                         RealisticWorkplaceData realisticWorkplaceData = new();
-                                         realisticWorkplaceData.max_workers = new_workers;
+                                    
 
+                                    if (new_workers != original_workers)
+                                     {
                                          workProvider.m_MaxWorkers = new_workers;
                                          workProviderArr[i] = workProvider;
 
-                                         //Calculate factor
-                                         float factor = 1f;
+                                        //Calculate factor
+                                        float factor = 1f;
                                          if (original_workers > 0)
                                          {
                                              factor = new_workers / original_workers;
                                          }
+                                         if(factor == 0f)
+                                        {
+                                            factor = 1f;
+                                        }
 
                                          if (BuildingPropertyDataLookup.TryGetComponent(prefab2.m_Prefab, out var buildingPropertyData))
                                          {
-                                                buildingPropertyData.m_SpaceMultiplier *= factor;
-                                                realisticWorkplaceData.space_multiplier = buildingPropertyData.m_SpaceMultiplier;
+                                             buildingPropertyData.m_SpaceMultiplier *= factor;
+                                             //realisticWorkplaceData.space_multiplier = buildingPropertyData.m_SpaceMultiplier;
 
-                                                ecb.SetComponent(unfilteredChunkIndex, prefab2.m_Prefab, buildingPropertyData);
+                                             ecb.SetComponent(unfilteredChunkIndex, prefab2.m_Prefab, buildingPropertyData);
                                          }
+                                         
 
                                          if (WorkplaceDataLookup.TryGetComponent(prefab1.m_Prefab, out var workplaceData))
                                          {
                                              //Mod.log.Info($"Workplace:{workplaceData.m_MaxWorkers}, new:{workplaceData.m_MaxWorkers * factor}");
                                              workplaceData.m_MaxWorkers = (int)(((float)workplaceData.m_MaxWorkers) * factor);
-
+                                         
                                              ecb.SetComponent(unfilteredChunkIndex, prefab1.m_Prefab, workplaceData);
                                          }
 
@@ -272,23 +278,20 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                              //Mod.log.Info($"Service Company old workers per cell:{serviceCompanyData.m_MaxWorkersPerCell}, new:{serviceCompanyData.m_MaxWorkersPerCell * factor}");
                                              serviceCompanyData.m_MaxWorkersPerCell *= factor;
                                              serviceCompanyData.m_WorkPerUnit = (int)(((float)(serviceCompanyData.m_WorkPerUnit))*factor);
-
+                                         
                                              ecb.SetComponent(unfilteredChunkIndex, prefab1.m_Prefab, serviceCompanyData);
-                                         }
-
+                                         } 
+                                         
                                          if (IndustrialProcessDataLookup.TryGetComponent(prefab1.m_Prefab, out var industrialProcessData))
                                          {
-                                             //Mod.log.Info($"Industrial Process old workers per cell:{industrialProcessData.m_MaxWorkersPerCell}, new:{industrialProcessData.m_MaxWorkersPerCell * factor}");
-                                             industrialProcessData.m_MaxWorkersPerCell *= factor;
-                                             industrialProcessData.m_WorkPerUnit = (int)(((float)(industrialProcessData.m_WorkPerUnit)) * factor);
-
+                                            industrialProcessData.m_MaxWorkersPerCell *= factor;
+                                            industrialProcessData.m_WorkPerUnit = (int)(((float)(industrialProcessData.m_WorkPerUnit)) * factor);
+                                         
                                              ecb.SetComponent(unfilteredChunkIndex, prefab1.m_Prefab, industrialProcessData);
                                          }
-
-                                         ecb.AddComponent(unfilteredChunkIndex, entity, realisticWorkplaceData);
-
                                      } 
                                 }                                  
+                            
                             }
                         }
                     } 

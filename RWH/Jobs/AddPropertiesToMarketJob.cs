@@ -21,7 +21,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
     [BurstCompile]
     public partial struct AddPropertiesToMarketJob : IJobChunk
     {
-        public EntityCommandBuffer ecb;
+        public EntityCommandBuffer.ParallelWriter ecb;
         public EconomyParameterData economyParameterData;
 
         public EntityTypeHandle entityTypeHandle;        
@@ -89,7 +89,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         var consumptionData = consumptionDataLookup[prefabRef.m_Prefab];
                         var buildingLevel = PropertyUtils.GetBuildingLevel(prefabRef.m_Prefab, spawnableBuildingDataLookup);
                         var askingRent = PropertyUtils.GetRentPricePerRenter(consumptionData, propertyData, buildingLevel, lotSize, landValue, areaType, ref this.economyParameterData);
-                        ecb.AddComponent(entity, new PropertyOnMarket { m_AskingRent = askingRent });
+                        ecb.AddComponent(unfilteredChunkIndex, entity, new PropertyOnMarket { m_AskingRent = askingRent });
                     } else
                     {
 
@@ -97,7 +97,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 }
                 else if (householdsCount == propertyData.m_ResidentialProperties && propertyToBeOnMarketLookup.HasComponent(entity))
                 {
-                    ecb.RemoveComponent<PropertyToBeOnMarket>(entity);
+                    ecb.RemoveComponent<PropertyToBeOnMarket>(unfilteredChunkIndex, entity);
                 }
             }
         }

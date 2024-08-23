@@ -45,9 +45,9 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     ],
                     None =
                     [
-                        ComponentType.Exclude<RealisticHouseholdData>(),
-                        ComponentType.Exclude<Deleted>(),
-                        ComponentType.Exclude<Temp>()
+                        //ComponentType.Exclude<RealisticHouseholdData>(),
+                        //ComponentType.Exclude<Deleted>(),
+                        //ComponentType.Exclude<Temp>()
                     ],
                 }
             ];
@@ -185,9 +185,9 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             property.m_ResidentialProperties = Math.Max(1,(int)(households * (1f - global_reduction)));
 
                             buildingPropertyDataArr[i] = property;
-                            RealisticHouseholdData realisticHouseholdData = new();
-                            realisticHouseholdData.households = property.m_ResidentialProperties;
-                            ecb.AddComponent(unfilteredChunkIndex, entity, realisticHouseholdData);
+                            //RealisticHouseholdData realisticHouseholdData = new();
+                            //realisticHouseholdData.households = property.m_ResidentialProperties;
+                            //ecb.AddComponent(unfilteredChunkIndex, entity, realisticHouseholdData);
                         }
                         
                     }
