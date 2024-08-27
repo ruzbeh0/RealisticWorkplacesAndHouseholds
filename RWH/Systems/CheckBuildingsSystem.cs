@@ -25,6 +25,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
         EntityQuery m_EconomyParamQuery;
         EntityQuery m_BuildingsQuery;
+        EntityArchetype m_RentEventArchetype;
+        Unity.Mathematics.Random random;
 
         protected override void OnCreate()
         {
@@ -40,7 +42,10 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 ComponentType.Exclude<PropertyOnMarket>()
             );
 
+            random = new Unity.Mathematics.Random(1);
             m_EconomyParamQuery = GetEntityQuery(ComponentType.ReadOnly<EconomyParameterData>());
+            m_RentEventArchetype = EntityManager.CreateArchetype(ComponentType.ReadWrite<Game.Common.Event>(), ComponentType.ReadWrite<RentersUpdated>());
+            this.RequireForUpdate(m_BuildingsQuery);
         }
 
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
@@ -60,14 +65,14 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         public override int GetUpdateInterval(SystemUpdatePhase phase)
         {
             // One day (or month) in-game is '262144' ticks
-            return 262144 / 2;
+            return 262144 / 8;
         }
 
         private void CheckBuildings()
         {
 
-            Mod.log.Info("Scheduling check for buildings that should be on the market");
-            AddPropertiesToMarketJob job = new AddPropertiesToMarketJob()
+            Mod.log.Info("Running Residential Properties Check Job");
+            ResidentialPropertyCheckJob job = new ResidentialPropertyCheckJob()
             {
                 ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                 commercialPropertyLookup = SystemAPI.GetComponentLookup<CommercialProperty>(true),
@@ -83,7 +88,10 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 buildingDataLookup = SystemAPI.GetComponentLookup<BuildingData>(true),
                 zoneDataLookup = SystemAPI.GetComponentLookup<ZoneData>(true),
                 spawnableBuildingDataLookup = SystemAPI.GetComponentLookup<SpawnableBuildingData>(true),
-                economyParameterData = m_EconomyParamQuery.GetSingleton<EconomyParameterData>()
+                economyParameterData = m_EconomyParamQuery.GetSingleton<EconomyParameterData>(),
+                workProviderLookup = SystemAPI.GetComponentLookup<WorkProvider>(true),
+                m_RentEventArchetype = m_RentEventArchetype,
+                random = random
 
             };
             this.Dependency = job.ScheduleParallel(m_BuildingsQuery, this.Dependency);

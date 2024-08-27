@@ -5,6 +5,7 @@ using Game.Settings;
 using Game.UI;
 using Game.UI.InGame;
 using Game.UI.Widgets;
+using RealisticWorkplacesAndHouseholds.Systems;
 using System.Collections.Generic;
 using System.Net.Configuration;
 using static Game.Simulation.TerrainSystem;
@@ -12,8 +13,8 @@ using static Game.Simulation.TerrainSystem;
 namespace RealisticWorkplacesAndHouseholds
 {
     [FileLocation($"ModsSettings\\{nameof(RealisticWorkplacesAndHouseholds)}\\{nameof(RealisticWorkplacesAndHouseholds)}")]
-    [SettingsUIGroupOrder(ResidentialGroup, ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, RowHomesGroup, CommercialGroup, OfficeGroup, IndustryGroup, SchoolGroup, HospitalGroup, PowerPlantGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, DepotGroup, GarbageGroup, PublicTransportGroup, AirportGroup, OtherGroup)]
-    [SettingsUIShowGroupName(ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, HospitalGroup, PowerPlantGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, GarbageGroup, DepotGroup, PublicTransportGroup, AirportGroup)]
+    [SettingsUIGroupOrder(ResidentialGroup, ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, RowHomesGroup, CommercialGroup, OfficeGroup, IndustryGroup, SchoolGroup, HospitalGroup, PowerPlantGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, DepotGroup, GarbageGroup, PublicTransportGroup, AirportGroup, OtherGroup, FindPropertyGroup)]
+    [SettingsUIShowGroupName(ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, HospitalGroup, PowerPlantGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, GarbageGroup, DepotGroup, PublicTransportGroup, AirportGroup, FindPropertyGroup)]
     public class Setting : ModSetting
     {
         public const string ResidentialSection = "Residential";
@@ -42,6 +43,7 @@ namespace RealisticWorkplacesAndHouseholds
         public const string AirportGroup = "AirportGroup";
         public const string OtherSection = "Other";
         public const string OtherGroup = "OtherGroup";
+        public const string FindPropertyGroup = "FindPropertyGroup";
 
         public Setting(IMod mod) : base(mod)
         {
@@ -78,8 +80,8 @@ namespace RealisticWorkplacesAndHouseholds
             single_household_low_density = true;
             disable_high_level_less_apt = false;
             residential_hallway_space = 10;
-            residential_l4_reduction = 15;
-            residential_l5_reduction = 30;
+            residential_l4_reduction = 10;
+            residential_l5_reduction = 20;
             office_non_usable_space = 20;
             commercial_sqm_per_worker_supermarket = 65;
             commercial_sqm_per_worker_restaurants = 28;
@@ -92,6 +94,8 @@ namespace RealisticWorkplacesAndHouseholds
             depot_sqm_per_worker = 65;
             garbage_sqm_per_worker = 95;
             increase_power_production = false;
+            find_property_limit_factor = 2;
+            find_property_night = false;
         }
 
         [SettingsUISection(ResidentialSection, ResidentialLowDensityGroup)]
@@ -258,7 +262,6 @@ namespace RealisticWorkplacesAndHouseholds
 
         [SettingsUISlider(min = 0, max = 90, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
         [SettingsUISection(OtherSection, OtherGroup)]
-        public int results_reduction { get; set; }
 
         [SettingsUIButton]
         [SettingsUISection(OtherSection, OtherGroup)]
@@ -266,10 +269,49 @@ namespace RealisticWorkplacesAndHouseholds
         {
             set
             {
-                SetDefaults();  
+                SetDefaults();
             }
 
         }
+        public int results_reduction { get; set; }
+        [SettingsUISection(OtherSection, FindPropertyGroup)]
+        [SettingsUIMultilineText]
+        public string DTText => string.Empty;
+
+        [SettingsUISlider(min = 1, max = 10, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(OtherSection, FindPropertyGroup)]
+        public int find_property_limit_factor { get; set; }
+
+        [SettingsUISection(OtherSection, FindPropertyGroup)]
+        public bool find_property_night { get; set; }
+
+        //[SettingsUIButton]
+        //[SettingsUIConfirmation]
+        //[SettingsUIHideByCondition(typeof(Setting), "IsInGame")]
+        //[SettingsUISection(OtherSection, OtherGroup)]
+        //public bool SeekNewHouseholds
+        //{
+        //    set
+        //    {
+        //        ResetHouseholdsSystem.TriggerReset(Components.ResetType.FindNewHome);
+        //    }
+        //}
+        //
+        //[SettingsUIButton]
+        //[SettingsUIConfirmation]
+        //[SettingsUIHideByCondition(typeof(Setting), "IsInGame")]
+        //[SettingsUISection(OtherSection, OtherGroup)]
+        //public bool DeleteOverflowHouseholds
+        //{
+        //    set
+        //    {
+        //        ResetHouseholdsSystem.TriggerReset(Components.ResetType.Delete);
+        //    }
+        //}
+
+        
+
+
 
     }  
 
@@ -310,6 +352,7 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionGroupLocaleID(Setting.PublicTransportGroup), "Transportation Stations" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.AirportGroup), "Airports" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.PostOfficeGroup), "Post Office Settings" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.FindPropertyGroup), "Find Property System Settings" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.commercial_avg_floor_height)), "Average Floor Height (meters)" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_avg_floor_height)), $"Average Floor Height for commercial, office, and city services buildings." },
@@ -329,8 +372,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_hallway_space)), $"Percentage of floor space for hallways. Does not include space for elevators and stairs." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.rowhomes_apt_per_floor)), "Number of apartments per floor" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.rowhomes_apt_per_floor)), $"Number of apartments per floor in Row Homes." },
-                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_high_level_less_apt)), "Disable Less Households On Luxury High Rises" },
-                { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_high_level_less_apt)), $"Number of apartments will be reduced once the building reaches levels 4 and 5." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_high_level_less_apt)), "Disable Fewer Households On Luxury High Rises" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_high_level_less_apt)), $"Number of apartments will be reduced once the building reaches levels 4 and 5. WARNING: This feature may cause performance issues and more homeless people in bigger cities." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_l4_reduction)), "Level 4: Apartment Size Increase" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_l4_reduction)), $"Increase in apartment size when compared to the average apartment size." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_l5_reduction)), "Level 5: Apartment Size Increase" },
@@ -397,6 +440,20 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.Button)), $"Reset settings to default values" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.prison_non_usable_space)), $"Percentage of Non-usable Area" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.prison_non_usable_space)), "Percentage of area in Prison Buildings that are as living quarters for prisoners. This include hallways, cafeterias, medical facilities, offices, etc." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.DTText)), $"Update the settings below if you are having issues with residential demand and buildings without households" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.find_property_limit_factor)), $"Requests Limit Factor" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.find_property_limit_factor)), "Increase the allowed limit of find property requests. Vanilla value is 1. Higher values will impact performance and slow the game." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.find_property_night)), $"Double Limit at Night" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.find_property_night)), "Double the amount of find property requests at night. This will impact performance and is only recommended to use with the Realistic Trips Mod" },
+
+                //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.SeekNewHouseholds)), "Seek New Households" },
+                //{ m_Setting.GetOptionDescLocaleID(nameof(Setting.SeekNewHouseholds)), $"RECOMMENDED: If any building has more households than properties (usually when this mod is started with a pre-existing existing save), click this button to have some households look for a new home while the simulation plays. Effect is near immediate, so be aware." },
+                //{ m_Setting.GetOptionWarningLocaleID(nameof(Setting.SeekNewHouseholds)), "Read the setting description first and prepare for residents to move out. The other option won't work, and this can't be undone. Are you sure you want to reset the households?"},
+                //
+                //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.DeleteOverflowHouseholds)), "Delete Overflow Households" },
+                //{ m_Setting.GetOptionDescLocaleID(nameof(Setting.DeleteOverflowHouseholds)), $"USE WITH CAUTION: If any building has more households than properties (usually when this mod is started with a pre-existing existing save), click this button to remove those households. This change is abrupt and immediate after pressing play." },
+                //{ m_Setting.GetOptionWarningLocaleID(nameof(Setting.DeleteOverflowHouseholds)), "Read the setting description first and prepare for a large drop in population. The other option won't work, and this can't be undone. Are you sure you want to delete the overflow households?"}
+
 
             };
         }

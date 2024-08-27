@@ -134,6 +134,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             float height = size.y;
                             int households = property.m_ResidentialProperties;
 
+                            int original_households = property.m_ResidentialProperties;
                             //Check if it is a row home
                             if ((zonedata.m_ZoneFlags & ZoneFlags.SupportNarrow) == ZoneFlags.SupportNarrow)
                             {
@@ -184,10 +185,19 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             //Apply global reduction factor
                             property.m_ResidentialProperties = Math.Max(1,(int)(households * (1f - global_reduction)));
 
+                            float factor = 1f;
+                            if (original_households > 0)
+                            {
+                                factor = property.m_ResidentialProperties / original_households;
+                            }
+                            if (factor == 0f)
+                            {
+                                factor = 1f;
+                            }
+
+                            property.m_SpaceMultiplier *= factor * property.m_SpaceMultiplier;
+
                             buildingPropertyDataArr[i] = property;
-                            //RealisticHouseholdData realisticHouseholdData = new();
-                            //realisticHouseholdData.households = property.m_ResidentialProperties;
-                            //ecb.AddComponent(unfilteredChunkIndex, entity, realisticHouseholdData);
                         }
                         
                     }

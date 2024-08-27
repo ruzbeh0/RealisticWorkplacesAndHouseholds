@@ -5,6 +5,7 @@ using Game;
 using Game.Modding;
 using Game.SceneFlow;
 using Game.Settings;
+using Game.Simulation;
 using HarmonyLib;
 using RealisticWorkplacesAndHouseholds.Jobs;
 using RealisticWorkplacesAndHouseholds.Systems;
@@ -45,16 +46,20 @@ namespace RealisticWorkplacesAndHouseholds
             AssetDatabase.global.LoadSettings(nameof(RealisticWorkplacesAndHouseholds), m_Setting, new Setting(this));
 
             // Disable original systems
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.BuildingPollutionAddSystem>().Enabled = false;
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdFindPropertySystem>().Enabled = false;
 
             updateSystem.UpdateAt<CityServicesWorkplaceUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateAt<HouseholdUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateAfter<NoisePollutionParameterUpdaterSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateBefore<NoisePollutionParameterUpdaterSystem>(SystemUpdatePhase.PrefabReferences);
+            //updateSystem.UpdateAfter<DemandParameterUpdaterSystem>(SystemUpdatePhase.PrefabUpdate);
+            //updateSystem.UpdateBefore<DemandParameterUpdaterSystem>(SystemUpdatePhase.PrefabReferences);
             updateSystem.UpdateAt<WorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAt<CityServicesWorkproviderUpdateSystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<RWHHouseholdFindPropertySystem>(SystemUpdatePhase.GameSimulation);
+            //updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
+
 
             //Harmony
             var harmony = new Harmony(harmonyID);

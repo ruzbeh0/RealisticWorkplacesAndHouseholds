@@ -53,6 +53,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             m_HouseholdsQuery = GetEntityQuery(            
                 ComponentType.ReadWrite<Household>(),                
                 ComponentType.ReadOnly<HouseholdCitizen>(),
+                ComponentType.ReadOnly<PropertyRenter>(),
                 ComponentType.Exclude<TouristHousehold>(),
                 ComponentType.Exclude<CommuterHousehold>(),
                 ComponentType.Exclude<CurrentBuilding>(),
@@ -84,10 +85,11 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         {
             var trigger = SystemAPI.GetSingleton<ResetHouseholdsTrigger>();
 
-            Mod.log.Info("Scheduling household reset of type " + trigger.ToString());
+            
 
             var temp = m_HouseholdsQuery.ToEntityArray(Allocator.Temp);
             int householdsCount = temp.Length;
+            Mod.log.Info("Scheduling household reset of type " + trigger.ToString() + " Household count:" + householdsCount);
             temp.Dispose();
             NativeList<Entity> evictedHouseholds = new NativeList<Entity>(householdsCount/2, Allocator.TempJob);
             var ecb = m_EndFrameBarrier.CreateCommandBuffer();

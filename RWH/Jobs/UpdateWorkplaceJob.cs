@@ -234,7 +234,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                         }
                                             
                                      }
-
+                                    
                                     //Apply global reduction factor
                                     new_workers = (int)(new_workers*(1f - global_reduction));
 
@@ -242,7 +242,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                                     if (new_workers != original_workers)
                                      {
-                                         workProvider.m_MaxWorkers = new_workers;
+                                        
+                                        workProvider.m_MaxWorkers = new_workers;
                                          workProviderArr[i] = workProvider;
 
                                         //Calculate factor
@@ -259,8 +260,6 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                          if (BuildingPropertyDataLookup.TryGetComponent(prefab2.m_Prefab, out var buildingPropertyData))
                                          {
                                              buildingPropertyData.m_SpaceMultiplier *= factor;
-                                             //realisticWorkplaceData.space_multiplier = buildingPropertyData.m_SpaceMultiplier;
-
                                              ecb.SetComponent(unfilteredChunkIndex, prefab2.m_Prefab, buildingPropertyData);
                                          }
                                          

@@ -15,11 +15,14 @@ using RealisticWorkplacesAndHouseholds.Components;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Entities;
+using static Game.Rendering.Utilities.State;
+using Game.Agents;
+using Game.Rendering;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
     [BurstCompile]
-    public partial struct AddPropertiesToMarketJob : IJobChunk
+    public partial struct ResidentialPropertyCheckJob : IJobChunk
     {
         public EntityCommandBuffer.ParallelWriter ecb;
         public EconomyParameterData economyParameterData;
@@ -38,7 +41,14 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ComponentLookup<LandValue> landValueLookup;
         public ComponentLookup<SpawnableBuildingData> spawnableBuildingDataLookup;
         public ComponentLookup<ZoneData> zoneDataLookup;
+        public ComponentLookup<WorkProvider> workProviderLookup;
+        public EntityArchetype m_RentEventArchetype;
+        public ResetType resetType = ResetType.FindNewHome;
+        public Unity.Mathematics.Random random;
 
+        public ResidentialPropertyCheckJob()
+        {
+        }
 
         public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
@@ -46,7 +56,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             var renterAccessor = chunk.GetBufferAccessor(ref renterTypeHandle);
             var prefabRefs = chunk.GetNativeArray(ref prefabRefTypeHandle);
             var buildings = chunk.GetNativeArray(ref buildingTypeHandle);
-
+            
             for (int i = 0; i < entities.Length; i++)
             {
                 var entity = entities[i];
@@ -68,9 +78,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 {
                     householdsCount = renters.Length;
                 }
-
+                
                 if (householdsCount < propertyData.m_ResidentialProperties)                   
                 {
+                    
                     if (!propertyOnMarketLookup.HasComponent(entity))
                     {
                         Entity roadEdge = building.m_RoadEdge;
@@ -95,9 +106,63 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                     }
                 }
+                else if(householdsCount > propertyData.m_ResidentialProperties)
+                {
+                    //Slow down evictions by processing only a few buildings at a time
+                    //int prob = random.NextInt(100);
+                    //int prob_check = householdsCount - propertyData.m_ResidentialProperties;
+                    //if (prob_check < 5)
+                    //{
+                    //    prob_check = 5;
+                    //}
+                    //else if (prob_check > 20)
+                    //{
+                    //    prob_check = 20;
+                    //}
+                    //if(prob_check < prob)
+                    {
+                        RemoveHouseholds(householdsCount - propertyData.m_ResidentialProperties, entity, renters, unfilteredChunkIndex);
+                        if (resetType == ResetType.FindNewHome)
+                        {
+                            Entity e = ecb.CreateEntity(unfilteredChunkIndex, this.m_RentEventArchetype);
+                            ecb.SetComponent(unfilteredChunkIndex, e, new RentersUpdated(entity));
+                        }
+                    } 
+                }
                 else if (householdsCount == propertyData.m_ResidentialProperties && propertyToBeOnMarketLookup.HasComponent(entity))
                 {
                     ecb.RemoveComponent<PropertyToBeOnMarket>(unfilteredChunkIndex, entity);
+                }
+            }
+            
+        }
+
+        private void RemoveHouseholds(int extraHouseholds, Entity property, DynamicBuffer<Renter> renters, int unfilteredChunkIndex)
+        {
+            //NativeHashSet<Entity> marked = new NativeHashSet<Entity>(extraHouseholds, Allocator.Temp);
+            for (int i = 0; i < extraHouseholds && extraHouseholds > 0; i++)
+            {
+                // was while(extraHouseholds > 0) but that might take too long if the set already contains it
+                //var entity = renters[random.NextInt(0,renters.Length)].m_Renter; // remove a random household so the newer ones aren't always removed
+                var entity = renters[i].m_Renter;
+                if (workProviderLookup.HasComponent(entity)) continue;
+                switch (resetType)
+                {
+                    case ResetType.Delete:
+                        ecb.AddComponent<Deleted>(unfilteredChunkIndex, entity);
+                        break;
+                    case ResetType.FindNewHome:
+                        ecb.AddComponent(unfilteredChunkIndex, entity, new PropertySeeker()
+                        {
+                            m_BestProperty = default(Entity),
+                            m_BestPropertyScore = float.NegativeInfinity
+                        });
+                        ecb.RemoveComponent<PropertyRenter>(unfilteredChunkIndex, entity);
+                        //evictedList.Add(entity);
+                        ecb.AddComponent(unfilteredChunkIndex, entity, new Evicted() { from = property });
+                        break;
+                    default:
+                        throw new System.Exception($"Invalid ResetType provided: \"{resetType}\"!");
                 }
             }
         }

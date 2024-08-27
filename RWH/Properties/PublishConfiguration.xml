@@ -38,11 +38,19 @@ These are the current supported building types:
 
 Different types of buildings will have their capacity calculated differently. In summary, all of them will use the buildings dimensions to estimate the number of floors and the area of each floor. For each type of building it is possible to customize for the number of workers or apartments per area (sq meter). This will be used to calculate the total number of households or workers. There are special considerations, for example, space for stairs, elevators, lobbys (for some cases) will be removed from the usable area. Also, mixed used buildings will only consider the first floor to calculate workers and the rest for households. And for Schools the number of teachers and students will be calculated similary, but also using a teacher to student ratio. These are just a few examples, each building type listed above have their own formula and set of parameters.
 
+## Existing Cities and Updating Settings
+
+When you apply this mod to an existing city or change the settings, there could be buildings where the number of houshold decreases. In these cases, the extra residents will be evicted and you might notice a drop in population in your city.
+
+## Known Issues
+
+* Existing cities that start using this mod might suffer a lack of residential demand and/or buildings that don't get filled with new residents. If this happens, you can increase the limit of the Find Property requests in the 'other' tab. Note that increasing this limit will cause the game to slow down. Once the issue is resolved, the limits can be lowered back.
+* Using the "Disable Fewer Households On Luxury High Rises" may cause citizens to be homeless and also contribute to the issue above.
+* There is currently an issue with employee calculations for buildings placed with the 'Plop the Growables' mod being very high. Saving and re-loading the game might solve the issue. However, placing buildings through this mod is not recommended.
+
 ## Credits
 
-This mod was inspired by the **Realistic Population** from CS1 and from **Realistic Building Occupancy** and **Realistic Density** from CS2. Thank you for to the authors of Realistic Building Occupancy and Realistic Density. I studied their code and it was very useful to create this mod. I tried to create a mod that joined the best qualities of both of them. Also, because this mod is similar to them, it should not be used with them.
-
-* City service buldings in an existing city don't get updated when the settings change.
+This mod was inspired by the **Realistic Population** from CS1 and from **Realistic Building Occupancy** and **Realistic Density** from CS2. Thank you for to the authors of Realistic Building Occupancy and Realistic Density: Trejak, Mimonsi and 89pleasure. I studied their code and it was very useful to create this mod. I tried to create a mod that joined the best qualities of both of them. Also, because this mod is similar to them, it should not be used with them.
 	</LongDescription>
 	<!--Thumbnail-->
 	<Thumbnail Value="Properties/Thumbnail.jpg" />
@@ -57,15 +65,15 @@ This mod was inspired by the **Realistic Population** from CS1 and from **Realis
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/realistic-workplaces-and-households.1699586/" />
 	<!--Version of the mod-->
-	<ModVersion Value="0.4" />
+	<ModVersion Value="0.4.1" />
 	<!--Recommended version of the base game to use the mod-->
 	<GameVersion Value="1.1.*" />
 	<!--Dependency for the mod, can be set multiple times-->
 	<Dependency Id="" />
 	<ChangeLog>
-* Added Research Facilities, Telecom Facilities, and Transportation Stations (including Airports)
-* Existing City Services now will be updated with current settings
-* Added option to increase power plant electricity production based on increase of employees
+* Added custom Household Find Property System to allow more citizens to look for a new residency. Also added options to configure this system. This addresses the bug of no residential demand in some cities.
+* Updated caculations for Post Sorting Facility
+* Changing default value for "Disable Fewer Households On Luxury High Rises" to true because this feature can cause performance issues.
 	</ChangeLog>
 	<!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon-->
 	<ExternalLink Type="github" Url="https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/" />

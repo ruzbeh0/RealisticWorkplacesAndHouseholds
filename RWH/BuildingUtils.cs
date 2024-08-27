@@ -225,10 +225,10 @@ namespace RealisticWorkplacesAndHouseholds
             //post sorting facility
             if (workers > 500)
             {
-                float base_area = 60 * 60;
+                float base_area = 30 * 30;
                 float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
                 //Removing one floor for trucks and mail storage
-                workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 1, 0);
+                workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, postoffice_sqm_per_employee * area_factor, 1, 0);
 
             }
             return workers;
