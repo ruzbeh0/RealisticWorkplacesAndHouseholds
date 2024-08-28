@@ -21,7 +21,7 @@ using Game.Rendering;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
-    [BurstCompile]
+    //[BurstCompile]
     public partial struct ResidentialPropertyCheckJob : IJobChunk
     {
         public EntityCommandBuffer.ParallelWriter ecb;

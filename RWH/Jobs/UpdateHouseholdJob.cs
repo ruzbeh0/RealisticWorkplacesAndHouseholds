@@ -54,7 +54,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         }
     }
 
-    [BurstCompile]
+    //[BurstCompile]
     public struct UpdateHouseholdJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
@@ -114,7 +114,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             var subMeshBufferAccessor = chunk.GetBufferAccessor(ref SubMeshHandle);
             var buildingPropertyDataArr = chunk.GetNativeArray(ref BuildingPropertyDataHandle);
             var entityArr = chunk.GetNativeArray(EntityTypeHandle);
-            //Mod.log.Info($"Length: {buildingDataArr.Length}");
+            
             for (int i = 0; i < buildingDataArr.Length; i++)
             {
                 SpawnableBuildingData spawnBuildingData = spawnBuildingDataArr[i];
@@ -142,6 +142,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                 {
                                     height += residential_avg_floor_height;
                                 }
+                                
                                 households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, width*length/ rowhome_apt_per_floor + HALLWAY_BUFFER, 0, 0);
                             } else
                             {
@@ -184,7 +185,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                             //Apply global reduction factor
                             property.m_ResidentialProperties = Math.Max(1,(int)(households * (1f - global_reduction)));
-
+                            Mod.log.Info($"Old: {original_households}, new:{property.m_ResidentialProperties}");
                             float factor = 1f;
                             if (original_households > 0)
                             {
@@ -194,9 +195,6 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             {
                                 factor = 1f;
                             }
-
-                            property.m_SpaceMultiplier *= factor * property.m_SpaceMultiplier;
-
                             buildingPropertyDataArr[i] = property;
                         }
                         

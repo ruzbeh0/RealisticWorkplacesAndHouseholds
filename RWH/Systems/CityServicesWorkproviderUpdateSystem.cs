@@ -11,7 +11,7 @@ using Game.Companies;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
-    [BurstCompile]
+    //[BurstCompile]
     public partial class CityServicesWorkproviderUpdateSystem : GameSystemBase
     {
         private EntityQuery m_UpdateCityServicesWorkplaceJobQuery1;

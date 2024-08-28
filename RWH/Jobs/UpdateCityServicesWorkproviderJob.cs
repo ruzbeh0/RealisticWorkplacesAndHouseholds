@@ -62,7 +62,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         }
     }
 
-    [BurstCompile]
+    //[BurstCompile]
     public struct UpdateCityServicesWorkproviderJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;

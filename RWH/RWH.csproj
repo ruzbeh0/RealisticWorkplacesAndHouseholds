@@ -26,7 +26,6 @@
 		<Reference Include="Colossal.PSI.Common">
 		</Reference>
 		<Reference Include="Colossal.UI.Binding">
-		  <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Cities Skylines II\Cities2_Data\Managed\Colossal.UI.Binding.dll</HintPath>
 		</Reference>
 		<Reference Include="Game">
 			<Private>false</Private>

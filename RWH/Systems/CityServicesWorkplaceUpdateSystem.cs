@@ -17,7 +17,7 @@ using Unity.Collections;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
-    [BurstCompile]
+    //[BurstCompile]
     public partial class CityServicesWorkplaceUpdateSystem : GameSystemBase
     {
         private EntityQuery m_UpdateCityServicesJobQuery;

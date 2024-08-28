@@ -96,6 +96,7 @@ namespace RealisticWorkplacesAndHouseholds
             increase_power_production = false;
             find_property_limit_factor = 2;
             find_property_night = false;
+            rent_discount = 20;
         }
 
         [SettingsUISection(ResidentialSection, ResidentialLowDensityGroup)]
@@ -260,8 +261,13 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(OtherSection, OtherGroup)]
         public int service_upkeep_reduction { get; set; }
 
+        [SettingsUISlider(min = 0, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(OtherSection, OtherGroup)]
+        public int rent_discount { get; set; }
+
         [SettingsUISlider(min = 0, max = 90, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
         [SettingsUISection(OtherSection, OtherGroup)]
+        public int results_reduction { get; set; }
 
         [SettingsUIButton]
         [SettingsUISection(OtherSection, OtherGroup)]
@@ -273,7 +279,7 @@ namespace RealisticWorkplacesAndHouseholds
             }
 
         }
-        public int results_reduction { get; set; }
+
         [SettingsUISection(OtherSection, FindPropertyGroup)]
         [SettingsUIMultilineText]
         public string DTText => string.Empty;
@@ -430,6 +436,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.sqm_univ_adjuster)), $"This factor will be applied to the base square meters per student for Universities." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.service_upkeep_reduction)), "Service Upkeep Cost Reduction" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.service_upkeep_reduction)), $"Reduce the cost of service upkeep. Use this to compensate for the extra cost due to more workers at service buildings." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.rent_discount)), "Residential Rent Discount" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.rent_discount)), $"This mod may cause higher rents due to changes in the number of building households. Use this setting to set a rent discount that will compensate the increase in rent." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.results_reduction)), "Global Workplace/Households reduction" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.results_reduction)), $"Reduce all workplace and househols results by this percentage. Note that some buildings need to have a minimum of 1 worker or household and those might not be reduced." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.prison_sqm_per_prisoner)), "Square Meters per Prisoner" },
