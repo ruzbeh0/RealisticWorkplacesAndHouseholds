@@ -33,8 +33,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     comp.m_ResidentialUpkeepLevelExponent = 1f + (comp.m_ResidentialUpkeepLevelExponent - 1)*(100 - lv5_reduction)/100f;
                 }
 
-                comp.m_RentPriceBuildingZoneTypeBase.x *= math.max(0, (100 - (100f / Mod.m_Setting.results_reduction) * Mod.m_Setting.rent_discount) / 100f);
-                comp.m_LandValueModifier.x = math.max(0,(100 - (100f / Mod.m_Setting.results_reduction) * Mod.m_Setting.rent_discount) / 100f);
+                comp.m_RentPriceBuildingZoneTypeBase.x *= math.max(0.01f, (100 - Mod.m_Setting.rent_discount) / 100f);
+                comp.m_LandValueModifier.x = math.max(0.01f,(100 - Mod.m_Setting.rent_discount) / 100f);
 
                 m_PrefabSystem.AddComponentData(prefabBase, comp);
             }

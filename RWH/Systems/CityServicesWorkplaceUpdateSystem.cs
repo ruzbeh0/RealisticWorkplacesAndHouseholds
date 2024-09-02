@@ -17,7 +17,7 @@ using Unity.Collections;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
-    //[BurstCompile]
+    [BurstCompile]
     public partial class CityServicesWorkplaceUpdateSystem : GameSystemBase
     {
         private EntityQuery m_UpdateCityServicesJobQuery;
@@ -94,8 +94,11 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 TransportStationDataLookup = SystemAPI.GetComponentLookup<TransportStationData>(true),
                 CargoTransportStationDataLookup = SystemAPI.GetComponentLookup<CargoTransportStationData>(true),
                 TelecomFacilityDataLookup = SystemAPI.GetComponentLookup<TelecomFacilityData>(true),
+                SolarPoweredDataLookup = SystemAPI.GetComponentLookup<SolarPoweredData>(true),
+                ParkDataLookup = SystemAPI.GetComponentLookup<ParkData>(true),
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
                 subMeshHandle = SystemAPI.GetBufferTypeHandle<SubMesh>(true),
+                park_sqm_per_worker = Mod.m_Setting.park_sqm_per_worker,
                 studentPerTeacher = Mod.m_Setting.students_per_teacher,
                 sqm_per_student = Mod.m_Setting.sqm_per_student,
                 support_staff = Mod.m_Setting.support_staff / 100f,
@@ -123,7 +126,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 more_electricity = Mod.m_Setting.increase_power_production,
                 transit_sqm_per_worker = Mod.m_Setting.transit_station_sqm_per_worker,
                 airport_sqm_per_worker = Mod.m_Setting.airport_sqm_per_worker,
-                global_reduction = Mod.m_Setting.results_reduction / 100f
+                global_reduction = Mod.m_Setting.results_reduction / 100f,
+                solar_reduction = Mod.m_Setting.solarpowerplant_reduction_factor
             };
             this.Dependency = updateCityServicesJob.ScheduleParallel(m_UpdateCityServicesJobQuery, this.Dependency);
             m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);

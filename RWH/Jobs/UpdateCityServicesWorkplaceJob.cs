@@ -56,7 +56,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         ComponentType.ReadOnly<WelfareOfficeData>(),
                         ComponentType.ReadOnly<ResearchFacilityData>(),
                         ComponentType.ReadOnly<TelecomFacilityData>(),
-                        //ComponentType.ReadOnly<ParkData>(),
+                        ComponentType.ReadOnly<ParkData>(),
                     ],
                     None =
                     [
@@ -69,7 +69,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         }
     }
 
-    //[BurstCompile]
+    [BurstCompile]
     public struct UpdateCityServicesWorkplaceJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
@@ -110,6 +110,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ComponentLookup<CargoTransportStationData> CargoTransportStationDataLookup;
         [ReadOnly]
         public ComponentLookup<TelecomFacilityData> TelecomFacilityDataLookup;
+        [ReadOnly]
+        public ComponentLookup<ParkData> ParkDataLookup;
+        [ReadOnly]
+        public ComponentLookup<SolarPoweredData> SolarPoweredDataLookup;
         [ReadOnly]
         public BufferTypeHandle<SubMesh> subMeshHandle;
         [ReadOnly]
@@ -170,6 +174,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public float airport_sqm_per_worker;
         [ReadOnly]
         public bool more_electricity;
+        [ReadOnly]
+        public int solar_reduction;
+        [ReadOnly]
+        public float park_sqm_per_worker;
 
         public UpdateCityServicesWorkplaceJob()
         {
@@ -205,6 +213,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 int oldworkers = workplaceData.m_MaxWorkers;
                 int workers = oldworkers;
 
+                if (ParkDataLookup.HasComponent(entity))
+                {
+                    workers = BuildingUtils.parkWorkers(width, length, height, industry_avg_floor_height, park_sqm_per_worker);
+                }
                 if (MaintenanceDepotDataLookup.HasComponent(entity) || TransportDepotDataLookup.HasComponent(entity) || CargoTransportStationDataLookup.HasComponent(entity))
                 {
                     workers = BuildingUtils.depotWorkers(width, length, height, industry_avg_floor_height, depot_sqm_per_worker);
@@ -221,19 +233,27 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 {
                     if (TransportStationDataLookup.TryGetComponent(entity, out var transportStation))
                     {
-                        if(transportStation.m_AircraftRefuelTypes != Game.Vehicles.EnergyTypes.None)
+                        if(!(CargoTransportStationDataLookup.HasComponent(entity) && transportStation.m_ComfortFactor == 0))
                         {
-                            //Airports
-                            workers = BuildingUtils.airportWorkers(width, length, height, industry_avg_floor_height, airport_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, oldworkers);
-                        } else
-                        {
-                            workers = BuildingUtils.publicTransportationWorkers(width, length, height, industry_avg_floor_height, transit_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, oldworkers); 
-                        }                       
+                            if (transportStation.m_AircraftRefuelTypes != Game.Vehicles.EnergyTypes.None)
+                            {
+                                //Airports
+                                workers = BuildingUtils.airportWorkers(width, length, height, industry_avg_floor_height, airport_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, oldworkers);
+                            }
+                            else
+                            {
+                                workers = BuildingUtils.publicTransportationWorkers(width, length, height, industry_avg_floor_height, transit_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, oldworkers);
+                            }
+                        }                     
                     } 
                 }
                 if (PowerPlantDataLookup.HasComponent(entity))
                 {
                     workers = BuildingUtils.powerPlantWorkers(width, length, height, industry_avg_floor_height, powerplant_sqm_per_employee);
+                    if(SolarPoweredDataLookup.HasComponent(entity))
+                    {
+                        workers /= solar_reduction;
+                    }
 
                     if(more_electricity && PowerPlantDataLookup.TryGetComponent(entity, out var powerPlant))
                     {

@@ -164,6 +164,15 @@ namespace RealisticWorkplacesAndHouseholds
             return BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, garbage_sqm_per_worker * area_factor, 1, 0, 2);
         }
 
+        //Calculates number of workers for parks facilities
+        public static int parkWorkers(float width, float length, float height, float industry_avg_floor_height, float park_sqm_per_worker)
+        {
+            //Using a 2 story floor limit
+            float base_area = 50 * 50;
+            float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
+            return BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, park_sqm_per_worker * area_factor, 1, 0, 2);
+        }
+
         //Calculates number of workers for telecom facilities
         public static int telecomWorkers(float width, float length, float height, float industry_avg_floor_height, float garbage_sqm_per_worker, int oldworkers)
         {

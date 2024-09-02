@@ -21,7 +21,7 @@ using Game.Rendering;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
-    //[BurstCompile]
+    [BurstCompile]
     public partial struct ResidentialPropertyCheckJob : IJobChunk
     {
         public EntityCommandBuffer.ParallelWriter ecb;
@@ -43,7 +43,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ComponentLookup<ZoneData> zoneDataLookup;
         public ComponentLookup<WorkProvider> workProviderLookup;
         public EntityArchetype m_RentEventArchetype;
-        public ResetType resetType = ResetType.FindNewHome;
+        public ResetType resetType = ResetType.Delete;
         public Unity.Mathematics.Random random;
 
         public ResidentialPropertyCheckJob()

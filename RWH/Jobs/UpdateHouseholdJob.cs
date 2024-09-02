@@ -54,7 +54,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         }
     }
 
-    //[BurstCompile]
+    [BurstCompile]
     public struct UpdateHouseholdJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
@@ -185,7 +185,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                             //Apply global reduction factor
                             property.m_ResidentialProperties = Math.Max(1,(int)(households * (1f - global_reduction)));
-                            Mod.log.Info($"Old: {original_households}, new:{property.m_ResidentialProperties}");
+                            //Mod.log.Info($"Old: {original_households}, new:{property.m_ResidentialProperties}");
                             float factor = 1f;
                             if (original_households > 0)
                             {

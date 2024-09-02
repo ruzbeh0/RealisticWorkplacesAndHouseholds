@@ -33,6 +33,7 @@ These are the current supported building types:
 * Research Facilities
 * Transportation Stations and Airports
 * Telecom Facilities
+* Parks
 
 ## Calculations
 
@@ -65,13 +66,15 @@ This mod was inspired by the **Realistic Population** from CS1 and from **Realis
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/realistic-workplaces-and-households.1699586/" />
 	<!--Version of the mod-->
-	<ModVersion Value="0.5.2" />
+	<ModVersion Value="0.6" />
 	<!--Recommended version of the base game to use the mod-->
 	<GameVersion Value="1.1.*" />
 	<!--Dependency for the mod, can be set multiple times-->
 	<Dependency Id="" />
 	<ChangeLog>
-* Fixed households not being updated
+* Added option to decrease employees in Solar Power Plants
+* Deleting evicted households to deal with too many homeless citizens
+* Added Parks
 	</ChangeLog>
 	<!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon-->
 	<ExternalLink Type="github" Url="https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/" />

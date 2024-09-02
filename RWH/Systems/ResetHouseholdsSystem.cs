@@ -48,6 +48,16 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
         protected override void OnCreate()
         {
+            m_BuildingsQuery = GetEntityQuery(
+                ComponentType.ReadOnly<Building>(),
+                ComponentType.ReadOnly<ResidentialProperty>(),
+                ComponentType.ReadOnly<PrefabRef>(),
+                ComponentType.ReadOnly<Renter>(),
+                ComponentType.Exclude<Deleted>(),
+                ComponentType.Exclude<Temp>(),
+                ComponentType.Exclude<PropertyOnMarket>()
+            );
+
             base.OnCreate();
             reset = false;
             m_HouseholdsQuery = GetEntityQuery(            

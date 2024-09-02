@@ -447,7 +447,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             public int level;
         }
 
-        //[BurstCompile]
+        [BurstCompile]
         private struct PreparePropertyJob : IJobChunk
         {
             [ReadOnly]
@@ -582,7 +582,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             }
         }
 
-        //[BurstCompile]
+        [BurstCompile]
         private struct FindPropertyJob : IJob
         {
             public NativeList<Entity> m_Entities;

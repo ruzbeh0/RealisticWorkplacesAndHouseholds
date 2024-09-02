@@ -18,7 +18,7 @@ using Game.UI.Menu;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
-    //[BurstCompile]
+    [BurstCompile]
     public partial class HouseholdUpdateSystem : GameSystemBase
     {
         private EntityQuery m_UpdateHouseholdJobQuery;

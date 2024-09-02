@@ -11,7 +11,7 @@ using Game.Companies;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
-    //[BurstCompile]
+    [BurstCompile]
     public partial class CityServicesWorkproviderUpdateSystem : GameSystemBase
     {
         private EntityQuery m_UpdateCityServicesWorkplaceJobQuery1;
@@ -84,6 +84,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 SchoolLookup = SystemAPI.GetComponentLookup<Game.Buildings.School>(true),
                 TelecomFacilityLookup = SystemAPI.GetComponentLookup<Game.Buildings.TelecomFacility>(true), 
                 SchoolDataLookup = SystemAPI.GetComponentLookup<SchoolData>(true),
+                ParkLookup = SystemAPI.GetComponentLookup<Game.Buildings.Park>(true),
+                park_sqm_per_worker = Mod.m_Setting.park_sqm_per_worker,
                 studentPerTeacher = Mod.m_Setting.students_per_teacher,
                 sqm_per_student = Mod.m_Setting.sqm_per_student,
                 support_staff = Mod.m_Setting.support_staff / 100f,

@@ -52,6 +52,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         ComponentType.ReadOnly<Game.Buildings.ResearchFacility>(),
                         ComponentType.ReadOnly<Game.Buildings.TransportStation>(),
                         ComponentType.ReadOnly<Game.Buildings.TelecomFacility>(),
+                        ComponentType.ReadOnly<Game.Buildings.Park>(),
                     ],
                     None =
                     [
@@ -62,7 +63,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         }
     }
 
-    //[BurstCompile]
+    [BurstCompile]
     public struct UpdateCityServicesWorkproviderJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
@@ -114,6 +115,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ComponentLookup<Game.Buildings.TransportStation> TransportStationLookup;
         [ReadOnly]
         public ComponentLookup<Game.Buildings.TelecomFacility> TelecomFacilityLookup;
+        [ReadOnly]
+        public ComponentLookup<Game.Buildings.Park> ParkLookup;
         [ReadOnly]
         public ComponentLookup<SchoolData> SchoolDataLookup;
         [ReadOnly]
@@ -170,6 +173,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public float transit_sqm_per_worker;
         [ReadOnly]
         public float airport_sqm_per_worker;
+        [ReadOnly]
+        public float park_sqm_per_worker;
 
         public UpdateCityServicesWorkproviderJob()
         {
@@ -205,6 +210,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         int original_workers = workProvider.m_MaxWorkers;
                         int workers = original_workers;
 
+                        if (ParkLookup.HasComponent(entity))
+                        {
+                            workers = BuildingUtils.parkWorkers(width, length, height, industry_avg_floor_height, park_sqm_per_worker);
+                        }
                         if (TransportDepotLookup.HasComponent(entity) || MaintenanceDepotLookup.HasComponent(entity) || CargoTransportStationLookup.HasComponent(entity))
                         {
                             workers = BuildingUtils.depotWorkers(width, length, height, industry_avg_floor_height, depot_sqm_per_worker);
@@ -221,14 +230,17 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         {
                             if (TransportStationLookup.TryGetComponent(entity, out var transportStation))
                             {
-                                if (transportStation.m_CarRefuelTypes != Game.Vehicles.EnergyTypes.None)
+                                if (!(CargoTransportStationLookup.HasComponent(entity) && transportStation.m_ComfortFactor == 0))
                                 {
-                                    workers = BuildingUtils.publicTransportationWorkers(width, length, height, industry_avg_floor_height, transit_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, original_workers);
-                                }
-                                else
-                                {
-                                    workers = BuildingUtils.airportWorkers(width, length, height, industry_avg_floor_height, airport_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, original_workers);
-                                }
+                                    if (transportStation.m_CarRefuelTypes != Game.Vehicles.EnergyTypes.None)
+                                    {
+                                        workers = BuildingUtils.publicTransportationWorkers(width, length, height, industry_avg_floor_height, transit_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, original_workers);
+                                    }
+                                    else
+                                    {
+                                        workers = BuildingUtils.airportWorkers(width, length, height, industry_avg_floor_height, airport_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, original_workers);
+                                    }
+                                }     
                             }
                         }
                         if (ElectricityProducerLookup.HasComponent(entity))

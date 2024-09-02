@@ -13,8 +13,8 @@ using static Game.Simulation.TerrainSystem;
 namespace RealisticWorkplacesAndHouseholds
 {
     [FileLocation($"ModsSettings\\{nameof(RealisticWorkplacesAndHouseholds)}\\{nameof(RealisticWorkplacesAndHouseholds)}")]
-    [SettingsUIGroupOrder(ResidentialGroup, ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, RowHomesGroup, CommercialGroup, OfficeGroup, IndustryGroup, SchoolGroup, HospitalGroup, PowerPlantGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, DepotGroup, GarbageGroup, PublicTransportGroup, AirportGroup, OtherGroup, FindPropertyGroup)]
-    [SettingsUIShowGroupName(ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, HospitalGroup, PowerPlantGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, GarbageGroup, DepotGroup, PublicTransportGroup, AirportGroup, FindPropertyGroup)]
+    [SettingsUIGroupOrder(ResidentialGroup, ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, RowHomesGroup, CommercialGroup, OfficeGroup, IndustryGroup, SchoolGroup, HospitalGroup, PowerPlantGroup, ParkGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, DepotGroup, GarbageGroup, PublicTransportGroup, AirportGroup, OtherGroup, FindPropertyGroup)]
+    [SettingsUIShowGroupName(ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, HospitalGroup, PowerPlantGroup, ParkGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, GarbageGroup, DepotGroup, PublicTransportGroup, AirportGroup, FindPropertyGroup)]
     public class Setting : ModSetting
     {
         public const string ResidentialSection = "Residential";
@@ -33,6 +33,7 @@ namespace RealisticWorkplacesAndHouseholds
         public const string CityServicesSection = "CityServices";
         public const string HospitalGroup = "HospitalGroup";
         public const string PowerPlantGroup = "PowerPlantGroup";
+        public const string ParkGroup = "ParkGroup";
         public const string AdminGroup = "AdminGroup";
         public const string PoliceGroup = "PoliceGroup";
         public const string FireGroup = "FireGroup";
@@ -68,6 +69,7 @@ namespace RealisticWorkplacesAndHouseholds
             hospital_sqm_per_patient = 50;
             industry_sqm_per_worker = 50;
             powerplant_sqm_per_worker = 200;
+            park_sqm_per_worker = 50;
             postoffice_sqm_per_worker = 46;
             transit_station_sqm_per_worker = 60;
             airport_sqm_per_worker = 70;
@@ -94,6 +96,7 @@ namespace RealisticWorkplacesAndHouseholds
             depot_sqm_per_worker = 65;
             garbage_sqm_per_worker = 95;
             increase_power_production = false;
+            solarpowerplant_reduction_factor = 5;
             find_property_limit_factor = 2;
             find_property_night = false;
             rent_discount = 20;
@@ -222,8 +225,16 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(CityServicesSection, PowerPlantGroup)]
         public int powerplant_sqm_per_worker { get; set; }
 
+        [SettingsUISlider(min = 1, max = 400, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(CityServicesSection, ParkGroup)]
+        public int park_sqm_per_worker { get; set; }
+
         [SettingsUISection(CityServicesSection, PowerPlantGroup)]
         public bool increase_power_production { get; set; }
+
+        [SettingsUISlider(min = 1, max = 10, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(CityServicesSection, PowerPlantGroup)]
+        public int solarpowerplant_reduction_factor { get; set; }
 
         [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(CityServicesSection, HospitalGroup)]
@@ -350,6 +361,7 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionGroupLocaleID(Setting.OfficeGroup), "Office Settings" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.HospitalGroup), "Hospital" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.PowerPlantGroup), "Power Plant" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.ParkGroup), "Parks" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.AdminGroup), "Admin Buildings" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.PoliceGroup), "Police Stations" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.FireGroup), "Fire Stations" },
@@ -404,10 +416,14 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_sqm_per_worker_restaurants)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.industry_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.industry_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.park_sqm_per_worker)), "Square Meters per Worker" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.park_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.powerplant_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.powerplant_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.increase_power_production)), "Increase Power Production" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.increase_power_production)), $"Increases the amount of electricity produced based on the increase of employees compared to the vanilla game. If there is a decrease of employees, power production will not change." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.solarpowerplant_reduction_factor)), "Solar Employee Reduction Factor" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.solarpowerplant_reduction_factor)), $"Reduced the calculated worker count for Solar Power Plants by the specified factor." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.hospital_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.hospital_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.transit_station_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
