@@ -43,7 +43,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ComponentLookup<ZoneData> zoneDataLookup;
         public ComponentLookup<WorkProvider> workProviderLookup;
         public EntityArchetype m_RentEventArchetype;
-        public ResetType resetType = ResetType.Delete;
+        public ResetType resetType = Mod.m_Setting.evicted_reset_type;
         public Unity.Mathematics.Random random;
 
         public ResidentialPropertyCheckJob()

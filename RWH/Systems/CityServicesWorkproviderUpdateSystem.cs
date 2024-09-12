@@ -36,7 +36,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
-            Mod.log.Info("City Services Work Provider calculations loaded");
+            //Mod.log.Info("City Services Work Provider calculations loaded");
             UpdateCityServicesWorkplace();
         }
 

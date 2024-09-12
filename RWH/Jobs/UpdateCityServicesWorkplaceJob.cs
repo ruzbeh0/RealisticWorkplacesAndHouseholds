@@ -315,7 +315,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 }
                 else if (FireStationDataLookup.HasComponent(entity))
                 {
-                    workers = BuildingUtils.fireStationWorkers(width, length, height, commercial_avg_floor_height, sqm_per_employee_fire);
+                    workers = BuildingUtils.fireStationWorkers(width, length, height, industry_avg_floor_height, sqm_per_employee_fire);
                 }
                 else if (SchoolDataLookup.HasComponent(entity))
                 {

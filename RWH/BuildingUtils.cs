@@ -256,7 +256,7 @@ namespace RealisticWorkplacesAndHouseholds
             float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
 
             //Skipping lobby because usually in fire stations the ground floor is the fire truck garage
-            return BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_fire * area_factor, 1, 0);
+            return BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_fire * area_factor, 1, 0, 4);
         }
 
         //Calculates school capacity

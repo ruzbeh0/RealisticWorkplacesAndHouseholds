@@ -48,13 +48,25 @@ namespace RealisticWorkplacesAndHouseholds
             // Disable original systems
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdFindPropertySystem>().Enabled = false;
 
-            updateSystem.UpdateAt<CityServicesWorkplaceUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
-            updateSystem.UpdateAt<HouseholdUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
+            if(!Mod.m_Setting.disable_households_calculations)
+            {
+                updateSystem.UpdateAt<HouseholdUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
+                updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
+            } 
             updateSystem.UpdateAfter<NoisePollutionParameterUpdaterSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateBefore<NoisePollutionParameterUpdaterSystem>(SystemUpdatePhase.PrefabReferences);
-            updateSystem.UpdateAt<WorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAt<CityServicesWorkproviderUpdateSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
+
+            if(!Mod.m_Setting.disable_workplace_calculations)
+            {
+                updateSystem.UpdateAt<WorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            }
+
+            if(!Mod.m_Setting.disable_cityservices_calculations)
+            {
+                updateSystem.UpdateAt<CityServicesWorkplaceUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
+                updateSystem.UpdateAt<CityServicesWorkproviderUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            }
+            
             updateSystem.UpdateAt<RWHHouseholdFindPropertySystem>(SystemUpdatePhase.GameSimulation);
             //updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
 

@@ -8,6 +8,7 @@ using Unity.Burst;
 using RealisticWorkplacesAndHouseholds.Jobs;
 using Game.Buildings;
 using Game.Companies;
+using RealisticWorkplacesAndHouseholds.Components;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
@@ -29,7 +30,10 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             // Job Queries
             UpdateWorkplaceJobQuery updateWorkplaceJobQuery = new();
             m_UpdateWorkplaceJobQuery1 = GetEntityQuery(updateWorkplaceJobQuery.Query);
-
+            //RemoveRealisticWorkplaceJobQuery removeWorkplaceJobQuery = new();
+            //m_UpdateWorkplaceJobQuery2 = GetEntityQuery(removeWorkplaceJobQuery.Query);
+            //
+            //this.RequireAnyForUpdate([m_UpdateWorkplaceJobQuery1, m_UpdateWorkplaceJobQuery2]);
             this.RequireAnyForUpdate(m_UpdateWorkplaceJobQuery1);
 
         }
@@ -37,15 +41,16 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
-            UpdateWorkplace();
-            Mod.log.Info("Workplace calculations loaded");
+            UpdateWorkplace(true);
         }
 
         [Preserve]
         protected override void OnUpdate()
         {
-            //Mod.log.Info($"OnUpdate");
-            //UpdateWorkplace();
+            if(!m_UpdateWorkplaceJobQuery1.IsEmptyIgnoreFilter)
+            {
+                UpdateWorkplace(false);
+            } 
         }
 
         protected override void OnDestroy()
@@ -54,7 +59,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
         }
 
-        private void UpdateWorkplace()
+        private void UpdateWorkplace(bool reset)
         {
             UpdateWorkplaceJob updateZonableWorkplace = new UpdateWorkplaceJob
             {
@@ -74,6 +79,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
                 BuildingPropertyDataLookup = SystemAPI.GetComponentLookup<BuildingPropertyData>(false),
                 ExtractorCompanyDataLookup = SystemAPI.GetComponentLookup<ExtractorCompanyData>(true),
+                RealisticWorkplaceDataLookup = SystemAPI.GetComponentLookup<RealisticWorkplaceData>(true),
+                reset = reset,
                 commercial_sqm_per_employee = Mod.m_Setting.commercial_sqm_per_worker,
                 office_sqm_per_employee = Mod.m_Setting.office_sqm_per_worker,
                 commercial_avg_floor_height = Mod.m_Setting.commercial_avg_floor_height,

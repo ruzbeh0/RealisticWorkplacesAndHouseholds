@@ -53,7 +53,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         {
             base.OnGameLoadingComplete(purpose, mode);
             UpdateCityServices();
-            Mod.log.Info("City Services Work Provider calculations loaded");
+            //Mod.log.Info("City Services Work Provider calculations loaded");
         }
 
         [Preserve]

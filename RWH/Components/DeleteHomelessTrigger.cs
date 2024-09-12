@@ -7,14 +7,8 @@ using Unity.Entities;
 
 namespace RealisticWorkplacesAndHouseholds.Components
 {
-    public struct ResetHouseholdsTrigger: IComponentData
+    public struct DeleteHomelessTrigger: IComponentData
     {
-        public ResetType resetType;
-    }
 
-    public enum ResetType : int
-    {
-        FindNewHome = 1,
-        Delete = 2
     }
 }

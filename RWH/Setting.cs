@@ -5,6 +5,7 @@ using Game.Settings;
 using Game.UI;
 using Game.UI.InGame;
 using Game.UI.Widgets;
+using RealisticWorkplacesAndHouseholds.Components;
 using RealisticWorkplacesAndHouseholds.Systems;
 using System.Collections.Generic;
 using System.Net.Configuration;
@@ -62,7 +63,7 @@ namespace RealisticWorkplacesAndHouseholds
             commercial_sqm_per_worker = 37;
             commercial_self_service_gas = false;
             police_sqm_per_worker = 60;
-            fire_sqm_per_worker = 85;
+            fire_sqm_per_worker = 60;
             office_sqm_per_worker = 23;
             office_elevators_per_sqm = 4180;
             hospital_sqm_per_worker = 100;
@@ -77,6 +78,7 @@ namespace RealisticWorkplacesAndHouseholds
             residential_avg_floor_height = 3;
             residential_sqm_per_apartment = 120;
             rowhomes_apt_per_floor = 1;
+            disable_row_homes_apt_per_floor = false;
             rowhomes_basement = true;
             residential_units_per_elevator = 70;
             single_household_low_density = true;
@@ -100,6 +102,9 @@ namespace RealisticWorkplacesAndHouseholds
             find_property_limit_factor = 2;
             find_property_night = false;
             rent_discount = 20;
+            disable_households_calculations = false;
+            disable_cityservices_calculations = false;
+            disable_workplace_calculations = false;
         }
 
         [SettingsUISection(ResidentialSection, ResidentialLowDensityGroup)]
@@ -107,7 +112,7 @@ namespace RealisticWorkplacesAndHouseholds
 
         [SettingsUISlider(min = 60, max = 500, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(ResidentialSection, ResidentialLowDensityGroup)]
-        [SettingsUIHideByCondition(typeof(Setting), nameof(single_household_low_density))]
+        [SettingsUIDisableByCondition(typeof(Setting), nameof(single_household_low_density))]
         public int residential_lowdensity_sqm_per_apartment { get; set; }
 
         [SettingsUISlider(min = 2f, max = 5f, step = 1, scalarMultiplier = 1, unit = Unit.kFloatSingleFraction)]
@@ -131,16 +136,20 @@ namespace RealisticWorkplacesAndHouseholds
 
         [SettingsUISlider(min = 0, max = 50, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
         [SettingsUISection(ResidentialSection, ResidentialHighDensityGroup)]
-        [SettingsUIHideByCondition(typeof(Setting), nameof(disable_high_level_less_apt))]
+        [SettingsUIDisableByCondition(typeof(Setting), nameof(disable_high_level_less_apt))]
         public int residential_l4_reduction { get; set; }
 
         [SettingsUISlider(min = 0, max = 50, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
         [SettingsUISection(ResidentialSection, ResidentialHighDensityGroup)]
-        [SettingsUIHideByCondition(typeof(Setting), nameof(disable_high_level_less_apt))]
+        [SettingsUIDisableByCondition(typeof(Setting), nameof(disable_high_level_less_apt))]
         public int residential_l5_reduction { get; set; }
+
+        [SettingsUISection(ResidentialSection, RowHomesGroup)]
+        public bool disable_row_homes_apt_per_floor { get; set; }
 
         [SettingsUISlider(min = 1, max = 4, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(ResidentialSection, RowHomesGroup)]
+        [SettingsUIDisableByCondition(typeof(Setting), nameof(disable_row_homes_apt_per_floor))]
         public int rowhomes_apt_per_floor { get; set; }
 
         [SettingsUISection(ResidentialSection, RowHomesGroup)]
@@ -268,6 +277,15 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(SchoolSection, SchoolGroup)]
         public float sqm_univ_adjuster { get; set; }
 
+        [SettingsUISection(OtherSection, OtherGroup)]
+        public bool disable_households_calculations { get; set; }
+
+        [SettingsUISection(OtherSection, OtherGroup)]
+        public bool disable_workplace_calculations { get; set; }
+
+        [SettingsUISection(OtherSection, OtherGroup)]
+        public bool disable_cityservices_calculations { get; set; }
+
         [SettingsUISlider(min = 0, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
         [SettingsUISection(OtherSection, OtherGroup)]
         public int service_upkeep_reduction { get; set; }
@@ -279,6 +297,9 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISlider(min = 0, max = 90, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
         [SettingsUISection(OtherSection, OtherGroup)]
         public int results_reduction { get; set; }
+
+        [SettingsUISection(OtherSection, OtherGroup)]
+        public ResetType evicted_reset_type { get; set; } = ResetType.FindNewHome;
 
         [SettingsUIButton]
         [SettingsUISection(OtherSection, OtherGroup)]
@@ -388,6 +409,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_units_per_elevator)), $"Number of Apartments per Elevator. The Elevator area will be subtracted and reduce the space available for apartments in the building." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_hallway_space)), "Percentage of floor space for hallways" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_hallway_space)), $"Percentage of floor space for hallways. Does not include space for elevators and stairs." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_row_homes_apt_per_floor)), "Disable Apt. per floors for Row Homes" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_row_homes_apt_per_floor)), $"If disabled, Row Homes will use the average sqm per apartment defined above. Otherwise, a specific number of apartments per floors will be used for Row Homes." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.rowhomes_apt_per_floor)), "Number of apartments per floor" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.rowhomes_apt_per_floor)), $"Number of apartments per floor in Row Homes." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_high_level_less_apt)), "Disable Fewer Households On Luxury High Rises" },
@@ -469,6 +492,16 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.find_property_limit_factor)), "Increase the allowed limit of find property requests. Vanilla value is 1. Higher values will impact performance and slow the game." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.find_property_night)), $"Double Limit at Night" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.find_property_night)), "Double the amount of find property requests at night. This will impact performance and is only recommended to use with the Realistic Trips Mod" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.evicted_reset_type)), $"Evicted Households Action" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.evicted_reset_type)), "Select what action to do with evicted households. They can either look for a new home or be deleted." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_households_calculations)), $"Disable Household Calculations" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_households_calculations)), "Disable calculations for households. Household values for residential buildings will be set to vanilla. Requires restarting the game." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_workplace_calculations)), $"Disable Workplace Calculations" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_workplace_calculations)), "Disable calculations for workplaces on Office, Commercial, and Industrial zones. Workplace values will be set to vanilla. Requires restarting the game." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_cityservices_calculations)), $"Disable City Services Workplace Calculations" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_cityservices_calculations)), "Disable calculations for workplaces on City Services buildings. Workplace values will be set to vanilla. Requires restarting the game." },
+                { m_Setting.GetEnumValueLocaleID(ResetType.Delete), "Delete" },
+                { m_Setting.GetEnumValueLocaleID(ResetType.FindNewHome), "Find New Home" },
 
                 //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.SeekNewHouseholds)), "Seek New Households" },
                 //{ m_Setting.GetOptionDescLocaleID(nameof(Setting.SeekNewHouseholds)), $"RECOMMENDED: If any building has more households than properties (usually when this mod is started with a pre-existing existing save), click this button to have some households look for a new home while the simulation plays. Effect is near immediate, so be aware." },

@@ -31,6 +31,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         HouseholdFindPropertySystem m_householdFindPropertySystem; 
         private EndFrameBarrier m_EndFrameBarrier;
         EntityQuery m_HouseholdsQuery;
+        EntityQuery m_HomelessHouseholdsQuery;
         EntityQuery m_BuildingsQuery;
         EntityArchetype m_RentEventArchetype;
 
@@ -71,6 +72,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 ComponentType.Exclude<Deleted>(),
                 ComponentType.Exclude<Temp>()
             );
+
             m_BuildingsQuery = GetEntityQuery(
                 ComponentType.ReadOnly<Building>(),
                 ComponentType.ReadOnly<ResidentialProperty>(),

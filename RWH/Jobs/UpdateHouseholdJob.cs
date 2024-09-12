@@ -45,9 +45,9 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     ],
                     None =
                     [
-                        //ComponentType.Exclude<RealisticHouseholdData>(),
-                        //ComponentType.Exclude<Deleted>(),
-                        //ComponentType.Exclude<Temp>()
+                        ComponentType.Exclude<RealisticHouseholdData>(),
+                        ComponentType.Exclude<Deleted>(),
+                        ComponentType.Exclude<Temp>()
                     ],
                 }
             ];
@@ -97,6 +97,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public float global_reduction;
         [ReadOnly]
         public int sqm_per_apartment_lowdensity;
+        [ReadOnly]
+        public bool enable_rh_apt_per_floor;
 
         public UpdateHouseholdJob()
         {
@@ -142,8 +144,14 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                 {
                                     height += residential_avg_floor_height;
                                 }
+
+                                float rowhome_area = sqm_per_apartment * (1 + hallway_pct);
+                                if (enable_rh_apt_per_floor)
+                                {
+                                    rowhome_area = width * length / rowhome_apt_per_floor + HALLWAY_BUFFER;
+                                } 
                                 
-                                households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, width*length/ rowhome_apt_per_floor + HALLWAY_BUFFER, 0, 0);
+                                households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, rowhome_area, 0, 0);
                             } else
                             {
                                 //Checking for single family homes
@@ -196,6 +204,9 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                 factor = 1f;
                             }
                             buildingPropertyDataArr[i] = property;
+                            //RealisticHouseholdData realisticHouseholdData = new();
+                            //realisticHouseholdData.households = property.m_ResidentialProperties;
+                            //ecb.AddComponent(unfilteredChunkIndex, entity, realisticHouseholdData);
                         }
                         
                     }

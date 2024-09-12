@@ -64,6 +64,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         private CitySystem m_CitySystem;
         private CityStatisticsSystem m_CityStatisticsSystem;
         private CountEmploymentSystem m_CountEmploymentSystem;
+        private SimulationSystem m_SimulationSystem;
         private EntityQuery m_HealthcareParameterQuery;
         private EntityQuery m_ParkParameterQuery;
         private EntityQuery m_EducationParameterQuery;
@@ -93,6 +94,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             this.m_TaxSystem = this.World.GetOrCreateSystemManaged<TaxSystem>();
             this.m_TriggerSystem = this.World.GetOrCreateSystemManaged<TriggerSystem>();
             this.m_CountEmploymentSystem = this.World.GetOrCreateSystemManaged<CountEmploymentSystem>();
+            this.m_SimulationSystem = this.World.GetOrCreateSystemManaged<SimulationSystem>();
             this.m_RentEventArchetype = this.EntityManager.CreateArchetype(ComponentType.ReadWrite<Game.Common.Event>(), ComponentType.ReadWrite<RentersUpdated>());
             this.m_HouseholdQuery = this.GetEntityQuery(ComponentType.ReadWrite<Household>(), ComponentType.ReadWrite<PropertySeeker>(), ComponentType.ReadOnly<HouseholdCitizen>(), ComponentType.Exclude<MovingAway>(), ComponentType.Exclude<TouristHousehold>(), ComponentType.Exclude<CommuterHousehold>(), ComponentType.Exclude<CurrentBuilding>(), ComponentType.Exclude<Deleted>(), ComponentType.Exclude<Temp>());
             this.m_EconomyParameterQuery = this.GetEntityQuery(ComponentType.ReadOnly<EconomyParameterData>());
@@ -321,6 +323,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 m_EconomyParameters = this.m_EconomyParameterQuery.GetSingleton<EconomyParameterData>(),
                 m_DemandParameters = this.m_DemandParameterQuery.GetSingleton<DemandParameterData>(),
                 m_BaseConsumptionSum = ((float)this.m_ResourceSystem.BaseConsumptionSum),
+                m_SimulationFrame = this.m_SimulationSystem.frameIndex,
                 m_RentQueue = this.m_RentQueue.AsParallelWriter(),
                 m_City = this.m_CitySystem.City,
                 m_PathfindQueue = this.m_PathfindSetupSystem.GetQueue((object)this, 80, 16).AsParallelWriter(),
@@ -360,6 +363,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             this.__TypeHandle.__Game_Prefabs_BuildingData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
             this.__TypeHandle.__Game_Companies_CommercialCompany_RO_ComponentLookup.Update(ref this.CheckedStateRef);
             this.__TypeHandle.__Game_Companies_IndustrialCompany_RO_ComponentLookup.Update(ref this.CheckedStateRef);
+            this.__TypeHandle.__Game_Citizens_Household_RW_ComponentLookup.Update(ref this.CheckedStateRef);
             this.__TypeHandle.__Game_Citizens_Household_RO_ComponentLookup.Update(ref this.CheckedStateRef);
             this.__TypeHandle.__Game_Companies_CompanyData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
             this.__TypeHandle.__Game_Buildings_PropertyRenter_RW_ComponentLookup.Update(ref this.CheckedStateRef);
@@ -380,7 +384,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 m_Prefabs = this.__TypeHandle.__Game_Prefabs_PrefabRef_RO_ComponentLookup,
                 m_PropertyRenters = this.__TypeHandle.__Game_Buildings_PropertyRenter_RW_ComponentLookup,
                 m_Companies = this.__TypeHandle.__Game_Companies_CompanyData_RO_ComponentLookup,
-                m_Households = this.__TypeHandle.__Game_Citizens_Household_RO_ComponentLookup,
+                m_Households = this.__TypeHandle.__Game_Citizens_Household_RW_ComponentLookup,
                 m_Industrials = this.__TypeHandle.__Game_Companies_IndustrialCompany_RO_ComponentLookup,
                 m_Commercials = this.__TypeHandle.__Game_Companies_CommercialCompany_RO_ComponentLookup,
                 m_BuildingDatas = this.__TypeHandle.__Game_Prefabs_BuildingData_RO_ComponentLookup,
@@ -668,6 +672,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             public PoliceConfigurationData m_PoliceParameters;
             public CitizenHappinessParameterData m_CitizenHappinessParameterData;
             public float m_BaseConsumptionSum;
+            public uint m_SimulationFrame;
             public EntityCommandBuffer m_CommandBuffer;
             [ReadOnly]
             public Entity m_City;
@@ -684,10 +689,10 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             private void StartHomeFinding(
               Entity household,
               Entity commuteCitizen,
-              Entity originLocation,
+              Entity targetLocation,
               Entity oldHome,
               float minimumScore,
-              bool movingIn,
+              bool targetIsOrigin,
               DynamicBuffer<HouseholdCitizen> citizens)
             {
                 this.m_CommandBuffer.AddComponent<PathInformation>(household, new PathInformation()
@@ -719,7 +724,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 SetupQueueTarget setupQueueTarget = new SetupQueueTarget();
                 setupQueueTarget.m_Type = SetupTargetType.CurrentLocation;
                 setupQueueTarget.m_Methods = PathMethod.Pedestrian;
-                setupQueueTarget.m_Entity = originLocation;
+                setupQueueTarget.m_Entity = targetLocation;
                 SetupQueueTarget a = setupQueueTarget;
                 setupQueueTarget = new SetupQueueTarget();
                 setupQueueTarget.m_Type = SetupTargetType.FindHome;
@@ -731,7 +736,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 DynamicBuffer<OwnedVehicle> bufferData;
                 if (this.m_OwnedVehicles.TryGetBuffer(household, out bufferData) && bufferData.Length != 0)
                 {
-                    parameters.m_Methods |= movingIn ? PathMethod.Road : PathMethod.Road | PathMethod.Parking;
+                    parameters.m_Methods |= targetIsOrigin ? PathMethod.Road : PathMethod.Road | PathMethod.Parking;
                     parameters.m_ParkingLength = float.MinValue;
                     parameters.m_IgnoredRules |= RuleFlags.ForbidCombustionEngines | RuleFlags.ForbidHeavyTraffic | RuleFlags.ForbidSlowTraffic;
                     a.m_Methods |= PathMethod.Road;
@@ -739,17 +744,16 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     b.m_Methods |= PathMethod.Road;
                     b.m_RoadTypes |= RoadTypes.Car;
                 }
-                if (movingIn)
+                if (targetIsOrigin)
                 {
                     parameters.m_MaxSpeed.y = 277.777771f;
                     parameters.m_Methods |= PathMethod.Taxi | PathMethod.PublicTransportNight;
                     parameters.m_SecondaryIgnoredRules = VehicleUtils.GetIgnoredPathfindRulesTaxiDefaults();
                 }
-                else if (originLocation != Entity.Null)
+                else
                     CommonUtils.Swap<SetupQueueTarget>(ref a, ref b);
                 parameters.m_MaxResultCount = 10;
-                parameters.m_PathfindFlags |= movingIn ? PathfindFlags.MultipleDestinations : PathfindFlags.MultipleOrigins;
-                this.m_CommandBuffer.AddBuffer<PathInformations>(household).Add(new PathInformations()
+                parameters.m_PathfindFlags |= targetIsOrigin ? PathfindFlags.MultipleDestinations : PathfindFlags.MultipleOrigins; this.m_CommandBuffer.AddBuffer<PathInformations>(household).Add(new PathInformations()
                 {
                     m_State = PathFlags.Pending
                 });
@@ -832,7 +836,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     if (citizenBuffer.Length != 0)
                     {
                         int householdIncome = EconomyUtils.GetHouseholdIncome(citizenBuffer, ref this.m_Workers, ref this.m_Citizens, ref this.m_HealthProblems, ref this.m_EconomyParameters, this.m_TaxRates);
-                        bool flag1 = this.m_HomelessHouseholds.HasComponent(entity1) || this.m_PropertyRenters.HasComponent(entity1) && this.m_PropertyRenters[entity1].m_Property != Entity.Null;
+                        
                         PropertySeeker propertySeeker = this.m_PropertySeekers[entity1];
                         DynamicBuffer<PathInformations> bufferData;
                         if (this.m_PathInformationBuffers.TryGetBuffer(entity1, out bufferData))
@@ -842,11 +846,11 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                             if ((pathInformations1.m_State & PathFlags.Pending) == (PathFlags)0)
                             {
                                 this.m_CommandBuffer.RemoveComponent<PathInformations>(entity1);
-                                bool flag2 = flag1 && propertySeeker.m_TargetProperty != Entity.Null;
-                                Entity entity2 = flag2 ? pathInformations1.m_Origin : pathInformations1.m_Destination;
-                                bool flag3 = false;
+                                bool flag1 = propertySeeker.m_TargetProperty != Entity.Null;
+                                Entity entity2 = flag1 ? pathInformations1.m_Origin : pathInformations1.m_Destination;
+                                bool flag2 = false;
                                 PathInformations pathInformations2;
-                                for (; !this.m_CachedPropertyInfo.ContainsKey(entity2) || this.m_CachedPropertyInfo[entity2].free <= 0; entity2 = flag2 ? pathInformations2.m_Origin : pathInformations2.m_Destination)
+                                for (; !this.m_CachedPropertyInfo.ContainsKey(entity2) || this.m_CachedPropertyInfo[entity2].free <= 0; entity2 = flag1 ? pathInformations2.m_Origin : pathInformations2.m_Destination)
                                 {
                                     ++index2;
                                     if (bufferData.Length > index2)
@@ -856,11 +860,11 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                                     else
                                     {
                                         entity2 = Entity.Null;
-                                        flag3 = true;
+                                        flag2 = true;
                                         break;
                                     }
                                 }
-                                if (!flag3 || bufferData.Length == 0 || !(bufferData[0].m_Destination != Entity.Null))
+                                if (!flag2 || bufferData.Length == 0 || !(bufferData[0].m_Destination != Entity.Null))
                                 {
                                     float num = float.NegativeInfinity;
                                     if (entity2 != Entity.Null && this.m_CachedPropertyInfo.ContainsKey(entity2) && this.m_CachedPropertyInfo[entity2].free > 0)
@@ -869,10 +873,23 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                                     }
                                     if ((double)num < (double)propertySeeker.m_BestPropertyScore)
                                         entity2 = propertySeeker.m_BestProperty;
-                                    bool flag4 = (this.m_Households[entity1].m_Flags & HouseholdFlags.MovedIn) != 0;
-                                    bool flag5 = entity2 != Entity.Null && (this.m_Parks.HasComponent(entity2) || this.m_Abandoneds.HasComponent(entity2));
-
-                                    if (((!this.m_PropertiesOnMarket.HasComponent(entity2) ? 0 : (this.m_PropertiesOnMarket[entity2].m_AskingRent < householdIncome ? 1 : 0)) & (!this.m_PropertyRenters.HasComponent(entity1) ? (true ? 1 : 0) : (!this.m_PropertyRenters[entity1].m_Property.Equals(entity2) ? 1 : 0))) != 0 || flag4 & flag5)
+                                    bool flag3 = (this.m_Households[entity1].m_Flags & HouseholdFlags.MovedIn) != 0;
+                                    bool flag4 = entity2 != Entity.Null && Game.Buildings.BuildingUtils.IsHomelessShelterBuilding(entity2, ref this.m_Parks, ref this.m_Abandoneds);
+                                    bool flag5 = CitizenUtils.IsHouseholdNeedSupport(citizenBuffer, ref this.m_Citizens, ref this.m_Students);
+                                    bool flag6 = this.m_PropertiesOnMarket.HasComponent(entity2) && (flag5 || this.m_PropertiesOnMarket[entity2].m_AskingRent < householdIncome);
+                                    bool flag7 = !this.m_PropertyRenters.HasComponent(entity1) || !this.m_PropertyRenters[entity1].m_Property.Equals(entity2);
+                                    if (this.m_PropertyRenters.HasComponent(entity1) && this.m_PropertyRenters[entity1].m_Property == entity2)
+                                    {
+                                        if (!flag5 && householdIncome < this.m_PropertyRenters[entity1].m_Rent)
+                                        {
+                                            this.MoveAway(entity1, citizenBuffer);
+                                        }
+                                        else if (!flag4)
+                                        {
+                                            this.m_CommandBuffer.RemoveComponent<PropertySeeker>(entity1);
+                                        }
+                                    }
+                                    else if (flag6 & flag7 || flag3 & flag4)
                                     {
                                         this.m_RentQueue.Enqueue(new Game.Buildings.PropertyUtils.RentAction()
                                         {
@@ -893,23 +910,9 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                                     }
                                     else
                                     {
-                                        if (this.m_PropertyRenters.HasComponent(entity1) && this.m_PropertyRenters[entity1].m_Property == entity2)
-                                        {
-                                            if (householdIncome < this.m_PropertyRenters[entity1].m_Rent)
-                                            {
-                                                this.MoveAway(entity1, citizenBuffer);
-                                            }
-                                            else
-                                            {
-                                                this.m_CommandBuffer.RemoveComponent<PropertySeeker>(entity1);
-                                            }
-                                        }
-                                        else
-                                        {
-                                            propertySeeker.m_BestProperty = new Entity();
-                                            propertySeeker.m_BestPropertyScore = float.NegativeInfinity;
-                                            this.m_PropertySeekers[entity1] = propertySeeker;
-                                        }
+                                        propertySeeker.m_BestProperty = new Entity();
+                                        propertySeeker.m_BestPropertyScore = float.NegativeInfinity;
+                                        this.m_PropertySeekers[entity1] = propertySeeker;
                                     }
                                 }
                             }
@@ -917,24 +920,26 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                         else
                         {
                             Entity entity3 = this.m_PropertyRenters.HasComponent(entity1) ? this.m_PropertyRenters[entity1].m_Property : Entity.Null;
-
-                            float num = entity3 != Entity.Null ? Game.Buildings.PropertyUtils.GetPropertyScore(entity3, entity1, citizenBuffer, ref this.m_PrefabRefs, ref this.m_BuildingProperties, ref this.m_Buildings, ref this.m_BuildingDatas, ref this.m_Households, ref this.m_Citizens, ref this.m_Students, ref this.m_Workers, ref this.m_SpawnableDatas, ref this.m_Crimes, ref this.m_ServiceCoverages, ref this.m_Lockeds, ref this.m_ElectricityConsumers, ref this.m_WaterConsumers, ref this.m_GarbageProducers, ref this.m_MailProducers, ref this.m_Transforms, ref this.m_Abandoneds, ref this.m_Parks, ref this.m_Availabilities, this.m_TaxRates, this.m_PollutionMap, this.m_AirPollutionMap, this.m_NoiseMap, this.m_TelecomCoverages, this.m_CityModifiers[this.m_City], this.m_HealthcareParameters.m_HealthcareServicePrefab, this.m_ParkParameters.m_ParkServicePrefab, this.m_EducationParameters.m_EducationServicePrefab, this.m_TelecomParameters.m_TelecomServicePrefab, this.m_GarbageParameters.m_GarbageServicePrefab, this.m_PoliceParameters.m_PoliceServicePrefab, this.m_CitizenHappinessParameterData, this.m_GarbageParameters) : float.NegativeInfinity;
+                            float num = entity3 != Entity.Null ? PropertyUtils.GetPropertyScore(entity3, entity1, citizenBuffer, ref this.m_PrefabRefs, ref this.m_BuildingProperties, ref this.m_Buildings, ref this.m_BuildingDatas, ref this.m_Households, ref this.m_Citizens, ref this.m_Students, ref this.m_Workers, ref this.m_SpawnableDatas, ref this.m_Crimes, ref this.m_ServiceCoverages, ref this.m_Lockeds, ref this.m_ElectricityConsumers, ref this.m_WaterConsumers, ref this.m_GarbageProducers, ref this.m_MailProducers, ref this.m_Transforms, ref this.m_Abandoneds, ref this.m_Parks, ref this.m_Availabilities, this.m_TaxRates, this.m_PollutionMap, this.m_AirPollutionMap, this.m_NoiseMap, this.m_TelecomCoverages, this.m_CityModifiers[this.m_City], this.m_HealthcareParameters.m_HealthcareServicePrefab, this.m_ParkParameters.m_ParkServicePrefab, this.m_EducationParameters.m_EducationServicePrefab, this.m_TelecomParameters.m_TelecomServicePrefab, this.m_GarbageParameters.m_GarbageServicePrefab, this.m_PoliceParameters.m_PoliceServicePrefab, this.m_CitizenHappinessParameterData, this.m_GarbageParameters) : float.NegativeInfinity;
                             Entity citizen = Entity.Null;
+                            // ISSUE: reference to a compiler-generated method
                             Entity workplaceOrSchool = this.GetFirstWorkplaceOrSchool(citizenBuffer, ref citizen);
-                            bool movingIn = !this.m_HomelessHouseholds.HasComponent(entity1) && entity3 == Entity.Null;
-                            Entity originLocation = workplaceOrSchool != Entity.Null ? workplaceOrSchool : this.GetCurrentLocation(citizenBuffer);
-                            if (originLocation == Entity.Null)
+                            bool targetIsOrigin = workplaceOrSchool == Entity.Null;
+                            // ISSUE: reference to a compiler-generated method
+                            Entity targetLocation = targetIsOrigin ? this.GetCurrentLocation(citizenBuffer) : workplaceOrSchool;
+                            if (targetLocation == Entity.Null)
                             {
                                 UnityEngine.Debug.LogWarning((object)string.Format("No valid origin location to start home path finding for household:{0}, move away", (object)entity1.Index));
+                                // ISSUE: reference to a compiler-generated method
                                 this.MoveAway(entity1, citizenBuffer);
                             }
                             else
                             {
-                                propertySeeker.m_TargetProperty = originLocation;
+                                propertySeeker.m_TargetProperty = workplaceOrSchool;
                                 propertySeeker.m_BestProperty = entity3;
                                 propertySeeker.m_BestPropertyScore = num;
                                 this.m_PropertySeekers[entity1] = propertySeeker;
-                                this.StartHomeFinding(entity1, citizen, originLocation, entity3, propertySeeker.m_BestPropertyScore, movingIn, citizenBuffer);
+                                this.StartHomeFinding(entity1, citizen, targetLocation, entity3, propertySeeker.m_BestPropertyScore, targetIsOrigin, citizenBuffer);
                             }
                         }
                     }
@@ -1016,6 +1021,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             public ComponentLookup<PropertyRenter> __Game_Buildings_PropertyRenter_RW_ComponentLookup;
             [ReadOnly]
             public ComponentLookup<CompanyData> __Game_Companies_CompanyData_RO_ComponentLookup;
+            public ComponentLookup<Household> __Game_Citizens_Household_RW_ComponentLookup;
             [ReadOnly]
             public ComponentLookup<IndustrialCompany> __Game_Companies_IndustrialCompany_RO_ComponentLookup;
             [ReadOnly]
@@ -1081,6 +1087,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 this.__Game_Buildings_Renter_RW_BufferLookup = state.GetBufferLookup<Renter>();
                 this.__Game_Buildings_PropertyRenter_RW_ComponentLookup = state.GetComponentLookup<PropertyRenter>();
                 this.__Game_Companies_CompanyData_RO_ComponentLookup = state.GetComponentLookup<CompanyData>(true);
+                this.__Game_Citizens_Household_RW_ComponentLookup = state.GetComponentLookup<Household>();
                 this.__Game_Companies_IndustrialCompany_RO_ComponentLookup = state.GetComponentLookup<IndustrialCompany>(true);
                 this.__Game_Companies_CommercialCompany_RO_ComponentLookup = state.GetComponentLookup<CommercialCompany>(true);
                 this.__Game_Companies_ServiceCompanyData_RO_ComponentLookup = state.GetComponentLookup<ServiceCompanyData>(true);

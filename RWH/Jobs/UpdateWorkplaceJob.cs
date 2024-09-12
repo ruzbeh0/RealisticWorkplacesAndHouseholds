@@ -38,10 +38,13 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         ComponentType.ReadWrite<WorkProvider>(),
                     ],
                     Any = [
+                        ComponentType.ReadOnly<RealisticWorkplaceData>(),
                     ],
                     None =
                     [
-
+                        //ComponentType.Exclude<RealisticWorkplaceData>(),
+                        ComponentType.Exclude<Deleted>(),
+                        ComponentType.Exclude<Temp>()
                     ],
                 },
             ];
@@ -74,6 +77,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ComponentLookup<SpawnableBuildingData> SpawnableBuildingDataLookup;
         [ReadOnly]
         public ComponentLookup<ZoneData> ZoneDataLookup;
+        [ReadOnly]
+        public ComponentLookup<RealisticWorkplaceData> RealisticWorkplaceDataLookup;
         public ComponentLookup<BuildingPropertyData> BuildingPropertyDataLookup;
         [ReadOnly]
         public ComponentLookup<ExtractorCompanyData> ExtractorCompanyDataLookup;
@@ -99,6 +104,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public float commercial_sqm_per_worker_supermarket;
         [ReadOnly]
         public float global_reduction;
+        [ReadOnly]
+        public bool reset;
 
         public UpdateWorkplaceJob()
         {
@@ -114,7 +121,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             var workProviderArr = chunk.GetNativeArray(ref WorkProviderHandle);
             var propertyRenterArr = chunk.GetNativeArray(ref PropertyRenterHandle);
             var prefabRefArr = chunk.GetNativeArray(ref PrefabRefHandle);
-            
+
             for (int i = 0; i < workProviderArr.Length; i++)
             {
                 var entity = entities[i];
@@ -122,6 +129,17 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 WorkProvider workProvider = workProviderArr[i];
                 PrefabRef prefab1 = prefabRefArr[i];
                 PrefabRef prefab2;
+
+                if (RealisticWorkplaceDataLookup.HasComponent(entity))
+                {
+                    if (reset)
+                    {
+                        ecb.RemoveComponent<RealisticWorkplaceData>(unfilteredChunkIndex, entity);
+                    } else
+                    {
+                        continue;
+                    }
+                }
 
                 if (PrefabRefLookup.TryGetComponent(propertyRenter.m_Property, out prefab2))
                 {
@@ -231,6 +249,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                                                 new_workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 0, 0);
                                             }
+
+                                            //Mod.log.Info($"workers:{original_workers}, new_workers:{new_workers}");
                                         }
                                             
                                      }
@@ -257,7 +277,11 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                             factor = 1f;
                                         }
 
-                                         if (BuildingPropertyDataLookup.TryGetComponent(prefab2.m_Prefab, out var buildingPropertyData))
+                                        RealisticWorkplaceData realisticWorkplaceData = new();
+                                        realisticWorkplaceData.max_workers = new_workers;
+                                        ecb.AddComponent(unfilteredChunkIndex, entity, realisticWorkplaceData);
+
+                                        if (BuildingPropertyDataLookup.TryGetComponent(prefab2.m_Prefab, out var buildingPropertyData))
                                          {
                                              buildingPropertyData.m_SpaceMultiplier *= factor;
                                              ecb.SetComponent(unfilteredChunkIndex, prefab2.m_Prefab, buildingPropertyData);

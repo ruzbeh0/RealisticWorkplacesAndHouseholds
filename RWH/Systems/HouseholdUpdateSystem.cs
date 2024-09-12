@@ -54,7 +54,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         {
             base.OnGameLoadingComplete(purpose, mode);
             UpdateHouseholds();
-            Mod.log.Info("Household calculations loaded");
+            //Mod.log.Info("Household calculations loaded");
         }
 
         [Preserve]
@@ -84,6 +84,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 ZoneDataLookup = SystemAPI.GetComponentLookup<ZoneData>(true),
                 sqm_per_apartment = Mod.m_Setting.residential_sqm_per_apartment,
                 residential_avg_floor_height = Mod.m_Setting.residential_avg_floor_height,
+                enable_rh_apt_per_floor = Mod.m_Setting.disable_row_homes_apt_per_floor,
                 rowhome_apt_per_floor = Mod.m_Setting.rowhomes_apt_per_floor,
                 rowhome_basement = Mod.m_Setting.rowhomes_basement,
                 units_per_elevator = Mod.m_Setting.residential_units_per_elevator,
