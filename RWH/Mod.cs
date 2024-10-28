@@ -41,6 +41,7 @@ namespace RealisticWorkplacesAndHouseholds
             m_Setting = new Setting(this);
             m_Setting.RegisterInOptionsUI();
             GameManager.instance.localizationManager.AddSource("en-US", new LocaleEN(m_Setting));
+            GameManager.instance.localizationManager.AddSource("pt-BR", new LocalePT(m_Setting));
 
 
             AssetDatabase.global.LoadSettings(nameof(RealisticWorkplacesAndHouseholds), m_Setting, new Setting(this));
@@ -55,8 +56,10 @@ namespace RealisticWorkplacesAndHouseholds
             } 
             updateSystem.UpdateAfter<NoisePollutionParameterUpdaterSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateBefore<NoisePollutionParameterUpdaterSystem>(SystemUpdatePhase.PrefabReferences);
+            updateSystem.UpdateAfter<ConsumptionDataUpdaterSystem>(SystemUpdatePhase.PrefabUpdate);
+            updateSystem.UpdateBefore<ConsumptionDataUpdaterSystem>(SystemUpdatePhase.PrefabReferences);
 
-            if(!Mod.m_Setting.disable_workplace_calculations)
+            if (!Mod.m_Setting.disable_workplace_calculations)
             {
                 updateSystem.UpdateAt<WorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
             }

@@ -175,6 +175,17 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public float airport_sqm_per_worker;
         [ReadOnly]
         public float park_sqm_per_worker;
+        public bool disable_park;
+        public bool disable_school;
+        public bool disable_police;
+        public bool disable_fire;
+        public bool disable_garbage;
+        public bool disable_depot;
+        public bool disable_hospital;
+        public bool disable_postoffice;
+        public bool disable_powerplant;
+        public bool disable_airport;
+        public bool disable_transport;
 
         public UpdateCityServicesWorkproviderJob()
         {
@@ -210,15 +221,15 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         int original_workers = workProvider.m_MaxWorkers;
                         int workers = original_workers;
 
-                        if (ParkLookup.HasComponent(entity))
+                        if (!disable_park && ParkLookup.HasComponent(entity))
                         {
                             workers = BuildingUtils.parkWorkers(width, length, height, industry_avg_floor_height, park_sqm_per_worker);
                         }
-                        if (TransportDepotLookup.HasComponent(entity) || MaintenanceDepotLookup.HasComponent(entity) || CargoTransportStationLookup.HasComponent(entity))
+                        if (!disable_depot && TransportDepotLookup.HasComponent(entity) || MaintenanceDepotLookup.HasComponent(entity) || CargoTransportStationLookup.HasComponent(entity))
                         {
                             workers = BuildingUtils.depotWorkers(width, length, height, industry_avg_floor_height, depot_sqm_per_worker);
                         }
-                        if (GarbageFacilityLookup.HasComponent(entity))
+                        if (!disable_garbage && GarbageFacilityLookup.HasComponent(entity))
                         {
                             workers = BuildingUtils.garbageWorkers(width, length, height, industry_avg_floor_height, garbage_sqm_per_worker);
                         }
@@ -234,24 +245,30 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                 {
                                     if (transportStation.m_CarRefuelTypes != Game.Vehicles.EnergyTypes.None)
                                     {
-                                        workers = BuildingUtils.publicTransportationWorkers(width, length, height, industry_avg_floor_height, transit_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, original_workers);
+                                        if(!disable_transport)
+                                        {
+                                            workers = BuildingUtils.publicTransportationWorkers(width, length, height, industry_avg_floor_height, transit_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, original_workers);
+                                        }
                                     }
                                     else
                                     {
-                                        workers = BuildingUtils.airportWorkers(width, length, height, industry_avg_floor_height, airport_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, original_workers);
+                                        if(!disable_airport)
+                                        {
+                                            workers = BuildingUtils.airportWorkers(width, length, height, industry_avg_floor_height, airport_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, original_workers);
+                                        }
                                     }
                                 }     
                             }
                         }
-                        if (ElectricityProducerLookup.HasComponent(entity))
+                        if (!disable_powerplant && ElectricityProducerLookup.HasComponent(entity))
                         {
                             workers = BuildingUtils.powerPlantWorkers(width, length, height, industry_avg_floor_height, powerplant_sqm_per_employee);
                         }
-                        if (HospitalLookup.HasComponent(entity))
+                        if (!disable_hospital && HospitalLookup.HasComponent(entity))
                         {
                             workers = BuildingUtils.hospitalWorkers(width, length, height, commercial_avg_floor_height, sqm_per_employee_hospital, office_sqm_per_elevator);
                         }
-                        if (PrisonLookup.HasComponent(entity))
+                        if (!disable_police && PrisonLookup.HasComponent(entity))
                         {
                             int new_capacity = BuildingUtils.prisonCapacity(width, length, height, commercial_avg_floor_height, prison_sqm_per_prisoner, prison_non_usable_area, office_sqm_per_elevator);
                             workers = BuildingUtils.prisonWorkers(new_capacity, prison_officers_prisoner_ratio);
@@ -268,19 +285,19 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         {
                             workers = BuildingUtils.researchFacilityWorkers(width, length, height, commercial_avg_floor_height, sqm_per_employee_office, non_usable_space_pct, sqm_per_student_university_factor, office_sqm_per_elevator);
                         }
-                        if (PostFacilityLookup.HasComponent(entity))
+                        if (!disable_postoffice && PostFacilityLookup.HasComponent(entity))
                         {
                             workers = BuildingUtils.postFacilitiesWorkers(width, length, height, industry_avg_floor_height, postoffice_sqm_per_employee, industry_sqm_per_employee, office_sqm_per_elevator);
                         }
-                        else if (PoliceStationLookup.HasComponent(entity))
+                        else if (!disable_police && PoliceStationLookup.HasComponent(entity))
                         {
                             workers = BuildingUtils.policeStationWorkers(width, length, height, commercial_avg_floor_height, sqm_per_employee_police);
                         }
-                        else if (FireStationLookup.HasComponent(entity))
+                        else if (!disable_fire && FireStationLookup.HasComponent(entity))
                         {
                             workers = BuildingUtils.fireStationWorkers(width, length, height, industry_avg_floor_height, sqm_per_employee_fire);  
                         }
-                        else if (SchoolLookup.HasComponent(entity))
+                        else if (!disable_school && SchoolLookup.HasComponent(entity))
                         {
                             if (SchoolDataLookup.TryGetComponent(prefab1, out SchoolData schoolData))
                             {

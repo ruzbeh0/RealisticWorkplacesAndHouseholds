@@ -112,7 +112,18 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 garbage_sqm_per_worker = Mod.m_Setting.garbage_sqm_per_worker,
                 transit_sqm_per_worker = Mod.m_Setting.transit_station_sqm_per_worker,
                 airport_sqm_per_worker = Mod.m_Setting.airport_sqm_per_worker,
-                global_reduction = Mod.m_Setting.results_reduction / 100f
+                global_reduction = Mod.m_Setting.results_reduction / 100f,
+                disable_powerplant = Mod.m_Setting.disable_powerplant,
+                disable_school = Mod.m_Setting.disable_school,
+                disable_police = Mod.m_Setting.disable_police,
+                disable_fire = Mod.m_Setting.disable_fire,
+                disable_postoffice = Mod.m_Setting.disable_postoffice,
+                disable_garbage = Mod.m_Setting.disable_garbage,
+                disable_depot = Mod.m_Setting.disable_garbage,
+                disable_hospital = Mod.m_Setting.disable_hospital,
+                disable_park = Mod.m_Setting.disable_park,
+                disable_transport = Mod.m_Setting.disable_transit,
+                disable_airport = Mod.m_Setting.disable_airport
             };
             this.Dependency = updateCityServicesJob.ScheduleParallel(m_UpdateCityServicesWorkplaceJobQuery1, this.Dependency);
             

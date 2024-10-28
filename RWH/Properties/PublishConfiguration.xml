@@ -66,15 +66,14 @@ This mod was inspired by the **Realistic Population** from CS1 and from **Realis
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/realistic-workplaces-and-households.1699586/" />
 	<!--Version of the mod-->
-	<ModVersion Value="0.7.1" />
+	<ModVersion Value="0.8.1" />
 	<!--Recommended version of the base game to use the mod-->
 	<GameVersion Value="1.1.*" />
 	<!--Dependency for the mod, can be set multiple times-->
 	<Dependency Id="" />
 	<ChangeLog>
-* Added options to disable household, workplaces and city services calculations in the Other tab
-* Replaced all SettingsUIHideByCondition in the options menu with SettingsUIDisableByCondition
-* Recoded workplace calculations to calculate employee numbers for buildings that were not present when game was loaded, such as some signature buildings
+* Updated Mod to be compatible with game version 1.1.10F1
+* Added PT-BR localization
 	</ChangeLog>
 	<!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon-->
 	<ExternalLink Type="github" Url="https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/" />

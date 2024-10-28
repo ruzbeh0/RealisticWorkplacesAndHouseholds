@@ -63,7 +63,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         private TelecomCoverageSystem m_TelecomCoverageSystem;
         private CitySystem m_CitySystem;
         private CityStatisticsSystem m_CityStatisticsSystem;
-        private CountEmploymentSystem m_CountEmploymentSystem;
         private SimulationSystem m_SimulationSystem;
         private EntityQuery m_HealthcareParameterQuery;
         private EntityQuery m_ParkParameterQuery;
@@ -93,7 +92,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             this.m_CityStatisticsSystem = this.World.GetOrCreateSystemManaged<CityStatisticsSystem>();
             this.m_TaxSystem = this.World.GetOrCreateSystemManaged<TaxSystem>();
             this.m_TriggerSystem = this.World.GetOrCreateSystemManaged<TriggerSystem>();
-            this.m_CountEmploymentSystem = this.World.GetOrCreateSystemManaged<CountEmploymentSystem>();
             this.m_SimulationSystem = this.World.GetOrCreateSystemManaged<SimulationSystem>();
             this.m_RentEventArchetype = this.EntityManager.CreateArchetype(ComponentType.ReadWrite<Game.Common.Event>(), ComponentType.ReadWrite<RentersUpdated>());
             this.m_HouseholdQuery = this.GetEntityQuery(ComponentType.ReadWrite<Household>(), ComponentType.ReadWrite<PropertySeeker>(), ComponentType.ReadOnly<HouseholdCitizen>(), ComponentType.Exclude<MovingAway>(), ComponentType.Exclude<TouristHousehold>(), ComponentType.Exclude<CommuterHousehold>(), ComponentType.Exclude<CurrentBuilding>(), ComponentType.Exclude<Deleted>(), ComponentType.Exclude<Temp>());
@@ -343,13 +341,12 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             this.m_TelecomCoverageSystem.AddReader(jobHandle1);
             this.m_TriggerSystem.AddActionBufferWriter(jobHandle1);
             this.m_CityStatisticsSystem.AddWriter(jobHandle1);
-            this.m_CountEmploymentSystem.AddReader(jobHandle1);
             this.m_TaxSystem.AddReader(jobHandle1);
             this.__TypeHandle.__Game_Prefabs_ResourceData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
             this.__TypeHandle.__Game_Areas_Lot_RO_ComponentLookup.Update(ref this.CheckedStateRef);
             this.__TypeHandle.__Game_Areas_Geometry_RO_ComponentLookup.Update(ref this.CheckedStateRef);
             this.__TypeHandle.__Game_Areas_SubArea_RO_BufferLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Companies_ExtractorCompany_RO_ComponentLookup.Update(ref this.CheckedStateRef);
+            this.__TypeHandle.__Game_Prefabs_ExtractorCompanyData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
             this.__TypeHandle.__Game_Objects_Attached_RO_ComponentLookup.Update(ref this.CheckedStateRef);
             this.__TypeHandle.__Game_Prefabs_SpawnableBuildingData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
             this.__TypeHandle.__Game_Companies_Employee_RO_BufferLookup.Update(ref this.CheckedStateRef);
@@ -379,9 +376,9 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 m_RentEventArchetype = this.m_RentEventArchetype,
                 m_PropertiesOnMarket = this.__TypeHandle.__Game_Buildings_PropertyOnMarket_RO_ComponentLookup,
                 m_Renters = this.__TypeHandle.__Game_Buildings_Renter_RW_BufferLookup,
-                m_BuildingProperties = this.__TypeHandle.__Game_Prefabs_BuildingPropertyData_RO_ComponentLookup,
+                m_BuildingPropertyDatas = this.__TypeHandle.__Game_Prefabs_BuildingPropertyData_RO_ComponentLookup,
                 m_ParkDatas = this.__TypeHandle.__Game_Prefabs_ParkData_RO_ComponentLookup,
-                m_Prefabs = this.__TypeHandle.__Game_Prefabs_PrefabRef_RO_ComponentLookup,
+                m_PrefabRefs = this.__TypeHandle.__Game_Prefabs_PrefabRef_RO_ComponentLookup,
                 m_PropertyRenters = this.__TypeHandle.__Game_Buildings_PropertyRenter_RW_ComponentLookup,
                 m_Companies = this.__TypeHandle.__Game_Companies_CompanyData_RO_ComponentLookup,
                 m_Households = this.__TypeHandle.__Game_Citizens_Household_RW_ComponentLookup,
@@ -389,17 +386,17 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 m_Commercials = this.__TypeHandle.__Game_Companies_CommercialCompany_RO_ComponentLookup,
                 m_BuildingDatas = this.__TypeHandle.__Game_Prefabs_BuildingData_RO_ComponentLookup,
                 m_ServiceCompanyDatas = this.__TypeHandle.__Game_Companies_ServiceCompanyData_RO_ComponentLookup,
-                m_ProcessDatas = this.__TypeHandle.__Game_Prefabs_IndustrialProcessData_RO_ComponentLookup,
+                m_IndustrialProcessDatas = this.__TypeHandle.__Game_Prefabs_IndustrialProcessData_RO_ComponentLookup,
                 m_WorkProviders = this.__TypeHandle.__Game_Companies_WorkProvider_RW_ComponentLookup,
                 m_HouseholdCitizens = this.__TypeHandle.__Game_Citizens_HouseholdCitizen_RO_BufferLookup,
                 m_Abandoneds = this.__TypeHandle.__Game_Buildings_Abandoned_RO_ComponentLookup,
                 m_HomelessHouseholds = this.__TypeHandle.__Game_Citizens_HomelessHousehold_RO_ComponentLookup,
                 m_Parks = this.__TypeHandle.__Game_Buildings_Park_RO_ComponentLookup,
                 m_Employees = this.__TypeHandle.__Game_Companies_Employee_RO_BufferLookup,
-                m_SpawnableBuildings = this.__TypeHandle.__Game_Prefabs_SpawnableBuildingData_RO_ComponentLookup,
+                m_SpawnableBuildingDatas = this.__TypeHandle.__Game_Prefabs_SpawnableBuildingData_RO_ComponentLookup,
                 m_Attacheds = this.__TypeHandle.__Game_Objects_Attached_RO_ComponentLookup,
-                m_ExtractorCompanies = this.__TypeHandle.__Game_Companies_ExtractorCompany_RO_ComponentLookup,
-                m_SubAreas = this.__TypeHandle.__Game_Areas_SubArea_RO_BufferLookup,
+                m_ExtractorCompanyDatas = this.__TypeHandle.__Game_Prefabs_ExtractorCompanyData_RO_ComponentLookup,
+                m_SubAreaBufs = this.__TypeHandle.__Game_Areas_SubArea_RO_BufferLookup,
                 m_Geometries = this.__TypeHandle.__Game_Areas_Geometry_RO_ComponentLookup,
                 m_Lots = this.__TypeHandle.__Game_Areas_Lot_RO_ComponentLookup,
                 m_ResourcePrefabs = this.m_ResourceSystem.GetPrefabs(),
@@ -737,7 +734,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 if (this.m_OwnedVehicles.TryGetBuffer(household, out bufferData) && bufferData.Length != 0)
                 {
                     parameters.m_Methods |= targetIsOrigin ? PathMethod.Road : PathMethod.Road | PathMethod.Parking;
-                    parameters.m_ParkingLength = float.MinValue;
+                    parameters.m_ParkingSize = (float2)float.MinValue;
                     parameters.m_IgnoredRules |= RuleFlags.ForbidCombustionEngines | RuleFlags.ForbidHeavyTraffic | RuleFlags.ForbidSlowTraffic;
                     a.m_Methods |= PathMethod.Road;
                     a.m_RoadTypes |= RoadTypes.Car;
@@ -1036,7 +1033,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             [ReadOnly]
             public ComponentLookup<Attached> __Game_Objects_Attached_RO_ComponentLookup;
             [ReadOnly]
-            public ComponentLookup<Game.Companies.ExtractorCompany> __Game_Companies_ExtractorCompany_RO_ComponentLookup;
+            public ComponentLookup<ExtractorCompanyData> __Game_Prefabs_ExtractorCompanyData_RO_ComponentLookup;
             [ReadOnly]
             public BufferLookup<Game.Areas.SubArea> __Game_Areas_SubArea_RO_BufferLookup;
             [ReadOnly]
@@ -1095,7 +1092,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 this.__Game_Companies_WorkProvider_RW_ComponentLookup = state.GetComponentLookup<WorkProvider>();
                 this.__Game_Companies_Employee_RO_BufferLookup = state.GetBufferLookup<Employee>(true);
                 this.__Game_Objects_Attached_RO_ComponentLookup = state.GetComponentLookup<Attached>(true);
-                this.__Game_Companies_ExtractorCompany_RO_ComponentLookup = state.GetComponentLookup<Game.Companies.ExtractorCompany>(true);
+                this.__Game_Prefabs_ExtractorCompanyData_RO_ComponentLookup = state.GetComponentLookup<ExtractorCompanyData>(true);
                 this.__Game_Areas_SubArea_RO_BufferLookup = state.GetBufferLookup<Game.Areas.SubArea>(true);
                 this.__Game_Areas_Geometry_RO_ComponentLookup = state.GetComponentLookup<Geometry>(true);
                 this.__Game_Areas_Lot_RO_ComponentLookup = state.GetComponentLookup<Game.Areas.Lot>(true);

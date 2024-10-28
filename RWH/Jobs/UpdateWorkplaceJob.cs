@@ -38,7 +38,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         ComponentType.ReadWrite<WorkProvider>(),
                     ],
                     Any = [
-                        ComponentType.ReadOnly<RealisticWorkplaceData>(),
+                        //ComponentType.ReadOnly<RealisticWorkplaceData>(),
                     ],
                     None =
                     [
@@ -257,8 +257,6 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     
                                     //Apply global reduction factor
                                     new_workers = (int)(new_workers*(1f - global_reduction));
-
-                                    
 
                                     if (new_workers != original_workers)
                                      {

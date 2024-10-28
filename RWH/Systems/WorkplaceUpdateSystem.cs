@@ -47,10 +47,10 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         [Preserve]
         protected override void OnUpdate()
         {
-            if(!m_UpdateWorkplaceJobQuery1.IsEmptyIgnoreFilter)
+            //if(!m_UpdateWorkplaceJobQuery1.IsEmptyIgnoreFilter)
             {
                 UpdateWorkplace(false);
-            } 
+            }
         }
 
         protected override void OnDestroy()
