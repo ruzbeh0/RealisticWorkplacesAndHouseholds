@@ -268,7 +268,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                         float factor = 1f;
                                          if (original_workers > 0)
                                          {
-                                             factor = new_workers / original_workers;
+                                             factor = new_workers / (float)original_workers;
                                          }
                                          if(factor == 0f)
                                         {
@@ -281,7 +281,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                                         if (BuildingPropertyDataLookup.TryGetComponent(prefab2.m_Prefab, out var buildingPropertyData))
                                          {
-                                             buildingPropertyData.m_SpaceMultiplier *= factor;
+                                             buildingPropertyData.m_SpaceMultiplier /= factor;
                                              ecb.SetComponent(unfilteredChunkIndex, prefab2.m_Prefab, buildingPropertyData);
                                          }
                                          

@@ -63,7 +63,7 @@ namespace RealisticWorkplacesAndHouseholds
             {
                 updateSystem.UpdateAt<WorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
             }
-
+            
             if(!Mod.m_Setting.disable_cityservices_calculations)
             {
                 updateSystem.UpdateAt<CityServicesWorkplaceUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
@@ -71,7 +71,7 @@ namespace RealisticWorkplacesAndHouseholds
             }
             
             updateSystem.UpdateAt<RWHHouseholdFindPropertySystem>(SystemUpdatePhase.GameSimulation);
-            //updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
 
             // Patch prefabs
             EconomyParametersPatcher patcher = new EconomyParametersPatcher();

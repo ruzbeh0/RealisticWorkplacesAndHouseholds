@@ -193,20 +193,20 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                             //Apply global reduction factor
                             property.m_ResidentialProperties = Math.Max(1,(int)(households * (1f - global_reduction)));
-                            //Mod.log.Info($"Old: {original_households}, new:{property.m_ResidentialProperties}");
                             float factor = 1f;
                             if (original_households > 0)
                             {
-                                factor = property.m_ResidentialProperties / original_households;
+                                factor = property.m_ResidentialProperties / (float)original_households;
                             }
                             if (factor == 0f)
                             {
                                 factor = 1f;
                             }
+                            //Mod.log.Info($"Old households: {original_households}, new households:{property.m_ResidentialProperties}, Old SpaceMult: {property.m_SpaceMultiplier}, new SpaceMult:{property.m_SpaceMultiplier / factor}");
+
+                            property.m_SpaceMultiplier /= factor;
+                            
                             buildingPropertyDataArr[i] = property;
-                            //RealisticHouseholdData realisticHouseholdData = new();
-                            //realisticHouseholdData.households = property.m_ResidentialProperties;
-                            //ecb.AddComponent(unfilteredChunkIndex, entity, realisticHouseholdData);
                         }
                         
                     }
