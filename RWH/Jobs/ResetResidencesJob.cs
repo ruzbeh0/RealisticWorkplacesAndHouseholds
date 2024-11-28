@@ -42,7 +42,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ResetType resetType;
         public EntityArchetype m_RentEventArchetype;
         public NativeList<Entity> evictedList;
-        public NativeQueue<PropertyUtils.RentAction> rentQueue;
+        public NativeQueue<RentAction> rentQueue;
 
         public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {

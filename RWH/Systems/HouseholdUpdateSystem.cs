@@ -82,6 +82,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 SpawnableBuildingHandle = SystemAPI.GetComponentTypeHandle<SpawnableBuildingData>(true),
                 BuildingPropertyDataHandle = SystemAPI.GetComponentTypeHandle<BuildingPropertyData>(false),
                 ZoneDataLookup = SystemAPI.GetComponentLookup<ZoneData>(true),
+                GroupAmbienceDataHandle = SystemAPI.GetComponentTypeHandle<GroupAmbienceData>(true),
                 sqm_per_apartment = Mod.m_Setting.residential_sqm_per_apartment,
                 residential_avg_floor_height = Mod.m_Setting.residential_avg_floor_height,
                 enable_rh_apt_per_floor = Mod.m_Setting.disable_row_homes_apt_per_floor,

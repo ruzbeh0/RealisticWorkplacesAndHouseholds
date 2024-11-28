@@ -275,13 +275,15 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                             factor = 1f;
                                         }
 
+                                        //Mod.log.Info($"old workers:{original_workers}, new_workers:{new_workers}, factor:{factor}");
+
                                         RealisticWorkplaceData realisticWorkplaceData = new();
                                         realisticWorkplaceData.max_workers = new_workers;
                                         ecb.AddComponent(unfilteredChunkIndex, entity, realisticWorkplaceData);
 
                                         if (BuildingPropertyDataLookup.TryGetComponent(prefab2.m_Prefab, out var buildingPropertyData))
                                          {
-                                             buildingPropertyData.m_SpaceMultiplier /= factor;
+                                             //buildingPropertyData.m_SpaceMultiplier /= factor;
                                              ecb.SetComponent(unfilteredChunkIndex, prefab2.m_Prefab, buildingPropertyData);
                                          }
                                          
@@ -297,7 +299,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                          if (ServiceCompanyDataLookup.TryGetComponent(prefab1.m_Prefab, out var serviceCompanyData))
                                          {
                                              //Mod.log.Info($"Service Company old workers per cell:{serviceCompanyData.m_MaxWorkersPerCell}, new:{serviceCompanyData.m_MaxWorkersPerCell * factor}");
-                                             serviceCompanyData.m_MaxWorkersPerCell *= factor;
+                                             //serviceCompanyData.m_MaxWorkersPerCell *= factor;
                                              serviceCompanyData.m_WorkPerUnit = (int)(((float)(serviceCompanyData.m_WorkPerUnit))*factor);
                                          
                                              ecb.SetComponent(unfilteredChunkIndex, prefab1.m_Prefab, serviceCompanyData);
@@ -305,7 +307,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                          
                                          if (IndustrialProcessDataLookup.TryGetComponent(prefab1.m_Prefab, out var industrialProcessData))
                                          {
-                                            industrialProcessData.m_MaxWorkersPerCell *= factor;
+                                            //industrialProcessData.m_MaxWorkersPerCell *= factor;
                                             industrialProcessData.m_WorkPerUnit = (int)(((float)(industrialProcessData.m_WorkPerUnit)) * factor);
                                          
                                              ecb.SetComponent(unfilteredChunkIndex, prefab1.m_Prefab, industrialProcessData);

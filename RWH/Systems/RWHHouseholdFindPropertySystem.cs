@@ -53,9 +53,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         private PathfindSetupSystem m_PathfindSetupSystem;
         private ResourceSystem m_ResourceSystem;
         private TaxSystem m_TaxSystem;
-        private NativeQueue<Game.Buildings.PropertyUtils.RentAction> m_RentQueue;
-        private NativeList<Entity> m_ReservedProperties;
-        private EntityArchetype m_RentEventArchetype;
         private TriggerSystem m_TriggerSystem;
         private GroundPollutionSystem m_GroundPollutionSystem;
         private AirPollutionSystem m_AirPollutionSystem;
@@ -64,6 +61,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         private CitySystem m_CitySystem;
         private CityStatisticsSystem m_CityStatisticsSystem;
         private SimulationSystem m_SimulationSystem;
+        private PropertyProcessingSystem m_PropertyProcessingSystem;
         private EntityQuery m_HealthcareParameterQuery;
         private EntityQuery m_ParkParameterQuery;
         private EntityQuery m_EducationParameterQuery;
@@ -79,8 +77,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         protected override void OnCreate()
         {
             base.OnCreate();
-            this.m_RentQueue = new NativeQueue<Game.Buildings.PropertyUtils.RentAction>((AllocatorManager.AllocatorHandle)Allocator.Persistent);
-            this.m_ReservedProperties = new NativeList<Entity>((AllocatorManager.AllocatorHandle)Allocator.Persistent);
             this.m_EndFrameBarrier = this.World.GetOrCreateSystemManaged<EndFrameBarrier>();
             this.m_PathfindSetupSystem = this.World.GetOrCreateSystemManaged<PathfindSetupSystem>();
             this.m_ResourceSystem = this.World.GetOrCreateSystemManaged<ResourceSystem>();
@@ -93,7 +89,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             this.m_TaxSystem = this.World.GetOrCreateSystemManaged<TaxSystem>();
             this.m_TriggerSystem = this.World.GetOrCreateSystemManaged<TriggerSystem>();
             this.m_SimulationSystem = this.World.GetOrCreateSystemManaged<SimulationSystem>();
-            this.m_RentEventArchetype = this.EntityManager.CreateArchetype(ComponentType.ReadWrite<Game.Common.Event>(), ComponentType.ReadWrite<RentersUpdated>());
+            this.m_PropertyProcessingSystem = this.World.GetOrCreateSystemManaged<PropertyProcessingSystem>();
             this.m_HouseholdQuery = this.GetEntityQuery(ComponentType.ReadWrite<Household>(), ComponentType.ReadWrite<PropertySeeker>(), ComponentType.ReadOnly<HouseholdCitizen>(), ComponentType.Exclude<MovingAway>(), ComponentType.Exclude<TouristHousehold>(), ComponentType.Exclude<CommuterHousehold>(), ComponentType.Exclude<CurrentBuilding>(), ComponentType.Exclude<Deleted>(), ComponentType.Exclude<Temp>());
             this.m_EconomyParameterQuery = this.GetEntityQuery(ComponentType.ReadOnly<EconomyParameterData>());
             this.m_DemandParameterQuery = this.GetEntityQuery(ComponentType.ReadOnly<DemandParameterData>());
@@ -160,8 +156,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             this.m_EvaluateDistributionMedium.Dispose();
             this.m_EvaluateDistributionHigh.Dispose();
             this.m_EvaluateDistributionLowrent.Dispose();
-            this.m_RentQueue.Dispose();
-            this.m_ReservedProperties.Dispose();
             base.OnDestroy();
         }
 
@@ -199,7 +193,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             this.__TypeHandle.__Game_Prefabs_BuildingPropertyData_RW_ComponentLookup.Update(ref this.CheckedStateRef);
             this.__TypeHandle.__Unity_Entities_Entity_TypeHandle.Update(ref this.CheckedStateRef);
 
-            RWHHouseholdFindPropertySystem.PreparePropertyJob jobData = new RWHHouseholdFindPropertySystem.PreparePropertyJob()
+            RWHHouseholdFindPropertySystem.PreparePropertyJob jobData1 = new RWHHouseholdFindPropertySystem.PreparePropertyJob()
             {
                 m_EntityType = this.__TypeHandle.__Unity_Entities_Entity_TypeHandle,
                 m_BuildingProperties = this.__TypeHandle.__Game_Prefabs_BuildingPropertyData_RW_ComponentLookup,
@@ -269,8 +263,9 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             this.__TypeHandle.__Game_Prefabs_BuildingData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
             JobHandle outJobHandle;
             JobHandle deps1;
-    
-            JobHandle jobHandle1 = new RWHHouseholdFindPropertySystem.FindPropertyJob()
+            JobHandle deps2;
+
+            RWHHouseholdFindPropertySystem.FindPropertyJob jobData2 = new RWHHouseholdFindPropertySystem.FindPropertyJob()
             {
                 m_Entities = this.m_HouseholdQuery.ToEntityListAsync((AllocatorManager.AllocatorHandle)this.World.UpdateAllocator.ToAllocator, out outJobHandle),
                 m_CachedPropertyInfo = nativeParallelHashMap,
@@ -320,99 +315,34 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 m_TaxRates = this.m_TaxSystem.GetTaxRates(),
                 m_EconomyParameters = this.m_EconomyParameterQuery.GetSingleton<EconomyParameterData>(),
                 m_DemandParameters = this.m_DemandParameterQuery.GetSingleton<DemandParameterData>(),
-                m_BaseConsumptionSum = ((float)this.m_ResourceSystem.BaseConsumptionSum),
+                m_BaseConsumptionSum = (float)this.m_ResourceSystem.BaseConsumptionSum,
                 m_SimulationFrame = this.m_SimulationSystem.frameIndex,
-                m_RentQueue = this.m_RentQueue.AsParallelWriter(),
+                m_RentActionQueue = this.m_PropertyProcessingSystem.GetRentActionQueue(out deps1).AsParallelWriter(),
                 m_City = this.m_CitySystem.City,
                 m_PathfindQueue = this.m_PathfindSetupSystem.GetQueue((object)this, 80, 16).AsParallelWriter(),
                 m_TriggerBuffer = this.m_TriggerSystem.CreateActionBuffer().AsParallelWriter(),
                 m_CommandBuffer = this.m_EndFrameBarrier.CreateCommandBuffer(),
-                m_StatisticsQueue = this.m_CityStatisticsSystem.GetStatisticsEventQueue(out deps1),
+                m_StatisticsQueue = this.m_CityStatisticsSystem.GetStatisticsEventQueue(out deps2),
                 hour = World.GetExistingSystemManaged<TimeSystem>().GetCurrentDateTime().Hour,
                 limit_factor = Mod.m_Setting.find_property_limit_factor,
                 double_night_limit = Mod.m_Setting.find_property_night
-            }.Schedule<RWHHouseholdFindPropertySystem.FindPropertyJob>(JobHandle.CombineDependencies(jobData.ScheduleParallel<RWHHouseholdFindPropertySystem.PreparePropertyJob>(this.m_FreePropertyQuery, JobUtils.CombineDependencies(this.Dependency, dependencies1, dependencies3, dependencies2, dependencies4)), outJobHandle, deps1));
-            this.m_EndFrameBarrier.AddJobHandleForProducer(jobHandle1);
-            this.m_PathfindSetupSystem.AddQueueWriter(jobHandle1);
-            this.m_ResourceSystem.AddPrefabsReader(jobHandle1);
-            this.m_AirPollutionSystem.AddReader(jobHandle1);
-            this.m_NoisePollutionSystem.AddReader(jobHandle1);
-            this.m_GroundPollutionSystem.AddReader(jobHandle1);
-            this.m_TelecomCoverageSystem.AddReader(jobHandle1);
-            this.m_TriggerSystem.AddActionBufferWriter(jobHandle1);
-            this.m_CityStatisticsSystem.AddWriter(jobHandle1);
-            this.m_TaxSystem.AddReader(jobHandle1);
-            this.__TypeHandle.__Game_Prefabs_ResourceData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Areas_Lot_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Areas_Geometry_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Areas_SubArea_RO_BufferLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Prefabs_ExtractorCompanyData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Objects_Attached_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Prefabs_SpawnableBuildingData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Companies_Employee_RO_BufferLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Buildings_Park_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Citizens_HomelessHousehold_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Buildings_Abandoned_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Citizens_HouseholdCitizen_RO_BufferLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Companies_WorkProvider_RW_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Prefabs_IndustrialProcessData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Companies_ServiceCompanyData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Prefabs_BuildingData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Companies_CommercialCompany_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Companies_IndustrialCompany_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Citizens_Household_RW_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Citizens_Household_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Companies_CompanyData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Buildings_PropertyRenter_RW_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Prefabs_PrefabRef_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Prefabs_ParkData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Prefabs_BuildingPropertyData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Buildings_Renter_RW_BufferLookup.Update(ref this.CheckedStateRef);
-            this.__TypeHandle.__Game_Buildings_PropertyOnMarket_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-            JobHandle deps2;
+            };
 
-            JobHandle jobHandle2 = new Game.Buildings.PropertyUtils.RentJob()
-            {
-                m_RentEventArchetype = this.m_RentEventArchetype,
-                m_PropertiesOnMarket = this.__TypeHandle.__Game_Buildings_PropertyOnMarket_RO_ComponentLookup,
-                m_Renters = this.__TypeHandle.__Game_Buildings_Renter_RW_BufferLookup,
-                m_BuildingPropertyDatas = this.__TypeHandle.__Game_Prefabs_BuildingPropertyData_RO_ComponentLookup,
-                m_ParkDatas = this.__TypeHandle.__Game_Prefabs_ParkData_RO_ComponentLookup,
-                m_PrefabRefs = this.__TypeHandle.__Game_Prefabs_PrefabRef_RO_ComponentLookup,
-                m_PropertyRenters = this.__TypeHandle.__Game_Buildings_PropertyRenter_RW_ComponentLookup,
-                m_Companies = this.__TypeHandle.__Game_Companies_CompanyData_RO_ComponentLookup,
-                m_Households = this.__TypeHandle.__Game_Citizens_Household_RW_ComponentLookup,
-                m_Industrials = this.__TypeHandle.__Game_Companies_IndustrialCompany_RO_ComponentLookup,
-                m_Commercials = this.__TypeHandle.__Game_Companies_CommercialCompany_RO_ComponentLookup,
-                m_BuildingDatas = this.__TypeHandle.__Game_Prefabs_BuildingData_RO_ComponentLookup,
-                m_ServiceCompanyDatas = this.__TypeHandle.__Game_Companies_ServiceCompanyData_RO_ComponentLookup,
-                m_IndustrialProcessDatas = this.__TypeHandle.__Game_Prefabs_IndustrialProcessData_RO_ComponentLookup,
-                m_WorkProviders = this.__TypeHandle.__Game_Companies_WorkProvider_RW_ComponentLookup,
-                m_HouseholdCitizens = this.__TypeHandle.__Game_Citizens_HouseholdCitizen_RO_BufferLookup,
-                m_Abandoneds = this.__TypeHandle.__Game_Buildings_Abandoned_RO_ComponentLookup,
-                m_HomelessHouseholds = this.__TypeHandle.__Game_Citizens_HomelessHousehold_RO_ComponentLookup,
-                m_Parks = this.__TypeHandle.__Game_Buildings_Park_RO_ComponentLookup,
-                m_Employees = this.__TypeHandle.__Game_Companies_Employee_RO_BufferLookup,
-                m_SpawnableBuildingDatas = this.__TypeHandle.__Game_Prefabs_SpawnableBuildingData_RO_ComponentLookup,
-                m_Attacheds = this.__TypeHandle.__Game_Objects_Attached_RO_ComponentLookup,
-                m_ExtractorCompanyDatas = this.__TypeHandle.__Game_Prefabs_ExtractorCompanyData_RO_ComponentLookup,
-                m_SubAreaBufs = this.__TypeHandle.__Game_Areas_SubArea_RO_BufferLookup,
-                m_Geometries = this.__TypeHandle.__Game_Areas_Geometry_RO_ComponentLookup,
-                m_Lots = this.__TypeHandle.__Game_Areas_Lot_RO_ComponentLookup,
-                m_ResourcePrefabs = this.m_ResourceSystem.GetPrefabs(),
-                m_Resources = this.__TypeHandle.__Game_Prefabs_ResourceData_RO_ComponentLookup,
-                m_StatisticsQueue = this.m_CityStatisticsSystem.GetStatisticsEventQueue(out deps2),
-                m_TriggerQueue = this.m_TriggerSystem.CreateActionBuffer(),
-                m_AreaType = Game.Zones.AreaType.Residential,
-                m_CommandBuffer = this.m_EndFrameBarrier.CreateCommandBuffer(),
-                m_RentQueue = this.m_RentQueue,
-                m_ReservedProperties = this.m_ReservedProperties,
-                m_DebugDisableHomeless = this.debugDisableHomeless
-            }.Schedule<Game.Buildings.PropertyUtils.RentJob>(JobHandle.CombineDependencies(deps2, jobHandle1));
-            this.m_TriggerSystem.AddActionBufferWriter(jobHandle2);
-            this.m_CityStatisticsSystem.AddWriter(jobHandle2);
-            this.m_EndFrameBarrier.AddJobHandleForProducer(jobHandle2);
-            this.Dependency = jobHandle2;
+            EntityQuery freePropertyQuery = this.m_FreePropertyQuery;
+            JobHandle dependsOn = JobUtils.CombineDependencies(this.Dependency, dependencies1, dependencies3, dependencies2, dependencies4, deps1);
+            JobHandle job0 = jobData1.ScheduleParallel<RWHHouseholdFindPropertySystem.PreparePropertyJob>(freePropertyQuery, dependsOn);
+            this.Dependency = jobData2.Schedule<RWHHouseholdFindPropertySystem.FindPropertyJob>(JobHandle.CombineDependencies(job0, outJobHandle, deps2));
+            this.m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
+            this.m_PathfindSetupSystem.AddQueueWriter(this.Dependency);
+            this.m_ResourceSystem.AddPrefabsReader(this.Dependency);
+            this.m_AirPollutionSystem.AddReader(this.Dependency);
+            this.m_NoisePollutionSystem.AddReader(this.Dependency);
+            this.m_GroundPollutionSystem.AddReader(this.Dependency);
+            this.m_TelecomCoverageSystem.AddReader(this.Dependency);
+            this.m_TriggerSystem.AddActionBufferWriter(this.Dependency);
+            this.m_CityStatisticsSystem.AddWriter(this.Dependency);
+            this.m_TaxSystem.AddReader(this.Dependency);
+
             nativeParallelHashMap.Dispose(this.Dependency);
         }
 
@@ -674,7 +604,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             [ReadOnly]
             public Entity m_City;
             public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
-            public NativeQueue<Game.Buildings.PropertyUtils.RentAction>.ParallelWriter m_RentQueue;
+            public NativeQueue<RentAction>.ParallelWriter m_RentActionQueue;
             public EconomyParameterData m_EconomyParameters;
             public DemandParameterData m_DemandParameters;
             public NativeQueue<TriggerAction>.ParallelWriter m_TriggerBuffer;
@@ -888,7 +818,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                                     }
                                     else if (flag6 & flag7 || flag3 & flag4)
                                     {
-                                        this.m_RentQueue.Enqueue(new Game.Buildings.PropertyUtils.RentAction()
+                                        this.m_RentActionQueue.Enqueue(new RentAction()
                                         {
                                             m_Property = entity2,
                                             m_Renter = entity1
@@ -1013,35 +943,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             public ComponentLookup<CurrentTransport> __Game_Citizens_CurrentTransport_RO_ComponentLookup;
             [ReadOnly]
             public BufferLookup<HouseholdCitizen> __Game_Citizens_HouseholdCitizen_RO_BufferLookup;
-            public ComponentLookup<PropertySeeker> __Game_Agents_PropertySeeker_RW_ComponentLookup;
-            public BufferLookup<Renter> __Game_Buildings_Renter_RW_BufferLookup;
-            public ComponentLookup<PropertyRenter> __Game_Buildings_PropertyRenter_RW_ComponentLookup;
-            [ReadOnly]
-            public ComponentLookup<CompanyData> __Game_Companies_CompanyData_RO_ComponentLookup;
-            public ComponentLookup<Household> __Game_Citizens_Household_RW_ComponentLookup;
-            [ReadOnly]
-            public ComponentLookup<IndustrialCompany> __Game_Companies_IndustrialCompany_RO_ComponentLookup;
-            [ReadOnly]
-            public ComponentLookup<CommercialCompany> __Game_Companies_CommercialCompany_RO_ComponentLookup;
-            [ReadOnly]
-            public ComponentLookup<ServiceCompanyData> __Game_Companies_ServiceCompanyData_RO_ComponentLookup;
-            [ReadOnly]
-            public ComponentLookup<IndustrialProcessData> __Game_Prefabs_IndustrialProcessData_RO_ComponentLookup;
-            public ComponentLookup<WorkProvider> __Game_Companies_WorkProvider_RW_ComponentLookup;
-            [ReadOnly]
-            public BufferLookup<Employee> __Game_Companies_Employee_RO_BufferLookup;
-            [ReadOnly]
-            public ComponentLookup<Attached> __Game_Objects_Attached_RO_ComponentLookup;
-            [ReadOnly]
-            public ComponentLookup<ExtractorCompanyData> __Game_Prefabs_ExtractorCompanyData_RO_ComponentLookup;
-            [ReadOnly]
-            public BufferLookup<Game.Areas.SubArea> __Game_Areas_SubArea_RO_BufferLookup;
-            [ReadOnly]
-            public ComponentLookup<Geometry> __Game_Areas_Geometry_RO_ComponentLookup;
-            [ReadOnly]
-            public ComponentLookup<Game.Areas.Lot> __Game_Areas_Lot_RO_ComponentLookup;
-            [ReadOnly]
-            public ComponentLookup<ResourceData> __Game_Prefabs_ResourceData_RO_ComponentLookup;
+            public ComponentLookup<PropertySeeker> __Game_Agents_PropertySeeker_RW_ComponentLookup;           
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void __AssignHandles(ref SystemState state)
@@ -1080,23 +982,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 this.__Game_Citizens_CurrentBuilding_RO_ComponentLookup = state.GetComponentLookup<CurrentBuilding>(true);
                 this.__Game_Citizens_CurrentTransport_RO_ComponentLookup = state.GetComponentLookup<CurrentTransport>(true);
                 this.__Game_Citizens_HouseholdCitizen_RO_BufferLookup = state.GetBufferLookup<HouseholdCitizen>(true);
-                this.__Game_Agents_PropertySeeker_RW_ComponentLookup = state.GetComponentLookup<PropertySeeker>();
-                this.__Game_Buildings_Renter_RW_BufferLookup = state.GetBufferLookup<Renter>();
-                this.__Game_Buildings_PropertyRenter_RW_ComponentLookup = state.GetComponentLookup<PropertyRenter>();
-                this.__Game_Companies_CompanyData_RO_ComponentLookup = state.GetComponentLookup<CompanyData>(true);
-                this.__Game_Citizens_Household_RW_ComponentLookup = state.GetComponentLookup<Household>();
-                this.__Game_Companies_IndustrialCompany_RO_ComponentLookup = state.GetComponentLookup<IndustrialCompany>(true);
-                this.__Game_Companies_CommercialCompany_RO_ComponentLookup = state.GetComponentLookup<CommercialCompany>(true);
-                this.__Game_Companies_ServiceCompanyData_RO_ComponentLookup = state.GetComponentLookup<ServiceCompanyData>(true);
-                this.__Game_Prefabs_IndustrialProcessData_RO_ComponentLookup = state.GetComponentLookup<IndustrialProcessData>(true);
-                this.__Game_Companies_WorkProvider_RW_ComponentLookup = state.GetComponentLookup<WorkProvider>();
-                this.__Game_Companies_Employee_RO_BufferLookup = state.GetBufferLookup<Employee>(true);
-                this.__Game_Objects_Attached_RO_ComponentLookup = state.GetComponentLookup<Attached>(true);
-                this.__Game_Prefabs_ExtractorCompanyData_RO_ComponentLookup = state.GetComponentLookup<ExtractorCompanyData>(true);
-                this.__Game_Areas_SubArea_RO_BufferLookup = state.GetBufferLookup<Game.Areas.SubArea>(true);
-                this.__Game_Areas_Geometry_RO_ComponentLookup = state.GetComponentLookup<Geometry>(true);
-                this.__Game_Areas_Lot_RO_ComponentLookup = state.GetComponentLookup<Game.Areas.Lot>(true);
-                this.__Game_Prefabs_ResourceData_RO_ComponentLookup = state.GetComponentLookup<ResourceData>(true);
+                this.__Game_Agents_PropertySeeker_RW_ComponentLookup = state.GetComponentLookup<PropertySeeker>();           
             }
         }
     }

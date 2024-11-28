@@ -19,6 +19,7 @@ using Game.Citizens;
 using static Game.Input.InputRecorder;
 using System;
 using Game.Economy;
+using Game.Simulation;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
@@ -38,6 +39,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         ComponentType.ReadOnly<PrefabData>(),
                         ComponentType.ReadOnly<BuildingData>(),
                         ComponentType.ReadOnly<BuildingPropertyData>(),
+                        ComponentType.ReadOnly<GroupAmbienceData>(),
                         ComponentType.ReadWrite<SpawnableBuildingData>(),
                         ComponentType.ReadWrite<SubMesh>(),
                     ],
@@ -73,6 +75,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ComponentTypeHandle<SpawnableBuildingData> SpawnableBuildingHandle;
         [ReadOnly]
         public ComponentLookup<ZoneData> ZoneDataLookup;
+        [ReadOnly]
+        public ComponentTypeHandle<GroupAmbienceData> GroupAmbienceDataHandle;
         [ReadOnly]
         public float sqm_per_apartment;
         [ReadOnly]
@@ -115,14 +119,17 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             var buildingDataArr = chunk.GetNativeArray(ref BuildingDataHandle);
             var subMeshBufferAccessor = chunk.GetBufferAccessor(ref SubMeshHandle);
             var buildingPropertyDataArr = chunk.GetNativeArray(ref BuildingPropertyDataHandle);
+            var groupAmbienceDataArr = chunk.GetNativeArray(ref GroupAmbienceDataHandle);
             var entityArr = chunk.GetNativeArray(EntityTypeHandle);
             
             for (int i = 0; i < buildingDataArr.Length; i++)
             {
                 SpawnableBuildingData spawnBuildingData = spawnBuildingDataArr[i];
                 BuildingPropertyData property = buildingPropertyDataArr[i];
+                GroupAmbienceData group = groupAmbienceDataArr[i];
                 DynamicBuffer<SubMesh> subMeshes = subMeshBufferAccessor[i];
                 Entity entity = entityArr[i];
+
                 if (spawnBuildingData.m_ZonePrefab != Entity.Null)
                 {
                     if (ZoneDataLookup.TryGetComponent(spawnBuildingData.m_ZonePrefab, out var zonedata))
@@ -160,10 +167,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     int floorOffset = 0;
                                     //Adding hallway area to apt area
                                     float apt_area = sqm_per_apartment*(1+hallway_pct);
-                                    if (luxury_highrise_less_apt)
+                                    if (luxury_highrise_less_apt && group.m_AmbienceType != GroupAmbienceType.ResidentialLowRent)
                                     {
                                         //High rise buildings that are level 4 or 5 will have less apartments
-                                        if(spawnBuildingData.m_Level == 4) 
+                                        if (spawnBuildingData.m_Level == 4) 
                                         {
                                             apt_area *= (1 + lv4_increase);
                                         }
@@ -188,7 +195,17 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     {
                                         households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, apt_area, floorOffset, units_per_elevator * (int)sqm_per_apartment);
                                     }
-                                } 
+                                }
+                                //Set low density households to 1 if they are higher than that and single family option is true
+                                if (single_family && property.m_ResidentialProperties > 1 &&
+                                    (zonedata.m_ZoneFlags & ZoneFlags.SupportNarrow) != ZoneFlags.SupportNarrow)
+                                {
+                                    //If less than 3 floors, assuming low density
+                                    if (height / residential_avg_floor_height < 3)
+                                    {
+                                        households = 1;
+                                    }
+                                }
                             }
 
                             //Apply global reduction factor

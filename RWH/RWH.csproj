@@ -18,14 +18,19 @@
 
 	<ItemGroup>
 		<Reference Include="Colossal.Collections">
+			<Private>false</Private>
 		</Reference>
 		<Reference Include="Colossal.Localization">
+			<Private>false</Private>
 		</Reference>
 		<Reference Include="Colossal.Mathematics">
+			<Private>false</Private>
 		</Reference>
 		<Reference Include="Colossal.PSI.Common">
+			<Private>false</Private>
 		</Reference>
 		<Reference Include="Colossal.UI.Binding">
+			<Private>false</Private>
 		</Reference>
 		<Reference Include="Game">
 			<Private>false</Private>

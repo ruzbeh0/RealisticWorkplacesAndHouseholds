@@ -105,7 +105,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             temp.Dispose();
             NativeList<Entity> evictedHouseholds = new NativeList<Entity>(householdsCount/2, Allocator.TempJob);
             var ecb = m_EndFrameBarrier.CreateCommandBuffer();
-            NativeQueue<PropertyUtils.RentAction> rentQueue = new NativeQueue<PropertyUtils.RentAction>(Allocator.TempJob);
+            NativeQueue<RentAction> rentQueue = new NativeQueue<RentAction>(Allocator.TempJob);
 
             var resetResidencesJob = new ResetResidencesJob()
             {
@@ -131,49 +131,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             EntityManager.DestroyEntity(m_TriggerQuery.GetSingletonEntity());
             JobHandle resetHandle = resetResidencesJob.Schedule(m_BuildingsQuery, this.Dependency);            
 
-            JobHandle statsEventQueueHandle;
-            NativeList<Entity> reservedProperties = new NativeList<Entity>(Allocator.TempJob);
             var cityStatsSystem = World.GetOrCreateSystemManaged<CityStatisticsSystem>();
             var triggerSystem = World.GetOrCreateSystemManaged<TriggerSystem>();
-            PropertyUtils.RentJob rentJob = new PropertyUtils.RentJob()
-            {
-                m_RentEventArchetype = m_RentEventArchetype,
-                m_PropertiesOnMarket = SystemAPI.GetComponentLookup<PropertyOnMarket>(true),
-                m_Renters = SystemAPI.GetBufferLookup<Renter>(false),
-                m_BuildingPropertyDatas = this.__TypeHandle.__Game_Prefabs_BuildingPropertyData_RO_ComponentLookup,
-                m_ParkDatas = SystemAPI.GetComponentLookup<ParkData>(true),
-                m_PrefabRefs = SystemAPI.GetComponentLookup<PrefabRef>(true),
-                m_PropertyRenters = SystemAPI.GetComponentLookup<PropertyRenter>(false),
-                m_Companies = SystemAPI.GetComponentLookup<CompanyData>(true),
-                m_Households = SystemAPI.GetComponentLookup<Household>(true),
-                m_Industrials = SystemAPI.GetComponentLookup<IndustrialCompany>(true),
-                m_Commercials = SystemAPI.GetComponentLookup<CommercialCompany>(true),
-                m_BuildingDatas = SystemAPI.GetComponentLookup<BuildingData>(true),
-                m_ServiceCompanyDatas = SystemAPI.GetComponentLookup<ServiceCompanyData>(true),
-                m_IndustrialProcessDatas = SystemAPI.GetComponentLookup<IndustrialProcessData>(true),
-                m_WorkProviders = SystemAPI.GetComponentLookup<WorkProvider>(false),                
-                m_HouseholdCitizens = SystemAPI.GetBufferLookup<HouseholdCitizen>(true),
-                m_Abandoneds = SystemAPI.GetComponentLookup<Abandoned>(true),
-                m_HomelessHouseholds = SystemAPI.GetComponentLookup<HomelessHousehold>(true),
-                m_Parks = SystemAPI.GetComponentLookup<Game.Buildings.Park>(true),
-                m_Employees = SystemAPI.GetBufferLookup<Employee>(true),
-                m_SpawnableBuildingDatas = SystemAPI.GetComponentLookup<SpawnableBuildingData>(true),
-                m_Attacheds = SystemAPI.GetComponentLookup<Attached>(true),
-                m_ExtractorCompanyDatas = SystemAPI.GetComponentLookup<ExtractorCompanyData>(true),
-                m_SubAreaBufs = SystemAPI.GetBufferLookup<Game.Areas.SubArea>(true),
-                m_Geometries = SystemAPI.GetComponentLookup<Geometry>(true),
-                m_Lots = SystemAPI.GetComponentLookup<Game.Areas.Lot>(true),
-                m_ResourcePrefabs = World.GetOrCreateSystemManaged<ResourceSystem>().GetPrefabs(),
-                m_Resources = SystemAPI.GetComponentLookup<Game.Prefabs.ResourceData>(true),
-                m_StatisticsQueue = cityStatsSystem.GetStatisticsEventQueue(out statsEventQueueHandle),
-                m_TriggerQueue = triggerSystem.CreateActionBuffer(),
-                m_AreaType = Game.Zones.AreaType.Residential,
-                m_CommandBuffer = ecb,
-                m_RentQueue = rentQueue,
-                m_ReservedProperties = reservedProperties,
-                m_DebugDisableHomeless = m_householdFindPropertySystem.debugDisableHomeless                
-            };
-            this.Dependency = rentJob.Schedule(JobHandle.CombineDependencies(statsEventQueueHandle, resetHandle));
             cityStatsSystem.AddWriter(this.Dependency);
             triggerSystem.AddActionBufferWriter(this.Dependency);
             this.m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
