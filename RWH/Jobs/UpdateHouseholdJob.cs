@@ -187,8 +187,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                         floorOffset++;
                                     }
 
-                                    //If less than 3 floors, assuming low density
-                                    if(height/ residential_avg_floor_height < 3)
+                                    //If less than 5 floors, assuming low density
+                                    if(height/ residential_avg_floor_height < 5)
                                     {
                                         households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, sqm_per_apartment_lowdensity * (1 + hallway_pct), 0, 0);
                                     } else
@@ -204,7 +204,12 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     if (height / residential_avg_floor_height < 3)
                                     {
                                         households = 1;
-                                    }
+                                    } 
+                                    //else if (height / residential_avg_floor_height < 4)
+                                    //{
+                                    //    //UK Detached homes?
+                                    //    households = 2;
+                                    //}
                                 }
                             }
 
@@ -219,11 +224,16 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             {
                                 factor = 1f;
                             }
-                            //Mod.log.Info($"Old households: {original_households}, new households:{property.m_ResidentialProperties}, Old SpaceMult: {property.m_SpaceMultiplier}, new SpaceMult:{property.m_SpaceMultiplier / factor}");
+                            if(property.m_SpaceMultiplier == 0)
+                            {
+                                property.m_SpaceMultiplier = 1;
+                            }
+                            //Mod.log.Info($"Old households: {original_households}, new households:{property.m_ResidentialProperties}, Old SpaceMult: {property.m_SpaceMultiplier}, new SpaceMult:{property.m_SpaceMultiplier / factor}, factor:{factor}");
 
                             property.m_SpaceMultiplier /= factor;
                             
                             buildingPropertyDataArr[i] = property;
+                            //ecb.AddComponent(unfilteredChunkIndex, entity, new BuildingPropertyExtraData(factor));
                         }
                         
                     }

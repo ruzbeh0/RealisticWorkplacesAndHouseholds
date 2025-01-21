@@ -53,6 +53,8 @@ namespace RealisticWorkplacesAndHouseholds
             {
                 updateSystem.UpdateAt<HouseholdUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
                 updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
+                World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.ZoneSpawnSystem>().Enabled = false;
+                updateSystem.UpdateAt<RWHZoneSpawnSystem>(SystemUpdatePhase.GameSimulation);
             } 
             updateSystem.UpdateAfter<NoisePollutionParameterUpdaterSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateBefore<NoisePollutionParameterUpdaterSystem>(SystemUpdatePhase.PrefabReferences);
@@ -66,7 +68,7 @@ namespace RealisticWorkplacesAndHouseholds
             
             if(!Mod.m_Setting.disable_cityservices_calculations)
             {
-                updateSystem.UpdateAt<CityServicesWorkplaceUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
+                updateSystem.UpdateAt<CityServicesWorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
                 updateSystem.UpdateAt<CityServicesWorkproviderUpdateSystem>(SystemUpdatePhase.GameSimulation);
             }
             

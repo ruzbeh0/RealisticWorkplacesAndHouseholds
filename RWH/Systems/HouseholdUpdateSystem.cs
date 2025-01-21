@@ -23,14 +23,14 @@ namespace RealisticWorkplacesAndHouseholds.Systems
     {
         private EntityQuery m_UpdateHouseholdJobQuery;
 
-        //ModificationEndBarrier m_EndFrameBarrier;
+        EndFrameBarrier m_EndFrameBarrier;
 
         [Preserve]
         protected override void OnCreate()
         {
             base.OnCreate();
 
-            //m_EndFrameBarrier = World.GetOrCreateSystemManaged<ModificationEndBarrier>();
+            m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 
             // Job Queries
             UpdateHouseholdJobQuery updateHouseholdJobQuery = new();
@@ -74,7 +74,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
             UpdateHouseholdJob updateHouseholdJob = new UpdateHouseholdJob
             {
-                //ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+                ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
                 BuildingDataHandle = SystemAPI.GetComponentTypeHandle<BuildingData>(true),
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
@@ -98,7 +98,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 sqm_per_apartment_lowdensity = Mod.m_Setting.residential_lowdensity_sqm_per_apartment
             };
             this.Dependency = updateHouseholdJob.ScheduleParallel(m_UpdateHouseholdJobQuery, this.Dependency);
-            //m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
+            m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
         }
     }
 }
