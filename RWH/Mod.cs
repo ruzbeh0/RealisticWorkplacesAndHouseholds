@@ -48,8 +48,9 @@ namespace RealisticWorkplacesAndHouseholds
 
             // Disable original systems
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdFindPropertySystem>().Enabled = false;
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdSpawnSystem>().Enabled = false;
 
-            if(!Mod.m_Setting.disable_households_calculations)
+            if (!Mod.m_Setting.disable_households_calculations)
             {
                 updateSystem.UpdateAt<HouseholdUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
                 updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
@@ -74,10 +75,9 @@ namespace RealisticWorkplacesAndHouseholds
             
             updateSystem.UpdateAt<RWHHouseholdFindPropertySystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
-
-            // Patch prefabs
-            EconomyParametersPatcher patcher = new EconomyParametersPatcher();
-            patcher.PatchEconomyParameters();
+            updateSystem.UpdateAt<ResidentialVacancySystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<RWHHouseholdSpawnSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<EconomyParameterUpdaterSystem>(SystemUpdatePhase.GameSimulation);
 
             //Harmony
             var harmony = new Harmony(harmonyID);

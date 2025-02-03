@@ -755,7 +755,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                         maxProcessEntities *= maxProcess_factor1;
                     }
                 }
-                //Mod.log.Info($"Process Entities used:{maxProcessEntities}");
+
+                Unity.Mathematics.Random random = Unity.Mathematics.Random.CreateFromIndex((uint)(this.m_Entities.Length+hour));
                 for (int index1 = 0; index1 < math.min(maxProcessEntities, this.m_Entities.Length); ++index1)
                 {
                     Entity entity1 = this.m_Entities[index1];
@@ -833,7 +834,10 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                                     }
                                     else if (entity2 == Entity.Null)
                                     {
-                                        this.MoveAway(entity1, citizenBuffer);
+                                        if(random.NextInt(100) < 10)
+                                        {
+                                            this.MoveAway(entity1, citizenBuffer);
+                                        }  
                                     }
                                     else
                                     {
@@ -849,15 +853,13 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                             Entity entity3 = this.m_PropertyRenters.HasComponent(entity1) ? this.m_PropertyRenters[entity1].m_Property : Entity.Null;
                             float num = entity3 != Entity.Null ? PropertyUtils.GetPropertyScore(entity3, entity1, citizenBuffer, ref this.m_PrefabRefs, ref this.m_BuildingProperties, ref this.m_Buildings, ref this.m_BuildingDatas, ref this.m_Households, ref this.m_Citizens, ref this.m_Students, ref this.m_Workers, ref this.m_SpawnableDatas, ref this.m_Crimes, ref this.m_ServiceCoverages, ref this.m_Lockeds, ref this.m_ElectricityConsumers, ref this.m_WaterConsumers, ref this.m_GarbageProducers, ref this.m_MailProducers, ref this.m_Transforms, ref this.m_Abandoneds, ref this.m_Parks, ref this.m_Availabilities, this.m_TaxRates, this.m_PollutionMap, this.m_AirPollutionMap, this.m_NoiseMap, this.m_TelecomCoverages, this.m_CityModifiers[this.m_City], this.m_HealthcareParameters.m_HealthcareServicePrefab, this.m_ParkParameters.m_ParkServicePrefab, this.m_EducationParameters.m_EducationServicePrefab, this.m_TelecomParameters.m_TelecomServicePrefab, this.m_GarbageParameters.m_GarbageServicePrefab, this.m_PoliceParameters.m_PoliceServicePrefab, this.m_CitizenHappinessParameterData, this.m_GarbageParameters) : float.NegativeInfinity;
                             Entity citizen = Entity.Null;
-                            // ISSUE: reference to a compiler-generated method
                             Entity workplaceOrSchool = this.GetFirstWorkplaceOrSchool(citizenBuffer, ref citizen);
                             bool targetIsOrigin = workplaceOrSchool == Entity.Null;
-                            // ISSUE: reference to a compiler-generated method
                             Entity targetLocation = targetIsOrigin ? this.GetCurrentLocation(citizenBuffer) : workplaceOrSchool;
                             if (targetLocation == Entity.Null)
                             {
                                 UnityEngine.Debug.LogWarning((object)string.Format("No valid origin location to start home path finding for household:{0}, move away", (object)entity1.Index));
-                                // ISSUE: reference to a compiler-generated method
+
                                 this.MoveAway(entity1, citizenBuffer);
                             }
                             else

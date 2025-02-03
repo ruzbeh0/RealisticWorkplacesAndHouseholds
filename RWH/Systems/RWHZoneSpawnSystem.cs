@@ -509,11 +509,6 @@ namespace RWH.Systems
                                         BuildingPropertyData propertyData = nativeArray4[index2];
 
                                         float factor = 1f;
-                                        //if (m_BuildingPropertyExtraData.TryGetComponent(nativeArray1[index2], out BuildingPropertyExtraData bPed))
-                                        //{
-                                        //    factor = bPed.factor;
-                                        //    //Mod.log.Info($"Factor:{factor}");
-                                        //}
 
                                         int demandAndAvailability = this.EvaluateDemandAndAvailability(location.m_AreaType, propertyData, lotSize.x * lotSize.y, factor, storage1);
                                         if (demandAndAvailability >= this.m_MinDemand | extractor)
@@ -580,7 +575,13 @@ namespace RWH.Systems
                         {
                             return this.m_ResidentialDemands.x;
                         }
-                        return (double)propertyData.m_SpaceMultiplier * factor * propertyData.m_ResidentialProperties / (double)((float)size) < 1.0 ? this.m_ResidentialDemands.y : this.m_ResidentialDemands.z;
+                        if(m_ResidentialDemands.y > 0 && m_ResidentialDemands.x == 0 && m_ResidentialDemands.z == 0)
+                        {
+                            factor /= propertyData.m_SpaceMultiplier * 2;
+                        }
+                        double x = (double)propertyData.m_SpaceMultiplier * factor * propertyData.m_ResidentialProperties / (double)((float)size);
+                        //Mod.log.Info($"m_ResidentialProperties: {propertyData.m_ResidentialProperties}, m_SpaceMultiplier:{propertyData.m_SpaceMultiplier}, x: {x}, m_ResidentialDemands: {m_ResidentialDemands}");
+                        return x < 1.0 ? this.m_ResidentialDemands.y : this.m_ResidentialDemands.z;
                     case Game.Zones.AreaType.Commercial:
                         int demandAndAvailability1 = 0;
                         ResourceIterator iterator1 = ResourceIterator.GetIterator();

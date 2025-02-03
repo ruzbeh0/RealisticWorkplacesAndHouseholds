@@ -107,6 +107,7 @@ namespace RealisticWorkplacesAndHouseholds
             disable_households_calculations = false;
             disable_cityservices_calculations = false;
             disable_workplace_calculations = false;
+            residential_vacancy_rate = 5;
         }
 
         [SettingsUISection(ResidentialSection, ResidentialLowDensityGroup)]
@@ -124,6 +125,10 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISlider(min = 60, max = 400, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(ResidentialSection, ResidentialGroup)]
         public int residential_sqm_per_apartment { get; set; }
+
+        [SettingsUISlider(min = 0, max = 30, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(ResidentialSection, ResidentialGroup)]
+        public int residential_vacancy_rate { get; set; }
 
         [SettingsUISlider(min = 0, max = 50, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
         [SettingsUISection(ResidentialSection, ResidentialHighDensityGroup)]
@@ -386,35 +391,6 @@ namespace RealisticWorkplacesAndHouseholds
 
         [SettingsUISection(OtherSection, FindPropertyGroup)]
         public bool find_property_night { get; set; }
-
-        //[SettingsUIButton]
-        //[SettingsUIConfirmation]
-        //[SettingsUIHideByCondition(typeof(Setting), "IsInGame")]
-        //[SettingsUISection(OtherSection, OtherGroup)]
-        //public bool SeekNewHouseholds
-        //{
-        //    set
-        //    {
-        //        ResetHouseholdsSystem.TriggerReset(Components.ResetType.FindNewHome);
-        //    }
-        //}
-        //
-        //[SettingsUIButton]
-        //[SettingsUIConfirmation]
-        //[SettingsUIHideByCondition(typeof(Setting), "IsInGame")]
-        //[SettingsUISection(OtherSection, OtherGroup)]
-        //public bool DeleteOverflowHouseholds
-        //{
-        //    set
-        //    {
-        //        ResetHouseholdsSystem.TriggerReset(Components.ResetType.Delete);
-        //    }
-        //}
-
-        
-
-
-
     }  
 
     public class LocaleEN : IDictionarySource
@@ -479,6 +455,9 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_powerplant)), $"Disable workplace calculations for power plants." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_school)), "Disable Schools" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_school)), $"Disable workplace calculations for schools." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_vacancy_rate)), "Vacancy Rate" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_vacancy_rate)), $"Percentage of apartments or houses that will be free and reserved for the local population of the city." },
+
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.commercial_avg_floor_height)), "Average Floor Height (meters)" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_avg_floor_height)), $"Average Floor Height for commercial, office, and city services buildings." },
