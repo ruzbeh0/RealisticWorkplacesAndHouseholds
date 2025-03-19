@@ -15,6 +15,9 @@ using Unity.Burst.Intrinsics;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Game.Citizens;
+using Unity.Entities.UniversalDelegates;
+using static Colossal.IO.AssetDatabase.AtlasFrame;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
@@ -114,7 +117,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             }
         }
 
-        private void RemoveHouseholds(int extraHouseholds, Entity property, DynamicBuffer<Renter> renters, ref Unity.Mathematics.Random random)
+    private void RemoveHouseholds(int extraHouseholds, Entity property, DynamicBuffer<Renter> renters, ref Unity.Mathematics.Random random)
         {
             //NativeHashSet<Entity> marked = new NativeHashSet<Entity>(extraHouseholds, Allocator.Temp);
             for (int i = 0; i < extraHouseholds && extraHouseholds > 0; i++)

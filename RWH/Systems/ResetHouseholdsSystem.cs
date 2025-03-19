@@ -126,7 +126,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 buildingDataLookup = SystemAPI.GetComponentLookup<BuildingData>(true),
                 evictedList = evictedHouseholds,
                 m_RentEventArchetype = m_RentEventArchetype,
-                rentQueue = rentQueue                
+                rentQueue = rentQueue,
             };            
             EntityManager.DestroyEntity(m_TriggerQuery.GetSingletonEntity());
             JobHandle resetHandle = resetResidencesJob.Schedule(m_BuildingsQuery, this.Dependency);            

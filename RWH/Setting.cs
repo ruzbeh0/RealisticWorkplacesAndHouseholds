@@ -101,8 +101,8 @@ namespace RealisticWorkplacesAndHouseholds
             garbage_sqm_per_worker = 95;
             increase_power_production = false;
             solarpowerplant_reduction_factor = 5;
-            find_property_limit_factor = 2;
-            find_property_night = false;
+            //find_property_limit_factor = 2;
+            //find_property_night = false;
             rent_discount = 20;
             disable_households_calculations = false;
             disable_cityservices_calculations = false;
@@ -381,16 +381,16 @@ namespace RealisticWorkplacesAndHouseholds
 
         }
 
-        [SettingsUISection(OtherSection, FindPropertyGroup)]
-        [SettingsUIMultilineText]
-        public string DTText => string.Empty;
-
-        [SettingsUISlider(min = 1, max = 10, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
-        [SettingsUISection(OtherSection, FindPropertyGroup)]
-        public int find_property_limit_factor { get; set; }
-
-        [SettingsUISection(OtherSection, FindPropertyGroup)]
-        public bool find_property_night { get; set; }
+        //[SettingsUISection(OtherSection, FindPropertyGroup)]
+        //[SettingsUIMultilineText]
+        //public string DTText => string.Empty;
+        //
+        //[SettingsUISlider(min = 1, max = 10, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        //[SettingsUISection(OtherSection, FindPropertyGroup)]
+        //public int find_property_limit_factor { get; set; }
+        //
+        //[SettingsUISection(OtherSection, FindPropertyGroup)]
+        //public bool find_property_night { get; set; }
     }  
 
     public class LocaleEN : IDictionarySource
@@ -557,11 +557,11 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.Button)), $"Reset settings to default values" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.prison_non_usable_space)), $"Percentage of Non-usable Area" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.prison_non_usable_space)), "Percentage of area in Prison Buildings that are as living quarters for prisoners. This include hallways, cafeterias, medical facilities, offices, etc." },
-                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.DTText)), $"Update the settings below if you are having issues with residential demand and buildings without households" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.find_property_limit_factor)), $"Requests Limit Factor" },
-                { m_Setting.GetOptionDescLocaleID(nameof(Setting.find_property_limit_factor)), "Increase the allowed limit of find property requests. Vanilla value is 1. Higher values will impact performance and slow the game." },
-                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.find_property_night)), $"Double Limit at Night" },
-                { m_Setting.GetOptionDescLocaleID(nameof(Setting.find_property_night)), "Double the amount of find property requests at night. This will impact performance and is only recommended to use with the Realistic Trips Mod" },
+                //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.DTText)), $"Update the settings below if you are having issues with residential demand and buildings without households" },
+                //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.find_property_limit_factor)), $"Requests Limit Factor" },
+                //{ m_Setting.GetOptionDescLocaleID(nameof(Setting.find_property_limit_factor)), "Increase the allowed limit of find property requests. Vanilla value is 1. Higher values will impact performance and slow the game." },
+                //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.find_property_night)), $"Double Limit at Night" },
+                //{ m_Setting.GetOptionDescLocaleID(nameof(Setting.find_property_night)), "Double the amount of find property requests at night. This will impact performance and is only recommended to use with the Realistic Trips Mod" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.evicted_reset_type)), $"Evicted Households Action" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.evicted_reset_type)), "Select what action to do with evicted households. They can either look for a new home or be deleted." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_households_calculations)), $"Disable Household Calculations" },
@@ -752,11 +752,11 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.Button)), $"Redefinir as configurações para os valores padrão" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.prison_non_usable_space)), $"Porcentagem de área não utilizável" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.prison_non_usable_space)), "Porcentagem de área em penitenciárias que não são usadas como alojamentos para prisioneiros. Isso inclui corredores, refeitórios, instalações médicas, escritórios, etc." },
-                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.DTText)), $"Atualize as configurações abaixo se você estiver tendo problemas com demanda residencial e edifícios sem domicílios" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.find_property_limit_factor)), $"Fator Limite de Solicitações de Propriedades" },
-                { m_Setting.GetOptionDescLocaleID(nameof(Setting.find_property_limit_factor)), "Aumente o limite permitido de solicitações de de busca por propriedades residenciais. O valor vanilla é 1. Valores mais altos impactarão o desempenho e deixarão o jogo mais lento." },
-                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.find_property_night)), $"Limite Duplo à Noite" },
-                { m_Setting.GetOptionDescLocaleID(nameof(Setting.find_property_night)), "Dobrar a quantidade de solicitações de busca de propriedades à noite. Isso impactará o desempenho e só é recomendado para uso com o Realistic Trips Mod" },
+                //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.DTText)), $"Atualize as configurações abaixo se você estiver tendo problemas com demanda residencial e edifícios sem domicílios" },
+                //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.find_property_limit_factor)), $"Fator Limite de Solicitações de Propriedades" },
+                //{ m_Setting.GetOptionDescLocaleID(nameof(Setting.find_property_limit_factor)), "Aumente o limite permitido de solicitações de de busca por propriedades residenciais. O valor vanilla é 1. Valores mais altos impactarão o desempenho e deixarão o jogo mais lento." },
+                //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.find_property_night)), $"Limite Duplo à Noite" },
+                //{ m_Setting.GetOptionDescLocaleID(nameof(Setting.find_property_night)), "Dobrar a quantidade de solicitações de busca de propriedades à noite. Isso impactará o desempenho e só é recomendado para uso com o Realistic Trips Mod" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.evicted_reset_type)), $"Ação para famílias despejadas" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.evicted_reset_type)), "Selecione qual ação fazer com as famílias despejadas de sua residência. Elas podem procurar um novo lar ou serem apagadas." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_households_calculations)), $"Desativar cálculos de número de domicílios" },

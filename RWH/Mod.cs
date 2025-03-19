@@ -47,8 +47,9 @@ namespace RealisticWorkplacesAndHouseholds
             AssetDatabase.global.LoadSettings(nameof(RealisticWorkplacesAndHouseholds), m_Setting, new Setting(this));
 
             // Disable original systems
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdFindPropertySystem>().Enabled = false;
+            //World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdFindPropertySystem>().Enabled = false;
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdSpawnSystem>().Enabled = false;
+            //World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.RentAdjustSystem>().Enabled = false;
 
             if (!Mod.m_Setting.disable_households_calculations)
             {
@@ -73,11 +74,12 @@ namespace RealisticWorkplacesAndHouseholds
                 updateSystem.UpdateAt<CityServicesWorkproviderUpdateSystem>(SystemUpdatePhase.GameSimulation);
             }
             
-            updateSystem.UpdateAt<RWHHouseholdFindPropertySystem>(SystemUpdatePhase.GameSimulation);
+            //updateSystem.UpdateAt<RWHHouseholdFindPropertySystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAt<ResidentialVacancySystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAt<RWHHouseholdSpawnSystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAt<EconomyParameterUpdaterSystem>(SystemUpdatePhase.GameSimulation);
+            //updateSystem.UpdateAt<RWHRentAdjustSystem>(SystemUpdatePhase.GameSimulation);
 
             //Harmony
             var harmony = new Harmony(harmonyID);

@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using RealisticWorkplacesAndHouseholds.Jobs;
 using Unity.Burst.Intrinsics;
 using Unity.Entities;
+using Game.Citizens;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
@@ -38,8 +39,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 ComponentType.ReadOnly<PrefabRef>(),
                 ComponentType.ReadOnly<Renter>(),
                 ComponentType.Exclude<Deleted>(),
-                ComponentType.Exclude<Temp>(),
-                ComponentType.Exclude<PropertyOnMarket>()
+                ComponentType.Exclude<Temp>()
+                //ComponentType.Exclude<PropertyOnMarket>()
             );
 
             random = new Unity.Mathematics.Random(1);
@@ -51,7 +52,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
-            if (mode == GameMode.Game && purpose == Purpose.LoadGame)
+            if (mode == GameMode.Game && purpose == Colossal.Serialization.Entities.Purpose.LoadGame)
             {
                 CheckBuildings();
             }
@@ -91,7 +92,9 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 economyParameterData = m_EconomyParamQuery.GetSingleton<EconomyParameterData>(),
                 workProviderLookup = SystemAPI.GetComponentLookup<WorkProvider>(true),
                 m_RentEventArchetype = m_RentEventArchetype,
-                random = random
+                random = random,
+                m_CitizenBufs = SystemAPI.GetBufferLookup<HouseholdCitizen>(true),
+                m_HealthProblems = SystemAPI.GetComponentLookup<HealthProblem>(true)
 
             };
             this.Dependency = job.ScheduleParallel(m_BuildingsQuery, this.Dependency);
