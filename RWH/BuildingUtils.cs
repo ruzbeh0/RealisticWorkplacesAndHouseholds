@@ -75,7 +75,7 @@ namespace RealisticWorkplacesAndHouseholds
                     //If this condition is met, what it represents is that this building has bigger apartments than the average
                     if (floorSize % sqm_per_unit < MIN_APT_SIZE)
                     {
-                        floorSize -= floorSize % sqm_per_unit;
+                        total_area -= (floorSize % sqm_per_unit) * floorCount;
                     }
                 } else
                 {
