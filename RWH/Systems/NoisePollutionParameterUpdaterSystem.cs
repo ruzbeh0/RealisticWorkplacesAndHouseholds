@@ -1,6 +1,7 @@
 ﻿using Colossal.Serialization.Entities;
 using Game;
 using Game.Prefabs;
+using RealisticWorkplacesAndHouseholds;
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
@@ -44,7 +45,7 @@ namespace RWH.Systems
                     _pollutionParameterData.Add(tsd, data);
                 }
 
-                data.m_NoiseMultiplier *= 1 / 4;
+                data.m_NoiseMultiplier *= Mod.m_Setting.noise_factor/100f;
 
                 EntityManager.SetComponentData<PollutionParameterData>(tsd, data);
             }

@@ -92,6 +92,7 @@ namespace RealisticWorkplacesAndHouseholds
             service_upkeep_reduction = 70;
             electricity_consumption_reduction = 20;
             water_consumption_reduction = 20;
+            noise_factor = 25;
             results_reduction = 0;
             residential_lowdensity_sqm_per_apartment = 150;
             prison_sqm_per_prisoner = 4;
@@ -173,6 +174,10 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(IndustrySection, IndustryGroup)]
         public float industry_avg_floor_height { get; set; }
 
+        [SettingsUISlider(min = 2000, max = 10000, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(IndustrySection, IndustryGroup)]
+        public int industry_area_base { get; set; } = 6400;
+
         [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(CommercialSection, CommercialGroup)]
         public int commercial_sqm_per_worker { get; set; }
@@ -196,6 +201,10 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISlider(min = 2000, max = 6000, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(OfficeSection, OfficeGroup)]
         public int office_elevators_per_sqm { get; set; }
+
+        [SettingsUISlider(min = 20, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(OfficeSection, OfficeGroup)]
+        public int office_height_base { get; set; } = 60;
 
         [SettingsUISection(CityServicesSection, HospitalGroup)]
         public bool disable_hospital { get; set; }
@@ -359,6 +368,10 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(OtherSection, OtherGroup)]
         public int water_consumption_reduction { get; set; }
 
+        [SettingsUISlider(min = 1, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(OtherSection, OtherGroup)]
+        public int noise_factor { get; set; }
+
         [SettingsUISlider(min = 0, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
         [SettingsUISection(OtherSection, OtherGroup)]
         public int rent_discount { get; set; }
@@ -489,6 +502,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.rowhomes_basement)), $"If set to true, Row Homes will have an extra floor in the basement." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.industry_avg_floor_height)), "Average Floor Height (meters)" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.industry_avg_floor_height)), $"Average Floor Height for industry buildings." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.industry_area_base)), "Large Area Threshold" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.industry_area_base)), $"For industry buildings that have a larger area than the defined threshold, a reduction factor will be applied to reduce the number of workplaces calculated." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.police_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.police_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.fire_sqm_per_worker)), "Square Meters per Worker" },
@@ -529,6 +544,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.office_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.office_non_usable_space)), $"Percentage of Non-usable Area" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.office_non_usable_space)), "Percentage of area in Office Buildings that are non-usable. This includes for example: hallways, conference rooms and mail rooms. It does not include space for elevators and stairs." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.office_height_base)), $"High Building Floor Threshold" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.office_height_base)), "For buildings that have higher number of floors as defined with this threshold a reduction factor will be applied to reduce the number of workplaces calculated." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.students_per_teacher)), "Number of Students per Teacher" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.students_per_teacher)), $"Number of Students per Teacher. This will be used to calculate the number of workers required at schools." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.support_staff)), "Percentage of Support Staff" },
@@ -545,6 +562,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.electricity_consumption_reduction)), $"Reduce electricity consumptions. Use this to compensate for the increase of electricity consumption in buildings. Electricity consumption is directly related to number of residents or employees in a building, so this mod will cause buildings to use more electricity." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.water_consumption_reduction)), "Water Consumption Reduction" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.water_consumption_reduction)), $"Reduce water consumptions. Use this to compensate for the increase of water consumption in buildings. Water consumption is directly related to number of residents or employees in a building, so this mod will cause buildings to use more water." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.noise_factor)), "Noise Factor" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.noise_factor)), $"Reduce noise produce by buildings by this factor. This factor will be applied to reduce noise production from buildings. A value of 100% will keep the same settings as the vanilla game." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.rent_discount)), "Residential Rent Discount" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.rent_discount)), $"This mod may cause higher rents due to changes in the number of building households. Use this setting to set a rent discount that will compensate the increase in rent." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.results_reduction)), "Global Workplace/Households reduction" },
@@ -684,6 +703,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.rowhomes_basement)), $"Se definido como verdadeiro, casas geminadas terão um andar extra no porão." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.industry_avg_floor_height)), "Altura média de um andar (metros)" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.industry_avg_floor_height)), $"Altura média de um andar para edifícios industriais." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.industry_area_base)), "Limite de Grande Área" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.industry_area_base)), $"Para edifícios industriais que tenham uma área maior que o limite definido, será aplicado um fator de redução para reduzir o número de locais de trabalho calculados." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.police_sqm_per_worker)), "Metros quadrados por trabalhador" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.police_sqm_per_worker)), $"Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.fire_sqm_per_worker)), "Metros quadrados por trabalhador" },
@@ -724,6 +745,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.office_sqm_per_worker)), $"Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.office_non_usable_space)), $"Porcentagem de área não utilizável" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.office_non_usable_space)), "Porcentagem de área em Edifícios de Escritórios que não são utilizáveis. Isso inclui, por exemplo: corredores, salas de conferência e salas de correspondência. Não inclui espaço para elevadores e escadas." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.office_height_base)), $"Limite de piso de edifício alto" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.office_height_base)), "Para edifícios com um número maior de andares, conforme definido com este limite, será aplicado um fator de redução para reduzir o número de locais de trabalho calculados." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.students_per_teacher)), "Número de alunos por professor" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.students_per_teacher)), $"Número de Alunos por Professor. Isso será usado para calcular o número de trabalhadores necessários nas escolas." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.support_staff)), "Porcentagem de equipe de suporte" },
@@ -740,6 +763,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.electricity_consumption_reduction)), $"Reduza o consumo de eletricidade. Use isso para compensar o aumento do consumo de eletricidade em prédios. O consumo de eletricidade está diretamente relacionado ao número de moradores ou funcionários em um prédio, então este mod fará com que os prédios usem mais eletricidade." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.water_consumption_reduction)), "Redução do Consumo de Água" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.water_consumption_reduction)), $"Reduza o consumo de água. Use isso para compensar o aumento do consumo de água em prédios. O consumo de água está diretamente relacionado ao número de moradores ou funcionários em um prédio, então este mod fará com que os prédios usem mais água." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.noise_factor)), "Fator de Ruído" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.noise_factor)), $"Reduza o ruído produzido por edifícios por este fator. Este fator será aplicado para reduzir a produção de ruído de edifícios. Um valor de 100% manterá as mesmas configurações do jogo original." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.rent_discount)), "Desconto de Aluguel Residencial" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.rent_discount)), $"Este mod pode causar aluguéis mais altos devido a mudanças no número de domicílios no prédio. Use esta configuração para definir um desconto de aluguel que compensará o aumento do aluguel." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.results_reduction)), "Redução global do local de trabalho/domicílios" },

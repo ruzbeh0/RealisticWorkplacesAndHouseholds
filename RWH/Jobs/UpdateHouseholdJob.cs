@@ -128,6 +128,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 BuildingPropertyData property = buildingPropertyDataArr[i];
                 GroupAmbienceData group = groupAmbienceDataArr[i];
                 DynamicBuffer<SubMesh> subMeshes = subMeshBufferAccessor[i];
+                BuildingData buildingData = buildingDataArr[i];
                 Entity entity = entityArr[i];
 
                 if (spawnBuildingData.m_ZonePrefab != Entity.Null)
@@ -142,6 +143,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             float length = size.z;
                             float height = size.y;
                             int households = property.m_ResidentialProperties;
+                            float lotSize = buildingData.m_LotSize.x * buildingData.m_LotSize.y;
 
                             int original_households = property.m_ResidentialProperties;
                             //Check if it is a row home
@@ -200,8 +202,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                 if (single_family && property.m_ResidentialProperties > 1 &&
                                     (zonedata.m_ZoneFlags & ZoneFlags.SupportNarrow) != ZoneFlags.SupportNarrow)
                                 {
-                                    //If less than 3 floors, assuming low density
-                                    if (height / residential_avg_floor_height < 3)
+                                    //If less than 3 floors and at least 20% of the lot area is free area, assuming low density
+                                    if (height / residential_avg_floor_height < 3 && width*length/lotSize < 0.8f)
                                     {
                                         households = 1;
                                     } 

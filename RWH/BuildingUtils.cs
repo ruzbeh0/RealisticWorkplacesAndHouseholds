@@ -75,7 +75,7 @@ namespace RealisticWorkplacesAndHouseholds
                     //If this condition is met, what it represents is that this building has bigger apartments than the average
                     if (floorSize % sqm_per_unit < MIN_APT_SIZE)
                     {
-                        floorSize -= floorSize % sqm_per_unit;
+                        total_area -= (floorSize % sqm_per_unit) * floorCount;
                     }
                 } else
                 {
@@ -129,6 +129,18 @@ namespace RealisticWorkplacesAndHouseholds
             else
             {
                 return (float)Math.Sqrt(area / base_area);
+            }
+        }
+
+        public static float smooth_height_factor(float base_height, float y)
+        {
+            if (y < base_height)
+            {
+                return 1;
+            }
+            else
+            {
+                return (float)Math.Sqrt(y / base_height);
             }
         }
 

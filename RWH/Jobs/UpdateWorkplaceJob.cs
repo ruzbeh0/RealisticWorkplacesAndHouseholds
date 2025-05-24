@@ -106,6 +106,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public float global_reduction;
         [ReadOnly]
         public bool reset;
+        [ReadOnly]
+        public int industry_base_threshold;
+        [ReadOnly]
+        public int office_height_threshold;
 
         public UpdateWorkplaceJob()
         {
@@ -225,8 +229,11 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                                                     //Adding hallway area to apt area
                                                     float area = employee_area * (1 + non_usable_space_pct);
-                                                    new_workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area, floor_offset, office_sqm_per_elevator);
-                                                    //Mod.log.Info($"Original number of Workers:{original_workers}, New:{new_workers}");
+
+                                                    //Smooth the employees per sqm for very tall buildings
+                                                    float height_factor = BuildingUtils.smooth_height_factor(office_height_threshold, height/ commercial_avg_floor_height);
+                                                    new_workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area * height_factor, floor_offset, office_sqm_per_elevator);
+                                                    //Mod.log.Info($"Original number of Workers:{original_workers}, New:{new_workers}, height_factor: {height_factor}, floors: {height / commercial_avg_floor_height}");
                                                 }
                                             }
                                             else
@@ -244,8 +251,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                                 }
 
                                                 //Smooth the employees per sqm for bigger industries
-                                                float base_area = 80 * 80;
-                                                float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
+                                                float area_factor = BuildingUtils.smooth_area_factor(industry_base_threshold, width, length);
 
                                                 new_workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 0, 0);
                                             }

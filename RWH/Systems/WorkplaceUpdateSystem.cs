@@ -91,7 +91,9 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 non_usable_space_pct = Mod.m_Setting.office_non_usable_space/100f,
                 commercial_sqm_per_worker_restaurants = Mod.m_Setting.commercial_sqm_per_worker_restaurants,
                 commercial_sqm_per_worker_supermarket = Mod.m_Setting.commercial_sqm_per_worker_supermarket,
-                global_reduction = Mod.m_Setting.results_reduction/100f
+                global_reduction = Mod.m_Setting.results_reduction/100f,
+                industry_base_threshold = Mod.m_Setting.industry_area_base,
+                office_height_threshold = Mod.m_Setting.office_height_base
             };
             this.Dependency = updateZonableWorkplace.ScheduleParallel(m_UpdateWorkplaceJobQuery1, this.Dependency);
             
