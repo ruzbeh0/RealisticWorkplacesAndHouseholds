@@ -70,7 +70,7 @@ namespace RWH.Systems
 
             this.World.GetOrCreateSystemManaged<HouseholdSpawnSystem>().Enabled = enable;
 
-            var prefabs = _query.ToEntityArray(Allocator.Temp);
+            using var prefabs = _query.ToEntityArray(Allocator.Temp);
 
             foreach (var tsd in prefabs)
             {

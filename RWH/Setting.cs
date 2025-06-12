@@ -66,8 +66,10 @@ namespace RealisticWorkplacesAndHouseholds
             fire_sqm_per_worker = 60;
             office_sqm_per_worker = 23;
             office_elevators_per_sqm = 4180;
-            hospital_sqm_per_worker = 100;
+            hospital_sqm_per_worker = 80;
             hospital_sqm_per_patient = 50;
+            clinic_sqm_per_worker = 120;
+            clinic_sqm_per_patient = 70;
             industry_sqm_per_worker = 50;
             powerplant_sqm_per_worker = 200;
             park_sqm_per_worker = 50;
@@ -212,6 +214,11 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(CityServicesSection, HospitalGroup)]
         [SettingsUIDisableByCondition(typeof(Setting), nameof(disable_hospital))]
+        public int clinic_sqm_per_worker { get; set; }
+
+        [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(CityServicesSection, HospitalGroup)]
+        [SettingsUIDisableByCondition(typeof(Setting), nameof(disable_hospital))]
         public int hospital_sqm_per_worker { get; set; }
 
         [SettingsUISection(CityServicesSection, PublicTransportGroup)]
@@ -297,6 +304,11 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(CityServicesSection, PowerPlantGroup)]
         [SettingsUIDisableByCondition(typeof(Setting), nameof(disable_powerplant))]
         public int solarpowerplant_reduction_factor { get; set; }
+
+        [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(CityServicesSection, HospitalGroup)]
+        [SettingsUIDisableByCondition(typeof(Setting), nameof(disable_hospital))]
+        public int clinic_sqm_per_patient { get; set; }
 
         [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(CityServicesSection, HospitalGroup)]
@@ -528,16 +540,20 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.increase_power_production)), $"Increases the amount of electricity produced based on the increase of employees compared to the vanilla game. If there is a decrease of employees, power production will not change." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.solarpowerplant_reduction_factor)), "Solar Employee Reduction Factor" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.solarpowerplant_reduction_factor)), $"Reduce the calculated worker count for Solar Power Plants by the specified factor." },
-                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.hospital_sqm_per_worker)), "Square Meters per Worker" },
-                { m_Setting.GetOptionDescLocaleID(nameof(Setting.hospital_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.hospital_sqm_per_worker)), "Hospital: Square Meters per Worker" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.hospital_sqm_per_worker)), $"Hospital: Number of square meters per worker. Higher numbers will decrease the number of workers." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.clinic_sqm_per_worker)), "Clinic: Square Meters per Worker" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.clinic_sqm_per_worker)), $"Clinic: Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.transit_station_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.transit_station_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.airport_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.airport_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.postoffice_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.postoffice_sqm_per_worker)), "Square Meters per Worker" },
-                { m_Setting.GetOptionDescLocaleID(nameof(Setting.hospital_sqm_per_patient)), $"Number of square meters per patient. Higher numbers will decrease the hospital capacity." },
-                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.hospital_sqm_per_patient)), "Square Meters per Patient" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.hospital_sqm_per_patient)), $"Hospital: Number of square meters per patient. Higher numbers will decrease the hospital capacity." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.hospital_sqm_per_patient)), "Hospital: Square Meters per Patient" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.clinic_sqm_per_patient)), $"Clinic: Number of square meters per patient. Higher numbers will decrease the clinic capacity." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.clinic_sqm_per_patient)), "Clinic: Square Meters per Patient" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.office_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.office_elevators_per_sqm)), $"The total amount of space required to have one elevator. This area will be used to calculate the number of elevators in the building, and the elevator area will reduce the available space for workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.office_elevators_per_sqm)), "Square Meters per Elevator" },
@@ -729,16 +745,20 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.increase_power_production)), $"Aumenta a quantidade de eletricidade produzida com base no aumento de funcionários em comparação ao jogo vanilla. Se houver uma diminuição de funcionários, a produção de energia não mudará." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.solarpowerplant_reduction_factor)), "Fator de redução de funcionários da Usina Solar" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.solarpowerplant_reduction_factor)), $"Reduz a contagem calculada de trabalhadores para Usinas de Energia Solar pelo fator especificado." },
-                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.hospital_sqm_per_worker)), "Metros quadrados por trabalhador" },
-                { m_Setting.GetOptionDescLocaleID(nameof(Setting.hospital_sqm_per_worker)), $"Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.hospital_sqm_per_worker)), "Hospital: Metros quadrados por trabalhador" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.hospital_sqm_per_worker)), $"Hospital: Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.clinic_sqm_per_worker)), "Clinica: Metros quadrados por trabalhador" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.clinic_sqm_per_worker)), $"Clinica: Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.transit_station_sqm_per_worker)), $"Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.transit_station_sqm_per_worker)), "Metros quadrados por trabalhador" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.airport_sqm_per_worker)), $"Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.airport_sqm_per_worker)), "Metros quadrados por trabalhador" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.postoffice_sqm_per_worker)), $"Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.postoffice_sqm_per_worker)), "Metros quadrados por trabalhador" },
-                { m_Setting.GetOptionDescLocaleID(nameof(Setting.hospital_sqm_per_patient)), $"Número de metros quadrados por paciente. Números maiores diminuirão a capacidade do hospital." },
-                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.hospital_sqm_per_patient)), "Metros quadrados por paciente" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.hospital_sqm_per_patient)), $"Hospital: Número de metros quadrados por paciente. Números maiores diminuirão a capacidade do hospital." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.hospital_sqm_per_patient)), "Hospital: Metros quadrados por paciente" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.clinic_sqm_per_patient)), $"Clinica: Número de metros quadrados por paciente. Números maiores diminuirão a capacidade do clinica." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.clinic_sqm_per_patient)), "Clinica: Metros quadrados por paciente" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.office_sqm_per_worker)), "Metros quadrados por trabalhador" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.office_elevators_per_sqm)), $"A quantidade total de espaço necessária para ter um elevador. Esta área será usada para calcular o número de elevadores no edifício, e a área do elevador reduzirá o espaço disponível para os trabalhadores." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.office_elevators_per_sqm)), "Metros quadrados por Elevador" },

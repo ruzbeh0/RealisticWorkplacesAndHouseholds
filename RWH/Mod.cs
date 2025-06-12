@@ -53,7 +53,7 @@ namespace RealisticWorkplacesAndHouseholds
 
             if (!Mod.m_Setting.disable_households_calculations)
             {
-                updateSystem.UpdateAt<HouseholdUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
+                updateSystem.UpdateAt<HouseholdUpdateSystem>(SystemUpdatePhase.GameSimulation);
                 updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
                 World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.ZoneSpawnSystem>().Enabled = false;
                 updateSystem.UpdateAt<RWHZoneSpawnSystem>(SystemUpdatePhase.GameSimulation);

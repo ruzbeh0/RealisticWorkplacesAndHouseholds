@@ -139,9 +139,13 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly]
         public float sqm_per_employee_fire;
         [ReadOnly]
+        public float sqm_per_patient_clinic;
+        [ReadOnly]
         public float sqm_per_patient_hospital;
         [ReadOnly]
         public float sqm_per_employee_hospital;
+        [ReadOnly]
+        public float sqm_per_employee_clinic;
         [ReadOnly]
         public float industry_avg_floor_height;
         [ReadOnly]
@@ -291,10 +295,19 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 {
                     if (HospitalDataLookup.TryGetComponent(entity, out HospitalData hospitalData))
                     {
-                        int new_capacity = workers = BuildingUtils.hospitalWorkers(width, length, height, commercial_avg_floor_height, sqm_per_patient_hospital, office_sqm_per_elevator);
+                        float sqm_per_patient = sqm_per_patient_hospital;
+                        float sqm_per_worker = sqm_per_employee_hospital;
+                        if(hospitalData.m_TreatmentBonus < 30)
+                        {
+                            sqm_per_patient = sqm_per_patient_clinic;
+                            sqm_per_worker = sqm_per_employee_clinic;
+
+                        }
+
+                        int new_capacity = workers = BuildingUtils.hospitalWorkers(width, length, height, commercial_avg_floor_height, sqm_per_patient, office_sqm_per_elevator);
                         hospitalData.m_PatientCapacity = (int)(new_capacity * (1f - global_reduction));
 
-                        workers = BuildingUtils.hospitalWorkers(width, length, height, commercial_avg_floor_height, sqm_per_employee_hospital, office_sqm_per_elevator);
+                        workers = BuildingUtils.hospitalWorkers(width, length, height, commercial_avg_floor_height, sqm_per_worker, office_sqm_per_elevator);
                         ecb.SetComponent(unfilteredChunkIndex, entity, hospitalData);
                     }        
                 }

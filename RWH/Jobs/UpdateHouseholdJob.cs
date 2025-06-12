@@ -16,7 +16,6 @@ using Game.Buildings;
 using RealisticWorkplacesAndHouseholds.Components;
 using UnityEngine;
 using Game.Citizens;
-using static Game.Input.InputRecorder;
 using System;
 using Game.Economy;
 using Game.Simulation;
@@ -63,6 +62,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         const float HALLWAY_BUFFER = 1f; // 1 sq metres of space in front of the unit's door
 
         public EntityCommandBuffer.ParallelWriter ecb;
+        [ReadOnly]
+        public bool reset;
+        [ReadOnly]
+        public ComponentLookup<RealisticHouseholdData> RealisticHouseholdDataLookup;
 
         [ReadOnly]
         public ComponentTypeHandle<BuildingData> BuildingDataHandle;
@@ -114,14 +117,13 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             bool useEnabledMask,
             in v128 chunkEnabledMask)
         {
-
             var spawnBuildingDataArr = chunk.GetNativeArray(ref SpawnableBuildingHandle);
             var buildingDataArr = chunk.GetNativeArray(ref BuildingDataHandle);
             var subMeshBufferAccessor = chunk.GetBufferAccessor(ref SubMeshHandle);
             var buildingPropertyDataArr = chunk.GetNativeArray(ref BuildingPropertyDataHandle);
             var groupAmbienceDataArr = chunk.GetNativeArray(ref GroupAmbienceDataHandle);
             var entityArr = chunk.GetNativeArray(EntityTypeHandle);
-            
+
             for (int i = 0; i < buildingDataArr.Length; i++)
             {
                 SpawnableBuildingData spawnBuildingData = spawnBuildingDataArr[i];
@@ -235,9 +237,18 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             property.m_SpaceMultiplier /= factor;
                             
                             buildingPropertyDataArr[i] = property;
-                            //ecb.AddComponent(unfilteredChunkIndex, entity, new BuildingPropertyExtraData(factor));
+                            if (!RealisticHouseholdDataLookup.HasComponent(entity))
+                            {
+                                RealisticHouseholdData realisticHouseholdData = new()
+                                {
+                                    households = property.m_ResidentialProperties
+                                };
+                                ecb.AddComponent<RealisticHouseholdData>(unfilteredChunkIndex, entity, realisticHouseholdData);
+                            }
+                               
+
                         }
-                        
+
                     }
                 }
  

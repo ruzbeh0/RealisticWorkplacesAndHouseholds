@@ -1,69 +1,95 @@
 ﻿using Game;
-using Unity.Entities;
-using UnityEngine.Scripting;
-using Unity.Jobs;
-using Game.Common;
-using Game.Prefabs;
-using Unity.Burst;
-using RealisticWorkplacesAndHouseholds.Jobs;
 using Game.Buildings;
+using Game.Common;
 using Game.Companies;
+using Game.Prefabs;
+using Game.Tools;
 using RealisticWorkplacesAndHouseholds.Components;
+using RealisticWorkplacesAndHouseholds.Jobs;
+using Unity.Burst;
+using Unity.Entities;
+using Unity.Jobs;
+using UnityEngine.Scripting;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
     [BurstCompile]
     public partial class WorkplaceUpdateSystem : GameSystemBase
     {
-        private EntityQuery m_UpdateWorkplaceJobQuery1;
-        private EntityQuery m_UpdateWorkplaceJobQuery2;
+        private EntityQuery m_UpdateWorkplaceJobQuery;
+        private EntityQuery m_ResetWorkplaceJobQuery;
 
-        EndFrameBarrier m_EndFrameBarrier;
+        private bool m_TriggerInitialWorkplaceUpdate = false;
 
         [Preserve]
         protected override void OnCreate()
         {
             base.OnCreate();
 
-            m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
+            // Query: excludes already updated entities
+            UpdateWorkplaceJobQuery standardQuery = new();
+            m_UpdateWorkplaceJobQuery = GetEntityQuery(standardQuery.Query);
 
-            // Job Queries
-            UpdateWorkplaceJobQuery updateWorkplaceJobQuery = new();
-            m_UpdateWorkplaceJobQuery1 = GetEntityQuery(updateWorkplaceJobQuery.Query);
-            //RemoveRealisticWorkplaceJobQuery removeWorkplaceJobQuery = new();
-            //m_UpdateWorkplaceJobQuery2 = GetEntityQuery(removeWorkplaceJobQuery.Query);
-            //
-            //this.RequireAnyForUpdate([m_UpdateWorkplaceJobQuery1, m_UpdateWorkplaceJobQuery2]);
-            this.RequireAnyForUpdate(m_UpdateWorkplaceJobQuery1);
+            // Query: allows all entities (including already updated ones) for reset
+            EntityQueryDesc resetQuery = new()
+            {
+                All = new[]
+                {
+                    ComponentType.ReadOnly<PrefabRef>(),
+                    ComponentType.ReadOnly<CompanyData>(),
+                    ComponentType.ReadOnly<PropertyRenter>(),
+                    ComponentType.ReadWrite<WorkProvider>(),
+                },
+                None = new[]
+                {
+                    ComponentType.Exclude<Deleted>(),
+                    ComponentType.Exclude<Temp>()
+                }
+            };
+            m_ResetWorkplaceJobQuery = GetEntityQuery(resetQuery);
 
+            this.RequireForUpdate(m_UpdateWorkplaceJobQuery);
         }
 
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
-            UpdateWorkplace(true);
+            m_TriggerInitialWorkplaceUpdate = true;
         }
 
         [Preserve]
         protected override void OnUpdate()
         {
-            //if(!m_UpdateWorkplaceJobQuery1.IsEmptyIgnoreFilter)
+            //Mod.log.Info($"OnUpdate, Reset:{m_TriggerInitialWorkplaceUpdate}");
+            if (m_TriggerInitialWorkplaceUpdate)
             {
-                UpdateWorkplace(false);
+                UpdateWorkplace(true); // Reset mode
+                m_TriggerInitialWorkplaceUpdate = false;
             }
-        }
-
-        protected override void OnDestroy()
-        {
-            base.OnDestroy();
-
+            else
+            {
+                UpdateWorkplace(false); // Standard update
+            }
         }
 
         private void UpdateWorkplace(bool reset)
         {
+            var activeQuery = reset ? m_ResetWorkplaceJobQuery : m_UpdateWorkplaceJobQuery;
+
+            if (reset)
+            {
+                activeQuery.ResetFilter(); // include all entities
+            }
+            else
+            {
+                activeQuery.SetChangedVersionFilter(typeof(WorkProvider));
+            }
+
+            var commandBufferSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
+
             UpdateWorkplaceJob updateZonableWorkplace = new UpdateWorkplaceJob
             {
-                ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+                ecb = commandBufferSystem.CreateCommandBuffer().AsParallelWriter(),
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
                 PrefabRefHandle = SystemAPI.GetComponentTypeHandle<PrefabRef>(true),
                 PropertyRenterHandle = SystemAPI.GetComponentTypeHandle<PropertyRenter>(true),
@@ -88,16 +114,21 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 industry_sqm_per_employee = Mod.m_Setting.industry_sqm_per_worker,
                 office_sqm_per_elevator = Mod.m_Setting.office_elevators_per_sqm,
                 commercial_self_service_gas = Mod.m_Setting.commercial_self_service_gas,
-                non_usable_space_pct = Mod.m_Setting.office_non_usable_space/100f,
+                non_usable_space_pct = Mod.m_Setting.office_non_usable_space / 100f,
                 commercial_sqm_per_worker_restaurants = Mod.m_Setting.commercial_sqm_per_worker_restaurants,
                 commercial_sqm_per_worker_supermarket = Mod.m_Setting.commercial_sqm_per_worker_supermarket,
-                global_reduction = Mod.m_Setting.results_reduction/100f,
+                global_reduction = Mod.m_Setting.results_reduction / 100f,
                 industry_base_threshold = Mod.m_Setting.industry_area_base,
                 office_height_threshold = Mod.m_Setting.office_height_base
             };
-            this.Dependency = updateZonableWorkplace.ScheduleParallel(m_UpdateWorkplaceJobQuery1, this.Dependency);
-            
-            m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
+
+            this.Dependency = updateZonableWorkplace.ScheduleParallel(activeQuery, this.Dependency);
+            commandBufferSystem.AddJobHandleForProducer(this.Dependency);
+        }
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
         }
     }
 }

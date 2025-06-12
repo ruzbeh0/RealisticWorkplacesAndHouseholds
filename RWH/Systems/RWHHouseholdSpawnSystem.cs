@@ -14,7 +14,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-using RWH.Systems;
+using Unity.Entities.Internal;
 using RealisticWorkplacesAndHouseholds;
 
 #nullable disable
@@ -72,11 +72,7 @@ namespace RWH.Systems
                 NativeArray<int> densityDemandFactors2 = this.m_ResidentialDemandSystem.GetMediumDensityDemandFactors(out deps2);
                 JobHandle deps3;
                 NativeArray<int> densityDemandFactors3 = this.m_ResidentialDemandSystem.GetHighDensityDemandFactors(out deps3);
-                this.__TypeHandle.__Game_Prefabs_PrefabRef_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-                this.__TypeHandle.__Game_Prefabs_OutsideConnectionData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-                this.__TypeHandle.__Game_City_Population_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-                this.__TypeHandle.__Game_Prefabs_DynamicHousehold_RO_ComponentLookup.Update(ref this.CheckedStateRef);
-                this.__TypeHandle.__Game_Prefabs_HouseholdData_RO_ComponentLookup.Update(ref this.CheckedStateRef);
+
                 JobHandle outJobHandle1;
                 JobHandle outJobHandle2;
                 JobHandle outJobHandle3;
@@ -87,11 +83,11 @@ namespace RWH.Systems
                     m_PrefabEntities = this.m_HouseholdPrefabQuery.ToEntityListAsync((AllocatorManager.AllocatorHandle)this.World.UpdateAllocator.ToAllocator, out outJobHandle1),
                     m_Archetypes = this.m_HouseholdPrefabQuery.ToComponentDataListAsync<Game.Prefabs.ArchetypeData>((AllocatorManager.AllocatorHandle)this.World.UpdateAllocator.ToAllocator, out outJobHandle2),
                     m_OutsideConnectionEntities = this.m_OutsideConnectionQuery.ToEntityListAsync((AllocatorManager.AllocatorHandle)this.World.UpdateAllocator.ToAllocator, out outJobHandle3),
-                    m_HouseholdDatas = this.__TypeHandle.__Game_Prefabs_HouseholdData_RO_ComponentLookup,
-                    m_Dynamics = this.__TypeHandle.__Game_Prefabs_DynamicHousehold_RO_ComponentLookup,
-                    m_Populations = this.__TypeHandle.__Game_City_Population_RO_ComponentLookup,
-                    m_OutsideConnectionDatas = this.__TypeHandle.__Game_Prefabs_OutsideConnectionData_RO_ComponentLookup,
-                    m_PrefabRefs = this.__TypeHandle.__Game_Prefabs_PrefabRef_RO_ComponentLookup,
+                    m_HouseholdDatas = InternalCompilerInterface.GetComponentLookup<Game.Prefabs.HouseholdData>(ref this.__TypeHandle.__Game_Prefabs_HouseholdData_RO_ComponentLookup, ref this.CheckedStateRef),
+                    m_Dynamics = InternalCompilerInterface.GetComponentLookup<DynamicHousehold>(ref this.__TypeHandle.__Game_Prefabs_DynamicHousehold_RO_ComponentLookup, ref this.CheckedStateRef),
+                    m_Populations = InternalCompilerInterface.GetComponentLookup<Population>(ref this.__TypeHandle.__Game_City_Population_RO_ComponentLookup, ref this.CheckedStateRef),
+                    m_OutsideConnectionDatas = InternalCompilerInterface.GetComponentLookup<OutsideConnectionData>(ref this.__TypeHandle.__Game_Prefabs_OutsideConnectionData_RO_ComponentLookup, ref this.CheckedStateRef),
+                    m_PrefabRefs = InternalCompilerInterface.GetComponentLookup<PrefabRef>(ref this.__TypeHandle.__Game_Prefabs_PrefabRef_RO_ComponentLookup, ref this.CheckedStateRef),
                     m_DemandParameterData = this.m_DemandParameterQuery.GetSingleton<DemandParameterData>(),
                     m_LowFactors = densityDemandFactors1,
                     m_MedFactors = densityDemandFactors2,
@@ -112,6 +108,7 @@ namespace RWH.Systems
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void __AssignQueries(ref SystemState state)
         {
+            new EntityQueryBuilder((AllocatorManager.AllocatorHandle)Allocator.Temp).Dispose();
         }
 
         protected override void OnCreateForCompiler()

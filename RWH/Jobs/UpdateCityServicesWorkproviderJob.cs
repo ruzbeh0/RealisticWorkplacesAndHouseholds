@@ -144,6 +144,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly]
         public float sqm_per_employee_hospital;
         [ReadOnly]
+        public float sqm_per_patient_clinic;
+        [ReadOnly]
+        public float sqm_per_employee_clinic;
+        [ReadOnly]
         public float industry_avg_floor_height;
         [ReadOnly]
         public float sqm_per_employee_transit;
@@ -264,9 +268,18 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         {
                             workers = BuildingUtils.powerPlantWorkers(width, length, height, industry_avg_floor_height, powerplant_sqm_per_employee);
                         }
-                        if (!disable_hospital && HospitalLookup.HasComponent(entity))
+                        Game.Buildings.Hospital hospital = default;
+                        if (!disable_hospital && HospitalLookup.TryGetComponent(entity, out hospital))
                         {
-                            workers = BuildingUtils.hospitalWorkers(width, length, height, commercial_avg_floor_height, sqm_per_employee_hospital, office_sqm_per_elevator);
+                            float sqm_per_patient = sqm_per_patient_hospital;
+                            float sqm_per_worker = sqm_per_employee_hospital;
+                            if (hospital.m_TreatmentBonus < 30)
+                            {
+                                sqm_per_patient = sqm_per_patient_clinic;
+                                sqm_per_worker = sqm_per_employee_clinic;
+                            }
+
+                            workers = BuildingUtils.hospitalWorkers(width, length, height, commercial_avg_floor_height, sqm_per_worker, office_sqm_per_elevator);
                         }
                         if (!disable_police && PrisonLookup.HasComponent(entity))
                         {

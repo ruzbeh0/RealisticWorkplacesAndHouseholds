@@ -114,6 +114,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 postoffice_sqm_per_employee = Mod.m_Setting.postoffice_sqm_per_worker,
                 sqm_per_employee_hospital = Mod.m_Setting.hospital_sqm_per_worker,
                 sqm_per_patient_hospital = Mod.m_Setting.hospital_sqm_per_patient,
+                sqm_per_patient_clinic = Mod.m_Setting.clinic_sqm_per_patient,
+                sqm_per_employee_clinic = Mod.m_Setting.clinic_sqm_per_worker,
                 powerplant_sqm_per_employee = Mod.m_Setting.powerplant_sqm_per_worker,
                 sqm_per_employee_transit = 1, //TODO
                 non_usable_space_pct = Mod.m_Setting.office_non_usable_space / 100f,
