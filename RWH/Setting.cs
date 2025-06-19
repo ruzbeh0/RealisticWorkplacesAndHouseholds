@@ -75,6 +75,7 @@ namespace RealisticWorkplacesAndHouseholds
             park_sqm_per_worker = 50;
             postoffice_sqm_per_worker = 46;
             transit_station_sqm_per_worker = 60;
+            admin_sqm_per_worker = 25;
             airport_sqm_per_worker = 70;
             industry_avg_floor_height = 4.5f;
             residential_avg_floor_height = 3;
@@ -228,6 +229,14 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(CityServicesSection, PublicTransportGroup)]
         [SettingsUIDisableByCondition(typeof(Setting), nameof(disable_transit))]
         public int transit_station_sqm_per_worker { get; set; }
+
+        [SettingsUISection(CityServicesSection, AdminGroup)]
+        public bool disable_admin { get; set; }
+
+        [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(CityServicesSection, AdminGroup)]
+        [SettingsUIDisableByCondition(typeof(Setting), nameof(disable_admin))]
+        public int admin_sqm_per_worker { get; set; }
 
         [SettingsUISection(CityServicesSection, AirportGroup)]
         public bool disable_airport { get; set; }
@@ -466,6 +475,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_fire)), $"Disable workplace calculations for fire stations." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_transit)), "Disable Transportation Stations" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_transit)), $"Disable workplace calculations for transportation stations." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_admin)), "Disable Admin Buildings" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_admin)), $"Disable workplace calculations for admin buildings." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_garbage)), "Disable Garbage Facilities" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_garbage)), $"Disable workplace calculations for garbage facilities." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_hospital)), "Disable Hospitals" },
@@ -546,6 +557,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.clinic_sqm_per_worker)), $"Clinic: Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.transit_station_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.transit_station_sqm_per_worker)), "Square Meters per Worker" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.admin_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.admin_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.airport_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.airport_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.postoffice_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
@@ -674,6 +687,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_fire)), $"Desabilite cálculos de local de trabalho para Bombeiros." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_transit)), "Desativar Estações de Transporte" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_transit)), $"Desabilite cálculos de local de trabalho para Estações de Transporte." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_admin)), "Desativar Prédios Administrativos" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_admin)), $"Desabilite cálculos de local de trabalho para Prédios Administrativos." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_garbage)), "Desativar Instalações de lixo" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_garbage)), $"Desabilite cálculos de local de trabalho para Instalações de lixo." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_hospital)), "Desativar Hospitais" },
@@ -751,6 +766,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.clinic_sqm_per_worker)), $"Clinica: Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.transit_station_sqm_per_worker)), $"Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.transit_station_sqm_per_worker)), "Metros quadrados por trabalhador" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.admin_sqm_per_worker)), $"Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.admin_sqm_per_worker)), "Metros quadrados por trabalhador" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.airport_sqm_per_worker)), $"Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.airport_sqm_per_worker)), "Metros quadrados por trabalhador" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.postoffice_sqm_per_worker)), $"Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },

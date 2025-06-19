@@ -128,6 +128,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 more_electricity = Mod.m_Setting.increase_power_production,
                 transit_sqm_per_worker = Mod.m_Setting.transit_station_sqm_per_worker,
                 airport_sqm_per_worker = Mod.m_Setting.airport_sqm_per_worker,
+                admin_sqm_per_worker = Mod.m_Setting.admin_sqm_per_worker,
                 global_reduction = Mod.m_Setting.results_reduction / 100f,
                 solar_reduction = Mod.m_Setting.solarpowerplant_reduction_factor,
                 disable_powerplant = Mod.m_Setting.disable_powerplant,
@@ -140,7 +141,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 disable_hospital = Mod.m_Setting.disable_hospital,
                 disable_park = Mod.m_Setting.disable_park,
                 disable_transport = Mod.m_Setting.disable_transit,
-                disable_airport = Mod.m_Setting.disable_airport
+                disable_airport = Mod.m_Setting.disable_airport,
+                disable_admin = Mod.m_Setting.disable_admin
             };
             this.Dependency = updateCityServicesJob.ScheduleParallel(m_UpdateCityServicesJobQuery, this.Dependency);
             m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);

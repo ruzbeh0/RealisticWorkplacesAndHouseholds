@@ -175,6 +175,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly]
         public float transit_sqm_per_worker;
         [ReadOnly]
+        public float admin_sqm_per_worker;
+        [ReadOnly]
         public float airport_sqm_per_worker;
         [ReadOnly]
         public bool more_electricity;
@@ -193,6 +195,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public bool disable_powerplant;
         public bool disable_airport;
         public bool disable_transport;
+        public bool disable_admin;
 
         public UpdateCityServicesWorkplaceJob()
         {
@@ -323,13 +326,13 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         ecb.SetComponent(unfilteredChunkIndex, entity, prisonData);
                     }               
                 }
-                if (WelfareOfficeDataLookup.HasComponent(entity))
+                if (!disable_admin && WelfareOfficeDataLookup.HasComponent(entity))
                 {
-                    workers = BuildingUtils.welfareOfficeWorkers(width, length, height, commercial_avg_floor_height, sqm_per_employee_office, office_sqm_per_elevator, non_usable_space_pct);
+                    workers = BuildingUtils.welfareOfficeWorkers(width, length, height, commercial_avg_floor_height, admin_sqm_per_worker, office_sqm_per_elevator, non_usable_space_pct);
                 }
-                if (AdminBuildingDataLookup.HasComponent(entity))
+                if (!disable_admin && AdminBuildingDataLookup.HasComponent(entity))
                 {
-                    workers = BuildingUtils.adminBuildingsWorkers(width, length, height, commercial_avg_floor_height, sqm_per_employee_office, office_sqm_per_elevator, non_usable_space_pct);
+                    workers = BuildingUtils.adminBuildingsWorkers(width, length, height, commercial_avg_floor_height, admin_sqm_per_worker, office_sqm_per_elevator, non_usable_space_pct);
                 }
                 if (ResearchFacilityDataLookup.HasComponent(entity))
                 {
