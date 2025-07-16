@@ -96,6 +96,7 @@ namespace RWH.Systems
                     m_City = this.m_CitySystem.City,
                     m_Demand = householdDemand,
                     m_Random = RandomSeed.Next().GetRandom((int)this.m_SimulationSystem.frameIndex),
+                    hh_speed_rate = Mod.m_Setting.hh_spawn_speed_rate,
                     m_CommandBuffer = this.m_EndFrameBarrier.CreateCommandBuffer()
                 }.Schedule<RWHHouseholdSpawnSystem.SpawnHouseholdJob>(JobUtils.CombineDependencies(outJobHandle1, outJobHandle2, jobHandle, outJobHandle3, deps1, deps2, deps3, deps4));
 
@@ -156,6 +157,7 @@ namespace RWH.Systems
             public NativeArray<int> m_HiFactors;
             [ReadOnly]
             public NativeArray<int> m_StudyPositions;
+            public float hh_speed_rate;
 
             private bool IsValidStudyPrefab(Entity householdPrefab)
             {
@@ -167,7 +169,7 @@ namespace RWH.Systems
 
             public void Execute()
             {
-                int max1 = Mathf.RoundToInt(300f / math.clamp(this.m_DemandParameterData.m_HouseholdSpawnSpeedFactor * math.log((float)(1.0 + 1.0 / 1000.0 * (double)this.m_Populations[this.m_City].m_Population)), 0.5f, 20f));
+                int max1 = Mathf.RoundToInt(300f / math.clamp((hh_speed_rate) * math.log((float)(1.0 + 1.0 / 1000.0 * (double)this.m_Populations[this.m_City].m_Population)), 0.5f, 20f));
                 int num1 = this.m_Random.NextInt(max1);
                 int num2 = 0;
                 for (; num1 < this.m_Demand; num1 = this.m_Random.NextInt(max1))

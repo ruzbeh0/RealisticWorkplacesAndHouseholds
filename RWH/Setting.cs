@@ -401,6 +401,10 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(OtherSection, OtherGroup)]
         public int results_reduction { get; set; }
 
+        [SettingsUISlider(min = 0.1f, max = 0.5f, step = 0.05f, scalarMultiplier = 1, unit = Unit.kFloatTwoFractions)]
+        [SettingsUISection(OtherSection, OtherGroup)]
+        public float hh_spawn_speed_rate { get; set; } = 0.5f;
+
         [SettingsUISection(OtherSection, OtherGroup)]
         public ResetType evicted_reset_type { get; set; } = ResetType.FindNewHome;
 
@@ -620,6 +624,9 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_cityservices_calculations)), "Disable calculations for workplaces on City Services buildings. Workplace values will be set to vanilla. Requires restarting the game." },
                 { m_Setting.GetEnumValueLocaleID(ResetType.Delete), "Delete" },
                 { m_Setting.GetEnumValueLocaleID(ResetType.FindNewHome), "Find New Home" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.hh_spawn_speed_rate)), $"Household Spawn Speed Factor" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.hh_spawn_speed_rate)), "This factor affects the speed of houshold spawning. Lower values means more households. Vanilla value is 0.5" },
+                
 
                 //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.SeekNewHouseholds)), "Seek New Households" },
                 //{ m_Setting.GetOptionDescLocaleID(nameof(Setting.SeekNewHouseholds)), $"RECOMMENDED: If any building has more households than properties (usually when this mod is started with a pre-existing existing save), click this button to have some households look for a new home while the simulation plays. Effect is near immediate, so be aware." },
@@ -829,6 +836,9 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_cityservices_calculations)), "Desabilite cálculos para locais de trabalho em prédios de Serviços Públicos. Os valores dos locais de trabalho serão definidos como vanilla. Requer reiniciar o jogo." },
                 { m_Setting.GetEnumValueLocaleID(ResetType.Delete), "Apagar" },
                 { m_Setting.GetEnumValueLocaleID(ResetType.FindNewHome), "Encontrar um novo lar" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.hh_spawn_speed_rate)), $"Fator de Velocidade de Geração de Famílias" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.hh_spawn_speed_rate)), "Este fator afeta a velocidade de geração de famílias. Valores menores significam mais famílias. O valor padrão é 0.5" },
+
 
                 //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.SeekNewHouseholds)), "Seek New Households" },
                 //{ m_Setting.GetOptionDescLocaleID(nameof(Setting.SeekNewHouseholds)), $"RECOMMENDED: If any building has more households than properties (usually when this mod is started with a pre-existing existing save), click this button to have some households look for a new home while the simulation plays. Effect is near immediate, so be aware." },

@@ -53,7 +53,7 @@ namespace RealisticWorkplacesAndHouseholds
 
             if (!Mod.m_Setting.disable_households_calculations)
             {
-                updateSystem.UpdateAt<HouseholdUpdateSystem>(SystemUpdatePhase.GameSimulation);
+                updateSystem.UpdateBefore<HouseholdUpdateSystem>(SystemUpdatePhase.GameSimulation);
                 updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
                 World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.ZoneSpawnSystem>().Enabled = false;
                 updateSystem.UpdateAt<RWHZoneSpawnSystem>(SystemUpdatePhase.GameSimulation);
@@ -66,13 +66,13 @@ namespace RealisticWorkplacesAndHouseholds
 
             if (!Mod.m_Setting.disable_workplace_calculations)
             {
-                updateSystem.UpdateAt<WorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
+                updateSystem.UpdateBefore<WorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
             }
             
             if(!Mod.m_Setting.disable_cityservices_calculations)
             {
-                updateSystem.UpdateAt<CityServicesWorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
-                updateSystem.UpdateAt<CityServicesWorkproviderUpdateSystem>(SystemUpdatePhase.GameSimulation);
+                updateSystem.UpdateBefore<CityServicesWorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
+                updateSystem.UpdateBefore<CityServicesWorkproviderUpdateSystem>(SystemUpdatePhase.GameSimulation);
             }
             
             //updateSystem.UpdateAt<RWHHouseholdFindPropertySystem>(SystemUpdatePhase.GameSimulation);

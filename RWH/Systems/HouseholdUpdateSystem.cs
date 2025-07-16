@@ -56,7 +56,14 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
-            m_TriggerInitialHouseholdUpdate = true;
+            if (mode == GameMode.Game && purpose == Colossal.Serialization.Entities.Purpose.LoadGame)
+            {
+                UpdateHouseholds(reset: true);
+                m_TriggerInitialHouseholdUpdate = false;
+            } else
+            {
+                m_TriggerInitialHouseholdUpdate = true;
+            }  
         }
 
         [Preserve]
