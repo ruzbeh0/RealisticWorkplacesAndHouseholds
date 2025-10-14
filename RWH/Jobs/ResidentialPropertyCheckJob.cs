@@ -60,92 +60,84 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             var prefabRefs = chunk.GetNativeArray(ref prefabRefTypeHandle);
             var buildings = chunk.GetNativeArray(ref buildingTypeHandle);
 
-            //Mod.log.Info($"Processing {entities.Length} buildings");
-            bool processedOnce = false;
-
-            if (!processedOnce)
+            for (int i = 0; i < entities.Length; i++)
             {
-                for (int i = 0; i < entities.Length; i++)
+                var entity = entities[i];
+                var prefabRef = prefabRefs[i];
+                var renters = renterAccessor[i];
+                var building = buildings[i];
+                if (!propertyDataLookup.TryGetComponent(prefabRef.m_Prefab, out var propertyData))
                 {
-                    var entity = entities[i];
-                    var prefabRef = prefabRefs[i];
-                    var renters = renterAccessor[i];
-                    var building = buildings[i];
-                    if (!propertyDataLookup.TryGetComponent(prefabRef.m_Prefab, out var propertyData))
+                    return;
+                }
+                int householdsCount;
+                bool isCommercialOffice = commercialPropertyLookup.HasComponent(entity);   // TODO: Check for office as well                 
+                if (isCommercialOffice)
+                {
+                    // TODO: change to counting the number of commercial properties instead of -1 after implementing multi-tenant commercial/office
+                    householdsCount = renters.Length - 1;
+                }
+                else
+                {
+                    householdsCount = renters.Length;
+                }
+
+                if (householdsCount < propertyData.m_ResidentialProperties)
+                {
+
+                    if (!propertyOnMarketLookup.HasComponent(entity))
                     {
-                        return;
-                    }
-                    int householdsCount;
-                    bool isCommercialOffice = commercialPropertyLookup.HasComponent(entity);   // TODO: Check for office as well                 
-                    if (isCommercialOffice)
-                    {
-                        // TODO: change to counting the number of commercial properties instead of -1 after implementing multi-tenant commercial/office
-                        householdsCount = renters.Length - 1;
+                        Entity roadEdge = building.m_RoadEdge;
+                        BuildingData buildingData = buildingDataLookup[prefabRef.m_Prefab];
+                        int lotSize = buildingData.m_LotSize.x * buildingData.m_LotSize.y;
+                        float landValue = 0;
+                        if (landValueLookup.HasComponent(roadEdge))
+                        {
+                            landValue = lotSize * landValueLookup[roadEdge].m_LandValue;
+                        }
+                        var areaType = Game.Zones.AreaType.None;
+                        if (this.spawnableBuildingDataLookup.TryGetComponent(prefabRef.m_Prefab, out var spawnableBldgData))
+                        {
+                            areaType = zoneDataLookup[spawnableBldgData.m_ZonePrefab].m_AreaType;
+                        }
+                        var consumptionData = consumptionDataLookup[prefabRef.m_Prefab];
+                        var buildingLevel = PropertyUtils.GetBuildingLevel(prefabRef.m_Prefab, spawnableBuildingDataLookup);
+                        var askingRent = PropertyUtils.GetRentPricePerRenter(propertyData, buildingLevel, lotSize, landValue, areaType, ref this.economyParameterData);
+                        ecb.AddComponent(unfilteredChunkIndex, entity, new PropertyOnMarket { m_AskingRent = askingRent });
                     }
                     else
                     {
-                        householdsCount = renters.Length;
-                    }
 
-                    if (householdsCount < propertyData.m_ResidentialProperties)
-                    {
-
-                        if (!propertyOnMarketLookup.HasComponent(entity))
-                        {
-                            Entity roadEdge = building.m_RoadEdge;
-                            BuildingData buildingData = buildingDataLookup[prefabRef.m_Prefab];
-                            int lotSize = buildingData.m_LotSize.x * buildingData.m_LotSize.y;
-                            float landValue = 0;
-                            if (landValueLookup.HasComponent(roadEdge))
-                            {
-                                landValue = lotSize * landValueLookup[roadEdge].m_LandValue;
-                            }
-                            var areaType = Game.Zones.AreaType.None;
-                            if (this.spawnableBuildingDataLookup.TryGetComponent(prefabRef.m_Prefab, out var spawnableBldgData))
-                            {
-                                areaType = zoneDataLookup[spawnableBldgData.m_ZonePrefab].m_AreaType;
-                            }
-                            var consumptionData = consumptionDataLookup[prefabRef.m_Prefab];
-                            var buildingLevel = PropertyUtils.GetBuildingLevel(prefabRef.m_Prefab, spawnableBuildingDataLookup);
-                            var askingRent = PropertyUtils.GetRentPricePerRenter(propertyData, buildingLevel, lotSize, landValue, areaType, ref this.economyParameterData);
-                            ecb.AddComponent(unfilteredChunkIndex, entity, new PropertyOnMarket { m_AskingRent = askingRent });
-                        }
-                        else
-                        {
-
-                        }
-                    }
-                    else if (householdsCount > propertyData.m_ResidentialProperties)
-                    {
-                        //Slow down evictions by processing only a few buildings at a time
-                        //int prob = random.NextInt(100);
-                        //int prob_check = householdsCount - propertyData.m_ResidentialProperties;
-                        //if (prob_check < 5)
-                        //{
-                        //    prob_check = 5;
-                        //}
-                        //else if (prob_check > 20)
-                        //{
-                        //    prob_check = 20;
-                        //}
-                        //if(prob_check < prob)
-                        {
-                            RemoveHouseholds(householdsCount - propertyData.m_ResidentialProperties, entity, renters, unfilteredChunkIndex);
-                            if (resetType == ResetType.FindNewHome)
-                            {
-                                Entity e = ecb.CreateEntity(unfilteredChunkIndex, this.m_RentEventArchetype);
-                                ecb.SetComponent(unfilteredChunkIndex, e, new RentersUpdated(entity));
-                            }
-                        }
-                    }
-                    else if (householdsCount == propertyData.m_ResidentialProperties && propertyToBeOnMarketLookup.HasComponent(entity))
-                    {
-                        ecb.RemoveComponent<PropertyToBeOnMarket>(unfilteredChunkIndex, entity);
                     }
                 }
-
+                else if (householdsCount > propertyData.m_ResidentialProperties)
+                {
+                    //Slow down evictions by processing only a few buildings at a time
+                    //int prob = random.NextInt(100);
+                    //int prob_check = householdsCount - propertyData.m_ResidentialProperties;
+                    //if (prob_check < 5)
+                    //{
+                    //    prob_check = 5;
+                    //}
+                    //else if (prob_check > 20)
+                    //{
+                    //    prob_check = 20;
+                    //}
+                    //if(prob_check < prob)
+                    {
+                        RemoveHouseholds(householdsCount - propertyData.m_ResidentialProperties, entity, renters, unfilteredChunkIndex);
+                        if (resetType == ResetType.FindNewHome)
+                        {
+                            Entity e = ecb.CreateEntity(unfilteredChunkIndex, this.m_RentEventArchetype);
+                            ecb.SetComponent(unfilteredChunkIndex, e, new RentersUpdated(entity));
+                        }
+                    }
+                }
+                else if (householdsCount == propertyData.m_ResidentialProperties && propertyToBeOnMarketLookup.HasComponent(entity))
+                {
+                    ecb.RemoveComponent<PropertyToBeOnMarket>(unfilteredChunkIndex, entity);
+                }
             }
-
         }
 
         private void RemoveHousehold(Entity property, Renter renter, ResetType reset, int unfilteredChunkIndex)

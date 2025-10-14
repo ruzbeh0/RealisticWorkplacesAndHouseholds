@@ -64,7 +64,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 var building = buildings[i];
                 if (!propertyDataLookup.TryGetComponent(prefabRef.m_Prefab, out var propertyData))
                 {
-                    return;
+                    continue;
                 }
                 int householdsCount;
                 bool isCommercialOffice = commercialPropertyLookup.HasComponent(entity);   // TODO: Check for office as well                 

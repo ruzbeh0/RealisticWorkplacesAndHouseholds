@@ -1,8 +1,16 @@
 ﻿
+using Game.Buildings;
+using Game.Citizens;
 using Game.Common;
+using Game.Companies;
+using Game.Economy;
 using Game.Objects;
 using Game.Prefabs;
+using Game.Simulation;
 using Game.Tools;
+using RealisticWorkplacesAndHouseholds;
+using RealisticWorkplacesAndHouseholds.Components;
+using System;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
@@ -10,15 +18,8 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
-using RealisticWorkplacesAndHouseholds;
-using Game.Companies;
-using Game.Buildings;
-using RealisticWorkplacesAndHouseholds.Components;
 using UnityEngine;
-using Game.Citizens;
-using System;
-using Game.Economy;
-using Game.Simulation;
+using static Game.Prefabs.TriggerPrefabData;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
@@ -58,6 +59,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
     [BurstCompile]
     public struct UpdateHouseholdJob : IJobChunk
     {
+        public ComponentLookup<RealisticWorkplacesAndHouseholds.Components.UsableFootprintFactor> UffLookup;
+
         public EntityTypeHandle EntityTypeHandle;
         const float HALLWAY_BUFFER = 1f; // 1 sq metres of space in front of the unit's door
 
@@ -146,6 +149,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             float height = size.y;
                             int households = property.m_ResidentialProperties;
                             float lotSize = buildingData.m_LotSize.x * buildingData.m_LotSize.y;
+                            float uff = UffLookup.HasComponent(entity) ? UffLookup[entity].Value : 1f;
 
                             int original_households = property.m_ResidentialProperties;
                             //Check if it is a row home
@@ -160,8 +164,11 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                 if (enable_rh_apt_per_floor)
                                 {
                                     rowhome_area = width * length / rowhome_apt_per_floor + HALLWAY_BUFFER;
-                                } 
-                                
+                                }
+
+                                uff = Math.Max(uff, 0.8f);
+                                width *= (float)Math.Sqrt(uff);
+                                length *= (float)Math.Sqrt(uff);
                                 households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, rowhome_area, 0, 0);
                             } else
                             {
@@ -191,8 +198,12 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                         floorOffset++;
                                     }
 
+                                    uff = Math.Max(uff, 0.75f);
+                                    width *= (float)Math.Sqrt(uff);
+                                    length *= (float)Math.Sqrt(uff);
+
                                     //If less than 5 floors, assuming low density
-                                    if(height/ residential_avg_floor_height < 5)
+                                    if (height/ residential_avg_floor_height < 5)
                                     {
                                         households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, sqm_per_apartment_lowdensity * (1 + hallway_pct), 0, 0);
                                     } else
@@ -232,8 +243,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             {
                                 property.m_SpaceMultiplier = 1;
                             }
-                            //Mod.log.Info($"Old households: {original_households}, new households:{property.m_ResidentialProperties}, Old SpaceMult: {property.m_SpaceMultiplier}, new SpaceMult:{property.m_SpaceMultiplier / factor}, factor:{factor}");
-
+                            //Mod.log.Info($"Households updated for building {entity.Index} from {original_households} to {property.m_ResidentialProperties} (factor {factor:0.###}), uff:{uff}, rowhome:{(zonedata.m_ZoneFlags & ZoneFlags.SupportNarrow) == ZoneFlags.SupportNarrow}");
                             property.m_SpaceMultiplier /= factor;
                             
                             buildingPropertyDataArr[i] = property;
@@ -244,8 +254,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     households = property.m_ResidentialProperties
                                 };
                                 ecb.AddComponent<RealisticHouseholdData>(unfilteredChunkIndex, entity, realisticHouseholdData);
-                            }
-                               
+                            }      
 
                         }
 

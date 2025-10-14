@@ -12,6 +12,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
     public partial class EconomyParameterUpdaterSystem : GameSystemBase
     {
         private EntityQuery _query;
+        private Dictionary<Entity, EconomyParameterData> _baseline = new();
 
         protected override void OnCreate()
         {
@@ -29,21 +30,29 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         protected override void OnUpdate()
         {
             var prefabs = _query.ToEntityArray(Allocator.Temp);
-
-            foreach (var tsd in prefabs)
+            foreach (var e in prefabs)
             {
-                EconomyParameterData data = EntityManager.GetComponentData<EconomyParameterData>(tsd);
-
-                if (!Mod.m_Setting.disable_high_level_less_apt)
+                var data = EntityManager.GetComponentData<EconomyParameterData>(e);
+                if (!_baseline.TryGetValue(e, out var baseData))
                 {
-                    int lv5_reduction = Mod.m_Setting.residential_l5_reduction;
-                    data.m_ResidentialUpkeepLevelExponent = 1f + (data.m_ResidentialUpkeepLevelExponent - 1) * (100 - lv5_reduction) / 100f;
+                    _baseline[e] = data;              // cache pristine baseline once
+                    baseData = data;
                 }
 
-                data.m_RentPriceBuildingZoneTypeBase.x = 0.5f*math.max(0.01f, (100 - Mod.m_Setting.rent_discount) / 100f);
-                data.m_LandValueModifier.x = 0.35f*math.max(0.01f, (100 - Mod.m_Setting.rent_discount) / 100f);
-                EntityManager.SetComponentData<EconomyParameterData>(tsd, data);
-            }  
+                // now write from the baseline every time (no compounding)
+                if (!Mod.m_Setting.disable_high_level_less_apt)
+                {
+                    int lv5 = Mod.m_Setting.residential_l5_reduction;
+                    data.m_ResidentialUpkeepLevelExponent =
+                        1f + (baseData.m_ResidentialUpkeepLevelExponent - 1f) * (100 - lv5) / 100f;
+                }
+
+                float rentK = math.max(0.01f, (100 - Mod.m_Setting.rent_discount) / 100f);
+                data.m_RentPriceBuildingZoneTypeBase.x = 0.5f * rentK;
+                data.m_LandValueModifier.x = 0.35f * rentK;
+
+                EntityManager.SetComponentData(e, data);
+            }
         }
 
         public override int GetUpdateInterval(SystemUpdatePhase phase)

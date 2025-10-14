@@ -49,7 +49,7 @@ namespace RealisticWorkplacesAndHouseholds
             // Disable original systems
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.BudgetApplySystem>().Enabled = false;
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdSpawnSystem>().Enabled = false;
-            //World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.RentAdjustSystem>().Enabled = false;
+            //World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdFindPropertySystem>().Enabled = false;
 
             if (!Mod.m_Setting.disable_households_calculations)
             {
@@ -62,10 +62,14 @@ namespace RealisticWorkplacesAndHouseholds
             updateSystem.UpdateBefore<NoisePollutionParameterUpdaterSystem>(SystemUpdatePhase.PrefabReferences);
             updateSystem.UpdateAfter<ConsumptionDataUpdaterSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateBefore<ConsumptionDataUpdaterSystem>(SystemUpdatePhase.PrefabReferences);
+            updateSystem.UpdateAfter<UsableFootprintBuildSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateAt<RWHBudgetApplySystem>(SystemUpdatePhase.GameSimulation);
 
             if (!Mod.m_Setting.disable_workplace_calculations)
             {
+                //updateSystem.UpdateBefore<WarehouseUpdateSystem>(SystemUpdatePhase.GameSimulation);
+                //updateSystem.UpdateAt<StorageWorkplacePrefabSeederSystem>(SystemUpdatePhase.PrefabUpdate);
+                //updateSystem.UpdateAt<EnsureWarehouseWorkProviderSystem>(SystemUpdatePhase.GameSimulation);
                 updateSystem.UpdateBefore<WorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
             }
             
@@ -75,11 +79,12 @@ namespace RealisticWorkplacesAndHouseholds
                 updateSystem.UpdateBefore<CityServicesWorkproviderUpdateSystem>(SystemUpdatePhase.GameSimulation);
             }
             
-            //updateSystem.UpdateAt<RWHHouseholdFindPropertySystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
+            //updateSystem.UpdateAt<RWH.Systems.RWHHouseholdFindPropertySystem>(SystemUpdatePhase.GameSimulation);
+            //updateSystem.UpdateAt<ResetHouseholdsSystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAt<ResidentialVacancySystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAt<RWHHouseholdSpawnSystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAt<EconomyParameterUpdaterSystem>(SystemUpdatePhase.GameSimulation);
+            //updateSystem.UpdateAfter<WarehouseDebugSystem>(SystemUpdatePhase.GameSimulation);
             //updateSystem.UpdateAt<RWHRentAdjustSystem>(SystemUpdatePhase.GameSimulation);
 
             //Harmony

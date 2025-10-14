@@ -17,6 +17,7 @@ using RealisticWorkplacesAndHouseholds.Components;
 using UnityEngine;
 using Game.Citizens;
 using Game.Economy;
+using System;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
@@ -73,6 +74,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ComponentTypeHandle<WorkProvider> WorkProviderHandle;
         public ComponentLookup<IndustrialProcessData> IndustrialProcessDataLookup;
         public ComponentLookup<WorkplaceData> WorkplaceDataLookup;
+        [ReadOnly]
+        public ComponentLookup<UsableFootprintFactor> UffLookup;
         [ReadOnly]
         public ComponentLookup<PrefabRef> PrefabRefLookup;
         [ReadOnly]
@@ -225,6 +228,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         float length = size.z;
                         float height = size.y;
 
+                        float uff = UffLookup.HasComponent(entity) ? UffLookup[entity].Value : 1f;
+
                         int original_workers = workProvider.m_MaxWorkers;
                         int workers = original_workers;
 
@@ -269,6 +274,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         }
                         if (!disable_powerplant && ElectricityProducerLookup.HasComponent(entity))
                         {
+                            width /= (float)Math.Sqrt(uff);
+                            length /= (float)Math.Sqrt(uff);
                             workers = BuildingUtils.powerPlantWorkers(width, length, height, industry_avg_floor_height, powerplant_sqm_per_employee);
                         }
                         Game.Buildings.Hospital hospital = default;
@@ -321,6 +328,12 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                                 workers = BuildingUtils.schoolWorkers(new_capacity, studentPerTeacher, support_staff);
                             }
+                        }
+
+                        float uff_workers = workers * uff;
+                        if (workers > 100 && uff_workers > 100)
+                        {
+                            workers =(int)uff_workers;
                         }
 
                         workers = (int)(workers * (1f - global_reduction));

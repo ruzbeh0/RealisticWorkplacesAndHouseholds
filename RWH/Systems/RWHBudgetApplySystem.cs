@@ -104,7 +104,7 @@ public partial class RWHBudgetApplySystem : GameSystemBase
                 ref NativeQueue<StatisticsEvent>.ParallelWriter local = ref this.m_StatisticsEventQueue;
                 statisticsEvent1 = new StatisticsEvent();
                 statisticsEvent1.m_Statistic = StatisticType.Income;
-                statisticsEvent1.m_Change = math.abs((float)income / (float)BudgetApplySystem.kUpdatesPerDay);
+                statisticsEvent1.m_Change = math.abs((float)income / (float)RWHBudgetApplySystem.kUpdatesPerDay);
                 statisticsEvent1.m_Parameter = (int)incomeSource;
                 StatisticsEvent statisticsEvent3 = statisticsEvent1;
                 local.Enqueue(statisticsEvent3);

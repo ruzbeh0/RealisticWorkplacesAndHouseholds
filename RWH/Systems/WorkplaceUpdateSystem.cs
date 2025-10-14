@@ -106,6 +106,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 BuildingPropertyDataLookup = SystemAPI.GetComponentLookup<BuildingPropertyData>(false),
                 ExtractorCompanyDataLookup = SystemAPI.GetComponentLookup<ExtractorCompanyData>(true),
                 RealisticWorkplaceDataLookup = SystemAPI.GetComponentLookup<RealisticWorkplaceData>(true),
+                UffLookup = SystemAPI.GetComponentLookup<RealisticWorkplacesAndHouseholds.Components.UsableFootprintFactor>(true),
                 reset = reset,
                 commercial_sqm_per_employee = Mod.m_Setting.commercial_sqm_per_worker,
                 office_sqm_per_employee = Mod.m_Setting.office_sqm_per_worker,

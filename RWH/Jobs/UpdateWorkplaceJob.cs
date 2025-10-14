@@ -10,6 +10,7 @@ using Game.Tools;
 using Mono.Cecil;
 using RealisticWorkplacesAndHouseholds;
 using RealisticWorkplacesAndHouseholds.Components;
+using System;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
@@ -18,6 +19,7 @@ using Unity.Entities;
 using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
 using UnityEngine;
+using static Game.Prefabs.TriggerPrefabData;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
@@ -57,6 +59,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
     {
         public EntityTypeHandle EntityTypeHandle;
         public EntityCommandBuffer.ParallelWriter ecb;
+        public ComponentLookup<RealisticWorkplacesAndHouseholds.Components.UsableFootprintFactor> UffLookup;
+
 
         [ReadOnly]
         public ComponentTypeHandle<CompanyData> CompanyDataHandle;
@@ -186,6 +190,11 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 // High density buildings have lobby
                 int floor_offset = (zonedata.m_MaxHeight > 25) ? 1 : 0;
 
+                float uff = UffLookup.HasComponent(entity) ? UffLookup[entity].Value : 1f;
+                width *= (float)Math.Sqrt(uff);
+                length *= (float)Math.Sqrt(uff);
+
+
                 if (zonedata.m_AreaType == Game.Zones.AreaType.Residential)
                 {
                     new_workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, commercial_sqm_per_employee, 0, 0, 1);
@@ -231,7 +240,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                         area_factor *= GetIndustryFactor(resource);
                     }
-
+                    width /= (float)Math.Sqrt(uff);
+                    length /= (float)Math.Sqrt(uff);
                     new_workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 0, 0);
                 }
 

@@ -1,19 +1,20 @@
-﻿using Game;
-using Unity.Entities;
-using UnityEngine.Scripting;
-using Game.SceneFlow;
-using Unity.Jobs;
+﻿using Colossal.Serialization.Entities;
+using Game;
+using Game.Buildings;
 using Game.Common;
-using Colossal.Serialization.Entities;
+using Game.Companies;
 using Game.Prefabs;
-using Unity.Mathematics;
-using Unity.Burst;
+using Game.SceneFlow;
 using Game.Settings;
 using RealisticWorkplacesAndHouseholds;
+using RealisticWorkplacesAndHouseholds.Components;
 using RealisticWorkplacesAndHouseholds.Jobs;
-using Game.Buildings;
-using Game.Companies;
+using Unity.Burst;
 using Unity.Collections;
+using Unity.Entities;
+using Unity.Jobs;
+using Unity.Mathematics;
+using UnityEngine.Scripting;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
@@ -98,6 +99,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 ParkDataLookup = SystemAPI.GetComponentLookup<ParkData>(true),
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
                 subMeshHandle = SystemAPI.GetBufferTypeHandle<SubMesh>(true),
+                UffLookup = SystemAPI.GetComponentLookup<UsableFootprintFactor>(true),
                 park_sqm_per_worker = Mod.m_Setting.park_sqm_per_worker,
                 studentPerTeacher = Mod.m_Setting.students_per_teacher,
                 sqm_per_student = Mod.m_Setting.sqm_per_student,

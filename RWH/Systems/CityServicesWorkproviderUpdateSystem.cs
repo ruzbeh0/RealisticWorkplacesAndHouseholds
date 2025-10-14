@@ -1,13 +1,14 @@
 ﻿using Game;
-using Unity.Entities;
-using UnityEngine.Scripting;
-using Unity.Jobs;
-using Game.Common;
-using Game.Prefabs;
-using Unity.Burst;
-using RealisticWorkplacesAndHouseholds.Jobs;
 using Game.Buildings;
+using Game.Common;
 using Game.Companies;
+using Game.Prefabs;
+using RealisticWorkplacesAndHouseholds.Components;
+using RealisticWorkplacesAndHouseholds.Jobs;
+using Unity.Burst;
+using Unity.Entities;
+using Unity.Jobs;
+using UnityEngine.Scripting;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
@@ -85,6 +86,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 TelecomFacilityLookup = SystemAPI.GetComponentLookup<Game.Buildings.TelecomFacility>(true), 
                 SchoolDataLookup = SystemAPI.GetComponentLookup<SchoolData>(true),
                 ParkLookup = SystemAPI.GetComponentLookup<Game.Buildings.Park>(true),
+                UffLookup = SystemAPI.GetComponentLookup<UsableFootprintFactor>(true),
                 park_sqm_per_worker = Mod.m_Setting.park_sqm_per_worker,
                 studentPerTeacher = Mod.m_Setting.students_per_teacher,
                 sqm_per_student = Mod.m_Setting.sqm_per_student,

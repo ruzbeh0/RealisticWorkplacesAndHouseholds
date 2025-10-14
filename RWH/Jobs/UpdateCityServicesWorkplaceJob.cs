@@ -76,6 +76,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public EntityCommandBuffer.ParallelWriter ecb;
 
         [ReadOnly]
+        public ComponentLookup<UsableFootprintFactor> UffLookup;
+        [ReadOnly]
         public ComponentTypeHandle<PrefabData> PrefabDataLookup;
         [ReadOnly]
         public ComponentTypeHandle<BuildingData> BuildingDataLookup;
@@ -228,6 +230,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 float length = size.z;
                 float height = size.y;
 
+                float uff = UffLookup.HasComponent(entity) ? UffLookup[entity].Value : 1f;
+                width *= (float)Math.Sqrt(uff);
+                length *= (float)Math.Sqrt(uff);
+
                 int oldworkers = workplaceData.m_MaxWorkers;
                 int workers = oldworkers;
 
@@ -245,6 +251,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 }
                 if (TelecomFacilityDataLookup.HasComponent(entity))
                 {
+                    width /= (float)Math.Sqrt(uff);
+                    length /= (float)Math.Sqrt(uff);
                     workers = BuildingUtils.telecomWorkers(width, length, height, industry_avg_floor_height, garbage_sqm_per_worker, oldworkers);
                 }
                 if (TransportStationDataLookup.HasComponent(entity))
@@ -273,6 +281,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 }
                 if (!disable_powerplant && PowerPlantDataLookup.HasComponent(entity))
                 {
+                    width /= (float)Math.Sqrt(uff);
+                    length /= (float)Math.Sqrt(uff);
                     workers = BuildingUtils.powerPlantWorkers(width, length, height, industry_avg_floor_height, powerplant_sqm_per_employee);
                     if(SolarPoweredDataLookup.HasComponent(entity))
                     {

@@ -62,8 +62,8 @@ namespace RealisticWorkplacesAndHouseholds
             commercial_avg_floor_height = 3.05f;
             commercial_sqm_per_worker = 37;
             commercial_self_service_gas = false;
-            police_sqm_per_worker = 60;
-            fire_sqm_per_worker = 60;
+            police_sqm_per_worker = 35;
+            fire_sqm_per_worker = 35;
             office_sqm_per_worker = 23;
             office_elevators_per_sqm = 4180;
             hospital_sqm_per_worker = 80;
@@ -74,12 +74,12 @@ namespace RealisticWorkplacesAndHouseholds
             powerplant_sqm_per_worker = 200;
             park_sqm_per_worker = 50;
             postoffice_sqm_per_worker = 46;
-            transit_station_sqm_per_worker = 60;
+            transit_station_sqm_per_worker = 40;
             admin_sqm_per_worker = 25;
-            airport_sqm_per_worker = 70;
+            airport_sqm_per_worker = 55;
             industry_avg_floor_height = 4.5f;
             residential_avg_floor_height = 3;
-            residential_sqm_per_apartment = 120;
+            residential_sqm_per_apartment = 90;
             rowhomes_apt_per_floor = 1;
             disable_row_homes_apt_per_floor = false;
             rowhomes_basement = true;

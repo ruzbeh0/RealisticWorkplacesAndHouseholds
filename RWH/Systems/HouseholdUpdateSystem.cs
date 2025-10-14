@@ -117,6 +117,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 hallway_pct = Mod.m_Setting.residential_hallway_space / 100f,
                 global_reduction = Mod.m_Setting.results_reduction / 100f,
                 sqm_per_apartment_lowdensity = Mod.m_Setting.residential_lowdensity_sqm_per_apartment,
+                UffLookup = SystemAPI.GetComponentLookup<RealisticWorkplacesAndHouseholds.Components.UsableFootprintFactor>(true),
                 reset = reset
             };
 

@@ -52,6 +52,8 @@ namespace RWH.Systems
             this.m_DemandParameterQuery = this.GetEntityQuery(ComponentType.ReadOnly<DemandParameterData>());
             this.RequireForUpdate(this.m_HouseholdPrefabQuery);
             this.RequireForUpdate(this.m_OutsideConnectionQuery);
+
+            Mod.log.Info("RWHHouseholdSpawnSystem: OnCreate");
         }
 
         [UnityEngine.Scripting.Preserve]
@@ -59,13 +61,22 @@ namespace RWH.Systems
         {
             JobHandle jobHandle = this.Dependency;
             int householdDemand = this.m_ResidentialDemandSystem.householdDemand;
+            //Mod.log.Info($"RWHHouseholdSpawnSystem: householdDemand={householdDemand}, vacancy_rate={m_ResidentialVacancySystem.vacancy_rate}, residential_vacancy_rate={Mod.m_Setting.residential_vacancy_rate}");
             if (householdDemand > 0 || m_ResidentialVacancySystem.vacancy_rate > Mod.m_Setting.residential_vacancy_rate/100f)
             {
-                if(householdDemand == 0)
+                if (householdDemand <= 0)
                 {
-                    householdDemand = 100 * (1 - (int)System.Math.Round(Mod.m_Setting.residential_vacancy_rate / 100f / m_ResidentialVacancySystem.vacancy_rate));
+                    // targetVacancy and actualVacancy in [0..1]
+                    float target = math.saturate(Mod.m_Setting.residential_vacancy_rate / 100f);
+                    float actual = math.max(0.001f, m_ResidentialVacancySystem.vacancy_rate);
+
+                    // spawn proportional to how far below target we are
+                    float ratio = math.saturate((target - actual) / target); // 0..1
+                    householdDemand = (int)math.round(100f * ratio);
                 }
+
                 
+
                 JobHandle deps1;
                 NativeArray<int> densityDemandFactors1 = this.m_ResidentialDemandSystem.GetLowDensityDemandFactors(out deps1);
                 JobHandle deps2;
@@ -94,7 +105,7 @@ namespace RWH.Systems
                     m_HiFactors = densityDemandFactors3,
                     m_StudyPositions = this.m_CountStudyPositionsSystem.GetStudyPositionsByEducation(out deps4),
                     m_City = this.m_CitySystem.City,
-                    m_Demand = householdDemand,
+                    m_Demand = 4*householdDemand,
                     m_Random = RandomSeed.Next().GetRandom((int)this.m_SimulationSystem.frameIndex),
                     hh_speed_rate = Mod.m_Setting.hh_spawn_speed_rate,
                     m_CommandBuffer = this.m_EndFrameBarrier.CreateCommandBuffer()
@@ -170,6 +181,7 @@ namespace RWH.Systems
             public void Execute()
             {
                 int max1 = Mathf.RoundToInt(300f / math.clamp((hh_speed_rate) * math.log((float)(1.0 + 1.0 / 1000.0 * (double)this.m_Populations[this.m_City].m_Population)), 0.5f, 20f));
+                //int max1 = 600;
                 int num1 = this.m_Random.NextInt(max1);
                 int num2 = 0;
                 for (; num1 < this.m_Demand; num1 = this.m_Random.NextInt(max1))
@@ -179,11 +191,14 @@ namespace RWH.Systems
                 }
                 if (num2 == 0)
                     return;
+                //num2 = num2 * 2;
                 int y1 = this.m_LowFactors[6] + this.m_MedFactors[6] + this.m_HiFactors[6];
                 int y2 = this.m_LowFactors[12] + this.m_MedFactors[12] + this.m_HiFactors[12];
                 int num3 = math.max(0, y1);
                 int num4 = math.max(0, y2);
                 float num5 = (float)num4 / (float)(num4 + num3);
+
+                //Mod.log.Info($"SpawnHouseholdJob: num2={num2}, num3={num3}, num4={num4}, num5={num5}, max1={max1}");
                 for (int index1 = 0; index1 < num2; ++index1)
                 {
                     int max2 = 0;
@@ -224,6 +239,7 @@ namespace RWH.Systems
                             m_CurrentBuilding = result
                         };
                         this.m_CommandBuffer.AddComponent<CurrentBuilding>(entity, component);
+                        //Mod.log.Info($"SpawnHouseholdJob: Spawning household with prefab {prefabEntity} in building {result}");
                     }
                     else
                     {
