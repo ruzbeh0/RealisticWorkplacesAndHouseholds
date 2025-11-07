@@ -130,6 +130,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 more_electricity = Mod.m_Setting.increase_power_production,
                 transit_sqm_per_worker = Mod.m_Setting.transit_station_sqm_per_worker,
                 airport_sqm_per_worker = Mod.m_Setting.airport_sqm_per_worker,
+                port_sqm_per_worker = Mod.m_Setting.port_sqm_per_worker,
                 admin_sqm_per_worker = Mod.m_Setting.admin_sqm_per_worker,
                 global_reduction = Mod.m_Setting.results_reduction / 100f,
                 solar_reduction = Mod.m_Setting.solarpowerplant_reduction_factor,

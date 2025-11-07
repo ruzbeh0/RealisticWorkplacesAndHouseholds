@@ -175,6 +175,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly]
         public float depot_sqm_per_worker;
         [ReadOnly]
+        public float port_sqm_per_worker;
+        [ReadOnly]
         public float garbage_sqm_per_worker;
         [ReadOnly]
         public float transit_sqm_per_worker;
@@ -237,7 +239,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         {
                             workers = BuildingUtils.parkWorkers(width, length, height, industry_avg_floor_height, park_sqm_per_worker);
                         }
-                        if (!disable_depot && TransportDepotLookup.HasComponent(entity) || MaintenanceDepotLookup.HasComponent(entity) || CargoTransportStationLookup.HasComponent(entity))
+                        if (!disable_depot && TransportDepotLookup.HasComponent(entity) || MaintenanceDepotLookup.HasComponent(entity))
                         {
                             workers = BuildingUtils.depotWorkers(width, length, height, industry_avg_floor_height, depot_sqm_per_worker);
                         }
@@ -253,7 +255,16 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         {
                             if (TransportStationLookup.TryGetComponent(entity, out var transportStation))
                             {
-                                if (!(CargoTransportStationLookup.HasComponent(entity) && transportStation.m_ComfortFactor == 0))
+                                if (transportStation.m_WatercraftRefuelTypes != Game.Vehicles.EnergyTypes.None)
+                                {
+                                    workers = BuildingUtils.publicTransportationWorkers(width, length, height, industry_avg_floor_height, port_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, original_workers);
+                                    int adjd_old_workers = (int)(original_workers / (1f - global_reduction));
+                                    if (adjd_old_workers > workers)
+                                    {
+                                        workers = adjd_old_workers;
+                                    }
+                                }
+                                else if (!(CargoTransportStationLookup.HasComponent(entity) && transportStation.m_ComfortFactor == 0))
                                 {
                                     if (transportStation.m_CarRefuelTypes != Game.Vehicles.EnergyTypes.None)
                                     {

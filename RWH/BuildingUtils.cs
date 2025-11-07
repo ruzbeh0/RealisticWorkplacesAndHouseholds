@@ -158,6 +158,20 @@ namespace RealisticWorkplacesAndHouseholds
             }
         }
 
+        //Smooths area factor, where areas that are smaller than base area have fators > 1
+        public static float smooth_area_factor3(float base_area, float x, float y)
+        {
+            float area = x * y;
+            if (area < base_area)
+            {
+                return base_area / area;
+            }
+            else
+            {
+                return (float)Math.Sqrt(area / base_area);
+            }
+        }
+
         //Calculates number of workers for transportation depots, maintenance depots, and cargo stations
         public static int depotWorkers(float width, float length, float height, float industry_avg_floor_height, float depot_sqm_per_worker)
         {
@@ -213,8 +227,17 @@ namespace RealisticWorkplacesAndHouseholds
         {
             //Smooth the employees per sqm for bigger hospitals
             float base_area = 50 * 50;
-            float area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
-            return BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area_factor * sqm_per_employee_hospital, office_sqm_per_elevator);
+            float area_factor = BuildingUtils.smooth_area_factor2(base_area, width, length);
+            if(area_factor < 1f)
+            {
+                sqm_per_employee_hospital *= area_factor;
+            } else
+            {
+                //For smaller clinics increase size instead of decreasing employees per sqm
+                width *= (float)Math.Sqrt(area_factor);
+                length *= (float)Math.Sqrt(area_factor);
+            }
+            return BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_hospital, office_sqm_per_elevator);
         }
 
         //Calculates number of workers for Welfare office

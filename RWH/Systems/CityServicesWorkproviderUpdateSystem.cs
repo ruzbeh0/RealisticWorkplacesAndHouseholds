@@ -116,6 +116,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 garbage_sqm_per_worker = Mod.m_Setting.garbage_sqm_per_worker,
                 transit_sqm_per_worker = Mod.m_Setting.transit_station_sqm_per_worker,
                 airport_sqm_per_worker = Mod.m_Setting.airport_sqm_per_worker,
+                port_sqm_per_worker = Mod.m_Setting.port_sqm_per_worker,
                 admin_sqm_per_worker = Mod.m_Setting.admin_sqm_per_worker,
                 global_reduction = Mod.m_Setting.results_reduction / 100f,
                 disable_powerplant = Mod.m_Setting.disable_powerplant,

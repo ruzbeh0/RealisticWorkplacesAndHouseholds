@@ -173,6 +173,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly]
         public float depot_sqm_per_worker;
         [ReadOnly]
+        public float port_sqm_per_worker;
+        [ReadOnly]
         public float garbage_sqm_per_worker;
         [ReadOnly]
         public float transit_sqm_per_worker;
@@ -241,7 +243,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 {
                     workers = BuildingUtils.parkWorkers(width, length, height, industry_avg_floor_height, park_sqm_per_worker);
                 }
-                if (!disable_depot && (MaintenanceDepotDataLookup.HasComponent(entity) || TransportDepotDataLookup.HasComponent(entity) || CargoTransportStationDataLookup.HasComponent(entity)))
+                if (!disable_depot && (MaintenanceDepotDataLookup.HasComponent(entity) || TransportDepotDataLookup.HasComponent(entity)))
                 {
                     workers = BuildingUtils.depotWorkers(width, length, height, industry_avg_floor_height, depot_sqm_per_worker);
                 }
@@ -259,7 +261,16 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 {
                     if (TransportStationDataLookup.TryGetComponent(entity, out var transportStation))
                     {
-                        if(!(CargoTransportStationDataLookup.HasComponent(entity) && transportStation.m_ComfortFactor == 0))
+                        if (transportStation.m_WatercraftRefuelTypes != Game.Vehicles.EnergyTypes.None)
+                        {
+                            workers = BuildingUtils.publicTransportationWorkers(width, length, height, industry_avg_floor_height, port_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, oldworkers);
+                            int adjd_old_workers = (int)(oldworkers/(1f - global_reduction));
+                            if (adjd_old_workers > workers)
+                            {
+                                workers = adjd_old_workers;
+                            }
+                        }
+                        else if (!(CargoTransportStationDataLookup.HasComponent(entity) && transportStation.m_ComfortFactor == 0))
                         {
                             if (transportStation.m_AircraftRefuelTypes != Game.Vehicles.EnergyTypes.None)
                             {
@@ -269,12 +280,12 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     workers = BuildingUtils.airportWorkers(width, length, height, industry_avg_floor_height, airport_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, oldworkers);
                                 }
                             }
-                            else
+                            else 
                             {
-                                if(!disable_transport)
+                                if (!disable_transport)
                                 {
                                     workers = BuildingUtils.publicTransportationWorkers(width, length, height, industry_avg_floor_height, transit_sqm_per_worker, non_usable_space_pct, office_sqm_per_elevator, oldworkers);
-                                } 
+                                }
                             }
                         }                     
                     } 
