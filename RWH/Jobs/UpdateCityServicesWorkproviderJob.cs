@@ -35,6 +35,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     [
                         ComponentType.ReadOnly<PrefabRef>(),
                         ComponentType.ReadWrite<WorkProvider>(),
+                        ComponentType.ReadOnly<SubMesh>()
                     ],
                     Any = [
                         ComponentType.ReadOnly<Game.Buildings.ElectricityProducer>(),
@@ -122,6 +123,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ComponentLookup<Game.Buildings.Park> ParkLookup;
         [ReadOnly]
         public ComponentLookup<SchoolData> SchoolDataLookup;
+        [ReadOnly] public BufferTypeHandle<SubMesh> SubMeshHandle;
         [ReadOnly]
         public float studentPerTeacher;
         [ReadOnly]
@@ -212,6 +214,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             var entities = chunk.GetNativeArray(EntityTypeHandle);
             var workProviderArr = chunk.GetNativeArray(ref WorkProviderHandle);
             var prefabRefArr = chunk.GetNativeArray(ref PrefabRefHandle);
+            var subMeshBufferAccessor = chunk.GetBufferAccessor(ref SubMeshHandle);
 
             for (int i = 0; i < workProviderArr.Length; i++)
             {
@@ -222,7 +225,9 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                 if (WorkplaceDataLookup.TryGetComponent(prefab1, out workplaceData))
                 {
-                    if (PrefabSubMeshesLookup.TryGetBuffer(prefab1, out var subMeshes))
+                    DynamicBuffer <SubMesh> subMeshes = subMeshBufferAccessor[i];
+
+                    if (subMeshes.Length > 0)
                     {
                         var dimensions = BuildingUtils.GetBuildingDimensions(subMeshes, meshDataLookup);
                         var size = ObjectUtils.GetSize(dimensions);

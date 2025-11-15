@@ -237,7 +237,10 @@ namespace RealisticWorkplacesAndHouseholds
                 width *= (float)Math.Sqrt(area_factor);
                 length *= (float)Math.Sqrt(area_factor);
             }
-            return BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_hospital, office_sqm_per_elevator);
+            //Smooth workers even more for big buildings
+            base_area = 100 * 100;
+            area_factor = BuildingUtils.smooth_area_factor(base_area, width, length);
+            return BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, sqm_per_employee_hospital* area_factor, office_sqm_per_elevator);
         }
 
         //Calculates number of workers for Welfare office

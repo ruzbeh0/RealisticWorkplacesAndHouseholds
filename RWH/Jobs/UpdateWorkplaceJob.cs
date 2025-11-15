@@ -54,7 +54,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         }
     }
 
-    [BurstCompile]
+    //[BurstCompile]
     public struct UpdateWorkplaceJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
@@ -135,6 +135,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 Game.Economy.Resource.Beverages => 1.05f,
                 Game.Economy.Resource.Paper => 0.9f,
                 Game.Economy.Resource.Pharmaceuticals => 0.75f,
+                Game.Economy.Resource.Fish => 3f,
                 _ => 1.0f
             };
         }
@@ -213,6 +214,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             area = commercial_sqm_per_worker_restaurants;
                         else if (resource == Game.Economy.Resource.Beverages || resource == Game.Economy.Resource.ConvenienceFood || resource == Game.Economy.Resource.Food)
                             area = commercial_sqm_per_worker_supermarket;
+                            
                     }
 
                     new_workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area, 0, office_sqm_per_elevator);
@@ -227,11 +229,14 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 }
                 else
                 {
+
                     float area_factor = BuildingUtils.smooth_area_factor(industry_base_threshold, width, length);
 
                     if (hasIndustrialProcessData)
                     {
+                        
                         var resource = industrialProcessData.m_Output.m_Resource;
+                        
                         if (resource == Game.Economy.Resource.Wood || resource == Game.Economy.Resource.Vegetables || resource == Game.Economy.Resource.Cotton || resource == Game.Economy.Resource.Grain ||
                             resource == Game.Economy.Resource.Livestock || resource == Game.Economy.Resource.Oil || resource == Game.Economy.Resource.Ore || resource == Game.Economy.Resource.Coal || resource == Game.Economy.Resource.Stone)
                         {
@@ -239,6 +244,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         }
 
                         area_factor *= GetIndustryFactor(resource);
+
                     }
                     width /= (float)Math.Sqrt(uff);
                     length /= (float)Math.Sqrt(uff);

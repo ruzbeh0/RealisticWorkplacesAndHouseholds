@@ -49,14 +49,15 @@ namespace RealisticWorkplacesAndHouseholds
             // Disable original systems
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.BudgetApplySystem>().Enabled = false;
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdSpawnSystem>().Enabled = false;
+            //World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.RentAdjustSystem>().Enabled = false;
             //World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdFindPropertySystem>().Enabled = false;
 
             if (!Mod.m_Setting.disable_households_calculations)
             {
                 updateSystem.UpdateBefore<HouseholdUpdateSystem>(SystemUpdatePhase.GameSimulation);
                 updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
-                World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.ZoneSpawnSystem>().Enabled = false;
-                updateSystem.UpdateAt<RWHZoneSpawnSystem>(SystemUpdatePhase.GameSimulation);
+                //World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.ZoneSpawnSystem>().Enabled = false;
+                //updateSystem.UpdateAt<RWHZoneSpawnSystem>(SystemUpdatePhase.GameSimulation);
             } 
             updateSystem.UpdateAfter<NoisePollutionParameterUpdaterSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateBefore<NoisePollutionParameterUpdaterSystem>(SystemUpdatePhase.PrefabReferences);
@@ -84,6 +85,7 @@ namespace RealisticWorkplacesAndHouseholds
             updateSystem.UpdateAt<ResidentialVacancySystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAt<RWHHouseholdSpawnSystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAt<EconomyParameterUpdaterSystem>(SystemUpdatePhase.GameSimulation);
+            //updateSystem.UpdateAt<RealisticWorkplacesAndHouseholds.Systems.RWHRentAdjustSystem>(SystemUpdatePhase.GameSimulation);
             //updateSystem.UpdateAfter<WarehouseDebugSystem>(SystemUpdatePhase.GameSimulation);
             //updateSystem.UpdateAt<RWHRentAdjustSystem>(SystemUpdatePhase.GameSimulation);
 

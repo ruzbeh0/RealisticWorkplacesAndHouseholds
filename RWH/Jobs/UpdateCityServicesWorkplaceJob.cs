@@ -328,7 +328,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                         }
 
-                        int new_capacity = workers = BuildingUtils.hospitalWorkers(width, length, height, commercial_avg_floor_height, sqm_per_patient, office_sqm_per_elevator);
+                        int new_capacity = BuildingUtils.hospitalWorkers(width, length, height, commercial_avg_floor_height, sqm_per_patient, office_sqm_per_elevator);
                         hospitalData.m_PatientCapacity = (int)(new_capacity * (1f - global_reduction));
 
                         workers = BuildingUtils.hospitalWorkers(width, length, height, commercial_avg_floor_height, sqm_per_worker, office_sqm_per_elevator);

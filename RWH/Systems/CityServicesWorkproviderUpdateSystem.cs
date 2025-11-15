@@ -66,7 +66,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 SpawnableBuildingDataLookup = SystemAPI.GetComponentLookup<SpawnableBuildingData>(true),
                 WorkProviderHandle = SystemAPI.GetComponentTypeHandle<WorkProvider>(false),
                 PrefabRefLookup = SystemAPI.GetComponentLookup<PrefabRef>(true),
-                PrefabSubMeshesLookup = SystemAPI.GetBufferLookup<SubMesh>(true),
+                SubMeshHandle = SystemAPI.GetBufferTypeHandle<SubMesh>(true),
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
                 TransportDepotLookup = SystemAPI.GetComponentLookup<Game.Buildings.TransportDepot>(true),
                 CargoTransportStationLookup = SystemAPI.GetComponentLookup<Game.Buildings.CargoTransportStation>(true),
