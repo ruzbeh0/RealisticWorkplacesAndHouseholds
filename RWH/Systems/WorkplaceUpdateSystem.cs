@@ -120,7 +120,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 commercial_sqm_per_worker_supermarket = Mod.m_Setting.commercial_sqm_per_worker_supermarket,
                 global_reduction = Mod.m_Setting.results_reduction / 100f,
                 industry_base_threshold = Mod.m_Setting.industry_area_base,
-                office_height_threshold = Mod.m_Setting.office_height_base
+                office_height_threshold = Mod.m_Setting.office_height_base,
+                commercial_sqm_per_worker_rec_entertainment = Mod.m_Setting.commercial_sqm_per_worker_rec_entertainment,
             };
 
             this.Dependency = updateZonableWorkplace.ScheduleParallel(activeQuery, this.Dependency);

@@ -61,7 +61,7 @@ namespace RealisticWorkplacesAndHouseholds
             sqm_univ_adjuster = 4f;
             support_staff = 30f;
             commercial_avg_floor_height = 3.05f;
-            commercial_sqm_per_worker = 37;
+            commercial_sqm_per_worker = 45;
             commercial_self_service_gas = false;
             police_sqm_per_worker = 50;
             fire_sqm_per_worker = 50;
@@ -73,7 +73,7 @@ namespace RealisticWorkplacesAndHouseholds
             clinic_sqm_per_patient = 35;
             industry_sqm_per_worker = 50;
             powerplant_sqm_per_worker = 200;
-            park_sqm_per_worker = 50;
+            park_sqm_per_worker = 80;
             postoffice_sqm_per_worker = 46;
             transit_station_sqm_per_worker = 40;
             admin_sqm_per_worker = 25;
@@ -92,7 +92,8 @@ namespace RealisticWorkplacesAndHouseholds
             residential_l5_reduction = 20;
             office_non_usable_space = 20;
             commercial_sqm_per_worker_supermarket = 65;
-            commercial_sqm_per_worker_restaurants = 28;
+            commercial_sqm_per_worker_restaurants = 37;
+            commercial_sqm_per_worker_rec_entertainment = 93;
             service_upkeep_reduction = 70;
             electricity_consumption_reduction = 20;
             water_consumption_reduction = 20;
@@ -194,6 +195,10 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(CommercialSection, CommercialGroup)]
         public int commercial_sqm_per_worker_restaurants { get; set; }
+
+        [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(CommercialSection, CommercialGroup)]
+        public int commercial_sqm_per_worker_rec_entertainment { get; set; }
 
         [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(OfficeSection, OfficeGroup)]
@@ -552,6 +557,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.commercial_sqm_per_worker_supermarket)), "Supermarkets: Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_sqm_per_worker_supermarket)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.commercial_sqm_per_worker_rec_entertainment)), "Recreation and Entertainment: Square Meters per Worker" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_sqm_per_worker_rec_entertainment)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.commercial_sqm_per_worker_restaurants)), "Restaurants: Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_sqm_per_worker_restaurants)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.industry_sqm_per_worker)), "Square Meters per Worker" },
@@ -769,6 +776,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_sqm_per_worker_supermarket)), $"Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.commercial_sqm_per_worker_restaurants)), "Restaurantes: Metros quadrados por trabalhador" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_sqm_per_worker_restaurants)), $"Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.commercial_sqm_per_worker_rec_entertainment)), "Recreação and Diversão: Square Meters per Worker" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_sqm_per_worker_rec_entertainment)), $"Number of square meters per worker. Higher numbers will decrease the number of workers." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.industry_sqm_per_worker)), "Metros quadrados por trabalhador" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.industry_sqm_per_worker)), $"Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.park_sqm_per_worker)), "Metros quadrados por trabalhador" },

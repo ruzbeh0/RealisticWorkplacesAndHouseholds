@@ -54,7 +54,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         }
     }
 
-    //[BurstCompile]
+    [BurstCompile]
     public struct UpdateWorkplaceJob : IJobChunk
     {
         public EntityTypeHandle EntityTypeHandle;
@@ -107,6 +107,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public float commercial_sqm_per_worker_restaurants;
         [ReadOnly]
         public float commercial_sqm_per_worker_supermarket;
+        [ReadOnly]
+        public float commercial_sqm_per_worker_rec_entertainment;
         [ReadOnly]
         public float global_reduction;
         [ReadOnly]
@@ -214,7 +216,11 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             area = commercial_sqm_per_worker_restaurants;
                         else if (resource == Game.Economy.Resource.Beverages || resource == Game.Economy.Resource.ConvenienceFood || resource == Game.Economy.Resource.Food)
                             area = commercial_sqm_per_worker_supermarket;
-                            
+                        else if (resource == Game.Economy.Resource.Recreation || resource == Game.Economy.Resource.Entertainment)
+                            area = commercial_sqm_per_worker_rec_entertainment;
+
+                        area *= BuildingUtils.smooth_area_factor(70*70, width, length);
+
                     }
 
                     new_workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area, 0, office_sqm_per_elevator);
