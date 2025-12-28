@@ -118,6 +118,16 @@ namespace RWH.Systems
 
                 float uff = ComputeUsableFootprintFactor(prefab);
 
+                // ✅ ADD HERE (right after computing uff)
+                float fill = ComputeFrontageFill(prefab); // you’ll implement this helper
+                if (fill >= 1f) // example threshold
+                {
+                    if (EntityManager.HasComponent<RowHomeLike>(prefab))
+                        ecb.SetComponent(prefab, new RowHomeLike { FrontageFill = fill });
+                    else
+                        ecb.AddComponent(prefab, new RowHomeLike { FrontageFill = fill });  // <-- this line
+                }
+                
                 if (uff < 1f)
                 {
                     if (EntityManager.HasComponent<UsableFootprintFactor>(prefab))
@@ -368,6 +378,223 @@ namespace RWH.Systems
 
             return math.clamp(uff, math.clamp(footprint_min, 0f, 1f), 1f);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private float ComputeFrontageFill(
+    Entity prefab,
+    float minHeightMeters = 4f,     // ~2 floors; helps ignore fences/hedges
+    float maxHeightMeters = 13.5f,    // ~4 floors; tune per assets
+    float minLotCoverage = 0.25f,    // bbox(building)/bbox(lot) area
+    float facadeToleranceMeters = 0.5f, // “same line” tolerance for façade slice
+    float maxFrontSetbackMeters = 3.0f,  // front yard filter (rowhomes usually small)
+    float minFacadeFill = 0.95f          // façade slice must fill lot width enough
+)
+        {
+            // ----------------------------
+            // 0) Height hardening (mesh-based)
+            // ----------------------------
+            if (_subMeshes.HasBuffer(prefab))
+            {
+                var dims = BuildingUtils.GetBuildingDimensions(_subMeshes[prefab], _meshData);
+                float3 size = ObjectUtils.GetSize(dims);
+                float height = size.y;
+
+                if (minHeightMeters > 0f && height < minHeightMeters)
+                    return 0f;
+
+                if (maxHeightMeters > 0f && height > maxHeightMeters)
+                    return 0f;
+            }
+
+            // ---------------------------------------
+            // 1) Need sub-areas to compute lot/building bounds
+            // ---------------------------------------
+            if (!_prefabSubAreas.HasBuffer(prefab) || !_prefabSubAreaNodes.HasBuffer(prefab))
+                return 0f;
+
+            var subAreas = _prefabSubAreas[prefab];
+            var nodes = _prefabSubAreaNodes[prefab];
+
+            if (subAreas.Length == 0 || nodes.Length == 0)
+                return 0f;
+
+            bool hasLot = false;
+            bool hasBuilding = false;
+
+            float lotMinX = float.PositiveInfinity, lotMaxX = float.NegativeInfinity;
+            float lotMinZ = float.PositiveInfinity, lotMaxZ = float.NegativeInfinity;
+
+            float bldgMinX = float.PositiveInfinity, bldgMaxX = float.NegativeInfinity;
+            float bldgMinZ = float.PositiveInfinity, bldgMaxZ = float.NegativeInfinity;
+
+            // Collect building (non-surface) footprint points so we can do façade slicing
+            var bpts = new NativeList<float3>(Allocator.Temp);
+
+            for (int i = 0; i < subAreas.Length; i++)
+            {
+                var sa = subAreas[i];
+
+                if (!_prefabAreaGeometry.TryGetComponent(sa.m_Prefab, out var ag))
+                    continue;
+
+                var range = sa.m_NodeRange;
+                int count = range.y - range.x + 1;
+                if (count < 3)
+                    continue;
+
+                bool isSurface = (ag.m_Type == AreaType.Surface);
+
+                for (int idx = range.x; idx <= range.y; idx++)
+                {
+                    float3 p = nodes[idx].m_Position;
+
+                    if (isSurface)
+                    {
+                        hasLot = true;
+                        lotMinX = math.min(lotMinX, p.x);
+                        lotMaxX = math.max(lotMaxX, p.x);
+                        lotMinZ = math.min(lotMinZ, p.z);
+                        lotMaxZ = math.max(lotMaxZ, p.z);
+                    }
+                    else
+                    {
+                        hasBuilding = true;
+
+                        bldgMinX = math.min(bldgMinX, p.x);
+                        bldgMaxX = math.max(bldgMaxX, p.x);
+                        bldgMinZ = math.min(bldgMinZ, p.z);
+                        bldgMaxZ = math.max(bldgMaxZ, p.z);
+
+                        bpts.Add(p);
+                    }
+                }
+            }
+
+            if (!hasLot || !hasBuilding || bpts.Length == 0)
+            {
+                bpts.Dispose();
+                return 0f;
+            }
+
+            float lotDx = lotMaxX - lotMinX;
+            float lotDz = lotMaxZ - lotMinZ;
+            float bldgDx = bldgMaxX - bldgMinX;
+            float bldgDz = bldgMaxZ - bldgMinZ;
+
+            if (lotDx <= 1e-4f || lotDz <= 1e-4f)
+            {
+                bpts.Dispose();
+                return 0f;
+            }
+
+            // ---------------------------------------
+            // 2) Extra hardening: minimum lot coverage
+            // ---------------------------------------
+            if (minLotCoverage > 0f)
+            {
+                float lotArea = lotDx * lotDz;
+                float bldgArea = bldgDx * bldgDz;
+
+                if (lotArea <= 1e-4f)
+                {
+                    bpts.Dispose();
+                    return 0f;
+                }
+
+                float coverage = bldgArea / lotArea;
+                if (coverage < minLotCoverage)
+                {
+                    bpts.Dispose();
+                    return 0f;
+                }
+            }
+
+            // ---------------------------------------
+            // 3) Choose frontage axis (orientation-agnostic)
+            // ---------------------------------------
+            float rawFillX = math.saturate(bldgDx / lotDx);
+            float rawFillZ = math.saturate(bldgDz / lotDz);
+
+            bool frontageIsX = rawFillX >= rawFillZ; // lot "width" axis
+            float lotFrontSize = frontageIsX ? lotDx : lotDz;
+
+            // depth axis bounds (perpendicular to frontage)
+            float bldgMinDepth = frontageIsX ? bldgMinZ : bldgMinX;
+            float bldgMaxDepth = frontageIsX ? bldgMaxZ : bldgMaxX;
+            float lotMinDepth = frontageIsX ? lotMinZ : lotMinX;
+            float lotMaxDepth = frontageIsX ? lotMaxZ : lotMaxX;
+
+            // Helper: compute frontage-span of points that lie close to a given depth "façade line"
+            float SpanAtDepth(float depthTarget, out int usedCount)
+            {
+                usedCount = 0;
+                float minF = float.PositiveInfinity;
+                float maxF = float.NegativeInfinity;
+
+                for (int i = 0; i < bpts.Length; i++)
+                {
+                    float3 p = bpts[i];
+                    float depth = frontageIsX ? p.z : p.x;
+
+                    if (math.abs(depth - depthTarget) <= facadeToleranceMeters)
+                    {
+                        float f = frontageIsX ? p.x : p.z;
+                        minF = math.min(minF, f);
+                        maxF = math.max(maxF, f);
+                        usedCount++;
+                    }
+                }
+
+                return (usedCount > 0) ? (maxF - minF) : 0f;
+            }
+
+            // ---------------------------------------
+            // 4) “Same line façade” logic (garage stepped back won’t count)
+            //    Evaluate BOTH depth extremes and pick the more “façade-like” side.
+            // ---------------------------------------
+            int cntMin, cntMax;
+            float spanMin = SpanAtDepth(bldgMinDepth, out cntMin);
+            float spanMax = SpanAtDepth(bldgMaxDepth, out cntMax);
+
+            bool useMaxSide = spanMax > spanMin;
+            float facadeSpan = useMaxSide ? spanMax : spanMin;
+
+            // If façade slicing failed (too few points), fall back to raw bbox fill.
+            // (Still subject to the setback rule below if it can be computed sensibly.)
+            float facadeFill = (facadeSpan > 0f && lotFrontSize > 1e-4f)
+                ? math.saturate(facadeSpan / lotFrontSize)
+                : math.max(rawFillX, rawFillZ);
+
+            // ---------------------------------------
+            // 5) Front yard / setback hardening
+            //    Rowhomes usually sit close to the lot edge along the depth axis.
+            // ---------------------------------------
+            if (maxFrontSetbackMeters > 0f)
+            {
+                float chosenFacadeDepth = useMaxSide ? bldgMaxDepth : bldgMinDepth;
+                float chosenLotEdge = useMaxSide ? lotMaxDepth : lotMinDepth;
+
+                float setback = math.abs(chosenFacadeDepth - chosenLotEdge);
+                if (setback > maxFrontSetbackMeters)
+                {
+                    bpts.Dispose();
+                    return 0f;
+                }
+            }
+
+            // Require the façade line to actually fill enough width (helps avoid odd shapes)
+            if (minFacadeFill > 0f && facadeFill < minFacadeFill)
+            {
+                bpts.Dispose();
+                return 0f;
+            }
+
+            bpts.Dispose();
+            return facadeFill;
+        }
+
+
+
 
         private string GetPrefabNameSafe(Entity prefab)
         {

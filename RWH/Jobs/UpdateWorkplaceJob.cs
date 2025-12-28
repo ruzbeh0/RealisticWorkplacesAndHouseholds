@@ -236,7 +236,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 else
                 {
 
-                    float area_factor = BuildingUtils.smooth_area_factor(industry_base_threshold, width, length);
+                    float area_factor = BuildingUtils.smooth_area_factor4(industry_base_threshold, width, length);
 
                     if (hasIndustrialProcessData)
                     {
@@ -252,9 +252,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         area_factor *= GetIndustryFactor(resource);
 
                     }
-                    width /= (float)Math.Sqrt(uff);
-                    length /= (float)Math.Sqrt(uff);
-                    new_workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 0, 0);
+                    //Using max floors of 2 for industry
+                    new_workers = BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, industry_sqm_per_employee * area_factor, 0, 0, 2);
                 }
 
                 new_workers = (int)(new_workers * (1f - global_reduction));

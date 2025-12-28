@@ -172,6 +172,24 @@ namespace RealisticWorkplacesAndHouseholds
             }
         }
 
+        //Smooths area factor. If the area is twice as big as base area, the factor will be even smaller
+        public static float smooth_area_factor4(float base_area, float x, float y)
+        {
+            float area = x * y;
+            if (area < base_area)
+            {
+                return 1;
+            }
+            else if (area < 2*base_area)
+            {
+                return (float)Math.Sqrt(area / base_area);
+            }
+            else
+            {
+                return (float)Math.Pow(Math.Sqrt(area / base_area),1.5f);
+            }
+        }
+
         //Calculates number of workers for transportation depots, maintenance depots, and cargo stations
         public static int depotWorkers(float width, float length, float height, float industry_avg_floor_height, float depot_sqm_per_worker)
         {

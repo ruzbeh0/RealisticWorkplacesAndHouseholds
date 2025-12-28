@@ -7,15 +7,20 @@ using Game.UI.InGame;
 using Game.UI.Widgets;
 using RealisticWorkplacesAndHouseholds.Components;
 using RealisticWorkplacesAndHouseholds.Systems;
+using System;
 using System.Collections.Generic;
 using System.Net.Configuration;
-using static Game.Simulation.TerrainSystem;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+
 
 namespace RealisticWorkplacesAndHouseholds
 {
     [FileLocation($"ModsSettings\\{nameof(RealisticWorkplacesAndHouseholds)}\\{nameof(RealisticWorkplacesAndHouseholds)}")]
-    [SettingsUIGroupOrder(ResidentialGroup, ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, RowHomesGroup, CommercialGroup, OfficeGroup, IndustryGroup, SchoolGroup, HospitalGroup, PowerPlantGroup, ParkGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, DepotGroup, PortGroup, GarbageGroup, PublicTransportGroup, AirportGroup, OtherGroup, FindPropertyGroup)]
-    [SettingsUIShowGroupName(ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, HospitalGroup, PowerPlantGroup, ParkGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, GarbageGroup, DepotGroup, PortGroup, PublicTransportGroup, AirportGroup, FindPropertyGroup)]
+    [SettingsUIGroupOrder(ResidentialGroup, ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, RowHomesGroup, CommercialGroup, OfficeGroup, IndustryGroup, SchoolGroup, HospitalGroup, PowerPlantGroup, ParkGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, DepotGroup, PortGroup, GarbageGroup, PublicTransportGroup, AirportGroup, AssetPacksChoiceGroup, AssetPacksSettingsGroup, OtherGroup, FindPropertyGroup)]
+    [SettingsUIShowGroupName(ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, HospitalGroup, PowerPlantGroup, ParkGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, GarbageGroup, DepotGroup, PortGroup, PublicTransportGroup, AirportGroup, AssetPacksSettingsGroup, FindPropertyGroup)]
     public class Setting : ModSetting
     {
         public const string ResidentialSection = "Residential";
@@ -32,6 +37,7 @@ namespace RealisticWorkplacesAndHouseholds
         public const string SchoolSection = "School";
         public const string SchoolGroup = "SchoolGroup";
         public const string CityServicesSection = "CityServices";
+        public const string AssetPacksSection = "AssetPacks";
         public const string HospitalGroup = "HospitalGroup";
         public const string PowerPlantGroup = "PowerPlantGroup";
         public const string ParkGroup = "ParkGroup";
@@ -47,9 +53,29 @@ namespace RealisticWorkplacesAndHouseholds
         public const string OtherSection = "Other";
         public const string OtherGroup = "OtherGroup";
         public const string FindPropertyGroup = "FindPropertyGroup";
+        public const string AssetPacksChoiceGroup = "AssetPacksChoiceGroup";
+        public const string AssetPacksSettingsGroup = "AssetPacksSettingsGroup";
+        public Dictionary<int, int> packIndexLookup = new Dictionary<int, int>();
+
+        private const string kAssetPackFactorsFileName = "asset_pack_factors.csv";
+        private static string AssetPackFactorsPath => Path.Combine(Mod.DataFolder, kAssetPackFactorsFileName);
+
+
+        public float[] pack_low_density_factor_ = new float[] { 0.5f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f };
+        public float[] pack_row_homes_factor_ = new float[] { 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f };
+        public float[] pack_medhigh_density_factor_ = new float[] { 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 0.8f, 1f, 1f };
 
         public Setting(IMod mod) : base(mod)
         {
+
+            int i = 0;
+            foreach (var value in Enum.GetValues(typeof(PacksEnum)))
+            {
+                PacksEnum e = (PacksEnum)value;
+                packIndexLookup.Add((int)e, i);
+                i++;
+            }
+
             if (students_per_teacher == 0) SetDefaults();
         }
 
@@ -108,13 +134,94 @@ namespace RealisticWorkplacesAndHouseholds
             garbage_sqm_per_worker = 95;
             increase_power_production = false;
             solarpowerplant_reduction_factor = 5;
-            //find_property_limit_factor = 2;
-            //find_property_night = false;
+            industry_area_base = 7000;
             rent_discount = 20;
             disable_households_calculations = false;
             disable_cityservices_calculations = false;
             disable_workplace_calculations = false;
             residential_vacancy_rate = 5;
+        }
+
+        public void SetParameters(int index)
+        {
+            pack_low = pack_low_density_factor_[index];
+            pack_row_homes = pack_row_homes_factor_[index];
+            pack_MedHigh = pack_medhigh_density_factor_[index];
+        }
+
+        private void ApplyParametersToArrays(int index)
+        {
+            pack_low_density_factor_[index] = pack_low;
+            pack_row_homes_factor_[index] = pack_row_homes;
+            pack_medhigh_density_factor_[index] = pack_MedHigh;
+        }
+
+        public void SaveAssetPackFactorsToCsv()
+        {
+            Directory.CreateDirectory(Mod.DataFolder);
+
+            using var sw = new StreamWriter(AssetPackFactorsPath, false, Encoding.UTF8);
+            sw.WriteLine("PackId,PackName,Low,RowHomes,MedHigh");
+
+            foreach (PacksEnum pack in Enum.GetValues(typeof(PacksEnum)))
+            {
+                int packId = (int)pack;
+                if (!packIndexLookup.TryGetValue(packId, out int i))
+                    continue;
+
+                sw.WriteLine(string.Join(",",
+                    packId.ToString(CultureInfo.InvariantCulture),
+                    pack.ToString(),
+                    pack_low_density_factor_[i].ToString(CultureInfo.InvariantCulture),
+                    pack_row_homes_factor_[i].ToString(CultureInfo.InvariantCulture),
+                    pack_medhigh_density_factor_[i].ToString(CultureInfo.InvariantCulture)
+                ));
+            }
+
+            Mod.log.Info($"Saved asset pack factors to: {AssetPackFactorsPath}");
+        }
+
+        public void TryLoadAssetPackFactorsFromCsv()
+        {
+            try
+            {
+                if (!File.Exists(AssetPackFactorsPath))
+                {
+                    Mod.log.Info($"No asset pack factor CSV found at: {AssetPackFactorsPath} (using defaults)");
+                    return;
+                }
+
+                foreach (var line in File.ReadLines(AssetPackFactorsPath))
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    if (line.StartsWith("#")) continue;
+                    if (line.StartsWith("PackId")) continue;
+
+                    var parts = line.Split(',');
+                    if (parts.Length < 5) continue;
+
+                    if (!int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int packId))
+                        continue;
+
+                    if (!packIndexLookup.TryGetValue(packId, out int i))
+                        continue;
+
+                    if (float.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float low))
+                        pack_low_density_factor_[i] = low;
+
+                    if (float.TryParse(parts[3], NumberStyles.Float, CultureInfo.InvariantCulture, out float rh))
+                        pack_row_homes_factor_[i] = rh;
+
+                    if (float.TryParse(parts[4], NumberStyles.Float, CultureInfo.InvariantCulture, out float mh))
+                        pack_medhigh_density_factor_[i] = mh;
+                }
+
+                Mod.log.Info($"Loaded asset pack factors from: {AssetPackFactorsPath}");
+            }
+            catch (Exception ex)
+            {
+                Mod.log.Error(ex, $"Failed reading asset pack factor CSV: {AssetPackFactorsPath}");
+            }
         }
 
         [SettingsUISection(ResidentialSection, ResidentialLowDensityGroup)]
@@ -125,7 +232,7 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUIDisableByCondition(typeof(Setting), nameof(single_household_low_density))]
         public int residential_lowdensity_sqm_per_apartment { get; set; }
 
-        [SettingsUISlider(min = 2f, max = 5f, step = 1, scalarMultiplier = 1, unit = Unit.kFloatSingleFraction)]
+        [SettingsUISlider(min = 2f, max = 5f, step = 0.1f, scalarMultiplier = 1, unit = Unit.kFloatSingleFraction)]
         [SettingsUISection(ResidentialSection, ResidentialGroup)]
         public float residential_avg_floor_height { get; set; }
 
@@ -169,20 +276,20 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(ResidentialSection, RowHomesGroup)]
         public bool rowhomes_basement { get; set; }
 
-        [SettingsUISlider(min = 2f, max = 5f, step = 1, scalarMultiplier = 1, unit = Unit.kFloatSingleFraction)]
+        [SettingsUISlider(min = 2f, max = 5f, step = 0.1f, scalarMultiplier = 1, unit = Unit.kFloatSingleFraction)]
         [SettingsUISection(CommercialSection, CommercialGroup)]
         public float commercial_avg_floor_height { get; set; }
 
         [SettingsUISection(CommercialSection, CommercialGroup)]
         public bool commercial_self_service_gas { get; set; }
 
-        [SettingsUISlider(min = 2f, max = 10f, step = 1, scalarMultiplier = 1, unit = Unit.kFloatSingleFraction)]
+        [SettingsUISlider(min = 2f, max = 10f, step = 0.1f, scalarMultiplier = 1, unit = Unit.kFloatSingleFraction)]
         [SettingsUISection(IndustrySection, IndustryGroup)]
         public float industry_avg_floor_height { get; set; }
 
         [SettingsUISlider(min = 2000, max = 10000, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(IndustrySection, IndustryGroup)]
-        public int industry_area_base { get; set; } = 6400;
+        public int industry_area_base { get; set; }
 
         [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(CommercialSection, CommercialGroup)]
@@ -388,6 +495,51 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(OtherSection, OtherGroup)]
         public bool disable_cityservices_calculations { get; set; }
 
+        [SettingsUISection(AssetPacksSection, AssetPacksChoiceGroup)]
+        public PacksEnum pack_choice { get; set; } = PacksEnum.France;
+
+        [SettingsUIButton]
+        [SettingsUISection(AssetPacksSection, AssetPacksChoiceGroup)]
+        public bool LoadButton
+        {
+            set
+            {
+                packIndexLookup.TryGetValue((int)pack_choice, out int selectedSetting);
+                SetParameters(selectedSetting);
+            }
+        }
+
+        [SettingsUIButton]
+        [SettingsUISection(AssetPacksSection, AssetPacksChoiceGroup)]
+        public bool SaveButton
+        {
+            set
+            {
+                if (!value) return;
+
+                if (!packIndexLookup.TryGetValue((int)pack_choice, out int selectedIndex))
+                    return;
+
+                // sliders -> arrays
+                ApplyParametersToArrays(selectedIndex);
+
+                // arrays -> disk
+                SaveAssetPackFactorsToCsv();
+            }
+        }
+
+        [SettingsUISlider(min = 0.1f, max = 2f, step = 0.05f, scalarMultiplier = 1, unit = Unit.kFloatTwoFractions)]
+        [SettingsUISection(AssetPacksSection, AssetPacksSettingsGroup)]
+        public float pack_low { get; set; }
+
+        [SettingsUISlider(min = 0.1f, max = 2f, step = 0.05f, scalarMultiplier = 1, unit = Unit.kFloatTwoFractions)]
+        [SettingsUISection(AssetPacksSection, AssetPacksSettingsGroup)]
+        public float pack_row_homes { get; set; }
+
+        [SettingsUISlider(min = 0.1f, max = 2f, step = 0.05f, scalarMultiplier = 1, unit = Unit.kFloatTwoFractions)]
+        [SettingsUISection(AssetPacksSection, AssetPacksSettingsGroup)]
+        public float pack_MedHigh { get; set; }
+
         [SettingsUISlider(min = 0, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
         [SettingsUISection(OtherSection, OtherGroup)]
         public int service_upkeep_reduction { get; set; }
@@ -430,16 +582,21 @@ namespace RealisticWorkplacesAndHouseholds
 
         }
 
-        //[SettingsUISection(OtherSection, FindPropertyGroup)]
-        //[SettingsUIMultilineText]
-        //public string DTText => string.Empty;
-        //
-        //[SettingsUISlider(min = 1, max = 10, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
-        //[SettingsUISection(OtherSection, FindPropertyGroup)]
-        //public int find_property_limit_factor { get; set; }
-        //
-        //[SettingsUISection(OtherSection, FindPropertyGroup)]
-        //public bool find_property_night { get; set; }
+        public enum PacksEnum
+        {
+            UK = 40,
+            Germany = 50,
+            Netherlands = 51,
+            France = 52,
+            EasterEurope = 55,
+            Japan = 60,
+            China = 70,
+            USNE = 71,
+            USSW = 72,
+            Skyscrapers = 100,
+            Mediterranean = 101,
+            DragonGate = 102,
+        }
     }  
 
     public class LocaleEN : IDictionarySource
@@ -482,6 +639,11 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionGroupLocaleID(Setting.AirportGroup), "Airports" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.PostOfficeGroup), "Post Office Settings" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.FindPropertyGroup), "Find Property System Settings" },
+                { m_Setting.GetOptionTabLocaleID(Setting.AssetPacksSection), "Asset Packs" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.AssetPacksSettingsGroup), "Asset Packs Settings" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.LoadButton)), "Load" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.LoadButton)), $"Load Asset Pack Settings" },
+
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_airport)), "Disable Airports" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_airport)), $"Disable workplace calculations for airports." },
@@ -642,8 +804,17 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetEnumValueLocaleID(ResetType.FindNewHome), "Find New Home" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.hh_spawn_speed_rate)), $"Household Spawn Speed Factor" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.hh_spawn_speed_rate)), "This factor affects the speed of houshold spawning. Lower values means more households. Vanilla value is 0.5" },
+                // --- Asset pack multipliers: Low density ---
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.pack_low)), "Low Density" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.pack_low)), "Multiplier for households of low-density asset pack buildings. 1.00 = default, values less than 1 reduce, values more than 1 increase." },
                 
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.pack_row_homes)), "Row Homes" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.pack_row_homes)), "Multiplier for households of row homes asset pack buildings. 1.00 = default, values less than 1 reduce, values more than 1 increase." },
 
+                // --- Asset pack multipliers: Med/High density ---
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.pack_MedHigh)), "Med/High Density" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.pack_MedHigh)), "Multiplier for households of medium and high-density UK asset pack buildings. 1.00 = default, values less than 1 reduce, values more than 1 increase." },
+                
                 //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.SeekNewHouseholds)), "Seek New Households" },
                 //{ m_Setting.GetOptionDescLocaleID(nameof(Setting.SeekNewHouseholds)), $"RECOMMENDED: If any building has more households than properties (usually when this mod is started with a pre-existing existing save), click this button to have some households look for a new home while the simulation plays. Effect is near immediate, so be aware." },
                 //{ m_Setting.GetOptionWarningLocaleID(nameof(Setting.SeekNewHouseholds)), "Read the setting description first and prepare for residents to move out. The other option won't work, and this can't be undone. Are you sure you want to reset the households?"},
@@ -651,7 +822,24 @@ namespace RealisticWorkplacesAndHouseholds
                 //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.DeleteOverflowHouseholds)), "Delete Overflow Households" },
                 //{ m_Setting.GetOptionDescLocaleID(nameof(Setting.DeleteOverflowHouseholds)), $"USE WITH CAUTION: If any building has more households than properties (usually when this mod is started with a pre-existing existing save), click this button to remove those households. This change is abrupt and immediate after pressing play." },
                 //{ m_Setting.GetOptionWarningLocaleID(nameof(Setting.DeleteOverflowHouseholds)), "Read the setting description first and prepare for a large drop in population. The other option won't work, and this can't be undone. Are you sure you want to delete the overflow households?"}
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.UK), "UK" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.USSW), "US Southwest" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.Germany), "Germany" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.USNE), "US Northeast" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.Skyscrapers), "Skyscrapers" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.China), "China" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.DragonGate), "Dragon Gate" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.EasterEurope), "Eastern Europe" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.France), "France" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.Japan), "Japan" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.Mediterranean), "Mediterranean Heritage"},
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.Netherlands), "Netherlands" },
 
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.pack_choice)), "Asset pack settings" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.pack_choice)), $"Change asset pack factors settings" },
+
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.SaveButton)), "Save" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.SaveButton)), "Save the current sliders for the selected pack." },
 
             };
         }
@@ -702,6 +890,9 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionGroupLocaleID(Setting.AirportGroup), "Aeroportos" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.PostOfficeGroup), "Correios" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.FindPropertyGroup), "Configurações do sistema de encontrar propriedade" },
+
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.LoadButton)), "Carregar" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.LoadButton)), $"Carregar configurações de pacotes de assets" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.disable_airport)), "Desativar Aeroportos" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.disable_airport)), $"Desabilite cálculos de local de trabalho para aeroportos." },
@@ -868,7 +1059,40 @@ namespace RealisticWorkplacesAndHouseholds
                 //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.DeleteOverflowHouseholds)), "Delete Overflow Households" },
                 //{ m_Setting.GetOptionDescLocaleID(nameof(Setting.DeleteOverflowHouseholds)), $"USE WITH CAUTION: If any building has more households than properties (usually when this mod is started with a pre-existing existing save), click this button to remove those households. This change is abrupt and immediate after pressing play." },
                 //{ m_Setting.GetOptionWarningLocaleID(nameof(Setting.DeleteOverflowHouseholds)), "Read the setting description first and prepare for a large drop in population. The other option won't work, and this can't be undone. Are you sure you want to delete the overflow households?"}
+                // --- Asset pack section / groups ---
+                { m_Setting.GetOptionTabLocaleID(Setting.AssetPacksSection), "Pacotes de assets" },
+                
+                { m_Setting.GetOptionGroupLocaleID(Setting.AssetPacksSettingsGroup), "Configurações do Pacotes de Assets" },
+                
+                // --- Asset pack multipliers: Low density ---
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.pack_low)), "Baixa Densidade" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.pack_low)), "Multiplicador para domicílios de edifícios de baixa densidade. 1,00 = padrão; valores menor que 1 reduzem, valores maior que 1 aumentam." },
+                
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.pack_row_homes)), "Casas Geminadas" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.pack_row_homes)), "Multiplicador para domicílios de casas geminadas. 1,00 = padrão; valores menor que 1 reduzem, valores maior que 1 aumentam." },
+                
+                // --- Asset pack multipliers: Med/High density ---
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.pack_MedHigh)), "Média/Alta densidade" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.pack_MedHigh)), "Multiplicador para domicílios de edifícios de média e alta densidade. 1,00 = padrão; valores menor que 1 reduzem, valores maior que 1 aumentam." },
+                
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.UK), "Reino Unido" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.USSW), "EUA Sudoeste" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.Germany), "Alemanha" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.USNE), "EUA Nordeste" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.Skyscrapers), "Skyscrapers" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.China), "China" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.DragonGate), "Dragon Gate" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.EasterEurope), "Leste Europeu" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.France), "França" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.Japan), "Japão" },
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.Mediterranean), "Mediterranean Heritage"},
+                { m_Setting.GetEnumValueLocaleID(Setting.PacksEnum.Netherlands), "Países Baixos" },
 
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.pack_choice)), "Configurações dos pacotes de assets" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.pack_choice)), "Alterar as configurações dos fatores dos pacotes de assets" },
+
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.SaveButton)), "Salvar" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.SaveButton)), "Salva os valores atuais dos sliders do pacote selecionado." },
 
             };
         }

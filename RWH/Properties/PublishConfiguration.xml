@@ -64,15 +64,15 @@ This mod was inspired by the **Realistic Population** from CS1 and from **Realis
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/realistic-workplaces-and-households.1699586/" />
 	<!--Version of the mod-->
-	<ModVersion Value="1.4" />
+	<ModVersion Value="1.5" />
 	<!--Recommended version of the base game to use the mod-->
-	<GameVersion Value="1.4.*" />
+	<GameVersion Value="1.5.*" />
 	<!--Dependency for the mod, can be set multiple times-->
 	<Dependency Id="" />
 	<ChangeLog>
-* Adjusted commercial default parameters
-* Updated commercial workplace calculations for large buildings (slightly reduced workplaces)
-* Added square meters per workers parameter for commercial recreation and enterntainment companies
+* Added Asset Packs factors
+* Fixed bug that was preventing buildings from leveling up
+* Changed average floor height step from 1 to 0.1 meters for residential, commercial and industry
 	</ChangeLog>
 	<!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon-->
 	<ExternalLink Type="github" Url="https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/" />

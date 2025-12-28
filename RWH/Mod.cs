@@ -25,6 +25,8 @@ namespace RealisticWorkplacesAndHouseholds
         // Mods Settings Folder
         public static string SettingsFolder = Path.Combine(EnvPath.kUserDataPath, "ModsSettings", nameof(RealisticWorkplacesAndHouseholds));
         readonly public static int kComponentVersion = 1;
+        public static string DataFolder = Path.Combine(EnvPath.kUserDataPath, "ModsData", "RWH");
+
 
         public void OnLoad(UpdateSystem updateSystem)
         {
@@ -38,6 +40,11 @@ namespace RealisticWorkplacesAndHouseholds
                 Directory.CreateDirectory(SettingsFolder);
             }
 
+            if (!Directory.Exists(DataFolder))
+            {
+                Directory.CreateDirectory(DataFolder);
+            }
+
             m_Setting = new Setting(this);
             m_Setting.RegisterInOptionsUI();
             GameManager.instance.localizationManager.AddSource("en-US", new LocaleEN(m_Setting));
@@ -46,12 +53,42 @@ namespace RealisticWorkplacesAndHouseholds
 
             AssetDatabase.global.LoadSettings(nameof(RealisticWorkplacesAndHouseholds), m_Setting, new Setting(this));
 
+            m_Setting.TryLoadAssetPackFactorsFromCsv();
+
+            //Harmony
+            var harmony = new Harmony(harmonyID);
+            //Harmony.DEBUG = true;
+            harmony.PatchAll(typeof(Mod).Assembly);
+            var patchedMethods = harmony.GetPatchedMethods().ToArray();
+            log.Info($"Plugin {harmonyID} made patches! Patched methods: " + patchedMethods);
+            foreach (var patchedMethod in patchedMethods)
+            {
+                log.Info($"Patched method: {patchedMethod.Module.Name}:{patchedMethod.Name}");
+            }
+
+            bool urbanInequalityMod = false;
+            foreach (var modInfo in GameManager.instance.modManager)
+            {
+                if (modInfo.asset.name.Equals("UrbanInequality"))
+                {
+                    Mod.log.Info($"Urban Inequality Mod is present");
+                    urbanInequalityMod = true;
+                }
+            }
+
+            if(!urbanInequalityMod)
+            {
+                World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.BuildingUpkeepSystem>().Enabled = false;
+                updateSystem.UpdateAt<RWH.Systems.RWHBuildingUpkeepSystem>(SystemUpdatePhase.GameSimulation);
+            }
+
             // Disable original systems
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.BudgetApplySystem>().Enabled = false;
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdSpawnSystem>().Enabled = false;
 
             if (!Mod.m_Setting.disable_households_calculations)
             {
+                //updateSystem.UpdateBefore<HouseholdUpdateSystem>(SystemUpdatePhase.PrefabUpdate);
                 updateSystem.UpdateBefore<HouseholdUpdateSystem>(SystemUpdatePhase.GameSimulation);
                 updateSystem.UpdateAfter<CheckBuildingsSystem>(SystemUpdatePhase.GameSimulation);
                 //World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.ZoneSpawnSystem>().Enabled = false;
@@ -83,17 +120,6 @@ namespace RealisticWorkplacesAndHouseholds
             updateSystem.UpdateAt<EconomyParameterUpdaterSystem>(SystemUpdatePhase.GameSimulation);
             //updateSystem.UpdateAt<RealisticWorkplacesAndHouseholds.Systems.RWHRentAdjustSystem>(SystemUpdatePhase.GameSimulation);
             //updateSystem.UpdateAfter<WarehouseDebugSystem>(SystemUpdatePhase.GameSimulation);
-
-            //Harmony
-            var harmony = new Harmony(harmonyID);
-            //Harmony.DEBUG = true;
-            harmony.PatchAll(typeof(Mod).Assembly);
-            var patchedMethods = harmony.GetPatchedMethods().ToArray();
-            log.Info($"Plugin {harmonyID} made patches! Patched methods: " + patchedMethods);
-            foreach (var patchedMethod in patchedMethods)
-            {
-                log.Info($"Patched method: {patchedMethod.Module.Name}:{patchedMethod.Name}");
-            }
         }
 
         public void OnDispose()

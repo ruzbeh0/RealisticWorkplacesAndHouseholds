@@ -13,4 +13,10 @@ namespace RealisticWorkplacesAndHouseholds.Components
     {
         public float Value;
     }
+
+    public struct RowHomeLike : IComponentData
+    {
+        public float FrontageFill; // optional, nice for debugging
+    }
+
 }

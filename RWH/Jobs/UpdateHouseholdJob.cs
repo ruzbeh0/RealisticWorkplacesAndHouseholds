@@ -20,6 +20,7 @@ using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
 using UnityEngine;
 using static Game.Prefabs.TriggerPrefabData;
+using static Game.Rendering.OverlayRenderSystem;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
@@ -82,6 +83,12 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly]
         public ComponentLookup<ZoneData> ZoneDataLookup;
         [ReadOnly]
+        public ComponentLookup<PrefabData> PrefabDataLookup;
+        [ReadOnly]
+        public BufferLookup<AssetPackElement> AssetPackElementBufferLookup;
+        [ReadOnly]
+        public ComponentLookup<AssetPackData> AssetPackDataLookup;
+        [ReadOnly]
         public ComponentTypeHandle<GroupAmbienceData> GroupAmbienceDataHandle;
         [ReadOnly]
         public float sqm_per_apartment;
@@ -109,6 +116,12 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public int sqm_per_apartment_lowdensity;
         [ReadOnly]
         public bool enable_rh_apt_per_floor;
+        [ReadOnly] public NativeParallelHashMap<Entity, FixedString64Bytes> PrefabNameMap;
+        [ReadOnly] public NativeParallelHashMap<Entity, float3> AssetPackFactorsLookup;
+        [ReadOnly]
+        public ComponentLookup<RowHomeLike> RowHomeLikeLookup;
+
+
 
         public UpdateHouseholdJob()
         {
@@ -142,6 +155,46 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     {
                         if (zonedata.m_AreaType == Game.Zones.AreaType.Residential)
                         {
+                            float3 asset_pack_factor = 1f;
+                            string asset_pack_names = "";
+                            if (AssetPackElementBufferLookup.TryGetBuffer(entity, out var assetPackElements1))
+                            {
+                                for (int index = 0; index < assetPackElements1.Length; ++index)
+                                {
+                                    Entity pack = assetPackElements1[index].m_Pack;
+                                    if (AssetPackDataLookup.HasComponent(pack))
+                                    {
+                                        if (PrefabDataLookup.TryGetComponent(pack, out PrefabData prefabData))
+                                        {
+                                            if (AssetPackFactorsLookup.TryGetValue(pack, out var asset_factor))
+                                            {
+                                                asset_pack_factor *= asset_factor;
+                                                //asset_pack_names = asset_pack_names + PrefabNameMap[pack].ToString() + " ";
+                                            }
+                                        }
+                                    }
+                                }    
+                            } else
+                            {
+                                if (AssetPackElementBufferLookup.TryGetBuffer(spawnBuildingData.m_ZonePrefab, out var assetPackElements2))
+                                {
+                                    for (int index = 0; index < assetPackElements2.Length; ++index)
+                                    {
+                                        Entity pack = assetPackElements2[index].m_Pack;
+                                        if (AssetPackDataLookup.HasComponent(pack))
+                                        {
+                                            if (PrefabDataLookup.TryGetComponent(pack, out PrefabData prefabData))
+                                            {
+                                                if (AssetPackFactorsLookup.TryGetValue(pack, out var asset_factor))
+                                                {
+                                                    asset_pack_factor *= asset_factor;
+                                                    //asset_pack_names = asset_pack_names + PrefabNameMap[pack].ToString() + " ";
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             var dimensions = BuildingUtils.GetBuildingDimensions(subMeshes, meshDataLookup);
                             var size = ObjectUtils.GetSize(dimensions);
                             float width = size.x;
@@ -152,8 +205,17 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             float uff = UffLookup.HasComponent(entity) ? UffLookup[entity].Value : 1f;
 
                             int original_households = property.m_ResidentialProperties;
+
+                            uff = Math.Max(uff, 0.75f);
+                            width *= (float)Math.Sqrt(uff);
+                            length *= (float)Math.Sqrt(uff);
+
                             //Check if it is a row home
-                            if ((zonedata.m_ZoneFlags & ZoneFlags.SupportNarrow) == ZoneFlags.SupportNarrow)
+                            bool isRowHome =
+                                ((zonedata.m_ZoneFlags & ZoneFlags.SupportNarrow) == ZoneFlags.SupportNarrow);
+                            if(asset_pack_factor.y != 1f)
+                                isRowHome = RowHomeLikeLookup.HasComponent(entity);
+                            if (isRowHome && height / residential_avg_floor_height < 5)
                             {
                                 if (rowhome_basement)
                                 {
@@ -170,6 +232,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                 width *= (float)Math.Sqrt(uff);
                                 length *= (float)Math.Sqrt(uff);
                                 households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, rowhome_area, 0, 0);
+                                //households = (int)(households * asset_pack_factor.y);
                             } else
                             {
                                 //Checking for single family homes
@@ -198,17 +261,15 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                         floorOffset++;
                                     }
 
-                                    uff = Math.Max(uff, 0.75f);
-                                    width *= (float)Math.Sqrt(uff);
-                                    length *= (float)Math.Sqrt(uff);
-
                                     //If less than 5 floors, assuming low density
                                     if (height/ residential_avg_floor_height < 5)
                                     {
                                         households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, sqm_per_apartment_lowdensity * (1 + hallway_pct), 0, 0);
+                                        households = (int)(households*asset_pack_factor.x);
                                     } else
                                     {
                                         households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, apt_area, floorOffset, units_per_elevator * (int)sqm_per_apartment);
+                                        households = (int)(households * asset_pack_factor.z);
                                     }
                                 }
                                 //Set low density households to 1 if they are higher than that and single family option is true
@@ -220,11 +281,6 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     {
                                         households = 1;
                                     } 
-                                    //else if (height / residential_avg_floor_height < 4)
-                                    //{
-                                    //    //UK Detached homes?
-                                    //    households = 2;
-                                    //}
                                 }
                             }
 
@@ -243,7 +299,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             {
                                 property.m_SpaceMultiplier = 1;
                             }
-                            //Mod.log.Info($"Households updated for building {entity.Index} from {original_households} to {property.m_ResidentialProperties} (factor {factor:0.###}), uff:{uff}, rowhome:{(zonedata.m_ZoneFlags & ZoneFlags.SupportNarrow) == ZoneFlags.SupportNarrow}");
+                            //Mod.log.Info($"Households updated for building {entity.Index} from {original_households} to {property.m_ResidentialProperties} (factor {factor:0.###}), uff:{uff}, rowhome:{isRowHome}, asset_pack_factor:{asset_pack_factor}, floors:{height / residential_avg_floor_height}, asset_pack_names:{asset_pack_names}");
                             property.m_SpaceMultiplier /= factor;
                             
                             buildingPropertyDataArr[i] = property;
