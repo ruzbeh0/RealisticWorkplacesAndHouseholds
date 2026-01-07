@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Unity.Entities;
-using Unity.Mathematics; // float3 사용을 위해 필수
+using Unity.Mathematics;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
@@ -18,43 +18,64 @@ namespace RealisticWorkplacesAndHouseholds.Systems
     {
         protected override void OnUpdate()
         {
-            // 설정창 버튼이 눌렸는지 확인
+            // [로그 1] 버튼 신호 감지
             if (Mod.m_Setting.export_data_requested)
             {
-                ExportAllPrefabsToCSV();
-                // 다시 false로 돌려놓아 중복 실행 방지
+                Mod.log.Info("[RWH Debug] Export button click detected in OnUpdate. Starting process...");
+
+                try
+                {
+                    ExportAllPrefabsToCSV();
+                }
+                catch (Exception ex)
+                {
+                    Mod.log.Error($"[RWH Error] Critical error during export: {ex.Message}\n{ex.StackTrace}");
+                }
+
                 Mod.m_Setting.export_data_requested = false;
+                Mod.log.Info("[RWH Debug] Export process finished. Flag reset.");
             }
         }
 
         private void ExportAllPrefabsToCSV()
         {
+            Mod.log.Info("[RWH Debug] ExportAllPrefabsToCSV method started.");
+
             var prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
 
-            // CSV 헤더 설정 (Signature 열 포함)
+            // CSV 헤더 준비
             var resCsv = new StringBuilder("Name,Type,Height,Width,Length,Households,Signature,AssetPack\n");
             var workCsv = new StringBuilder("Name,Category,Height,Width,Length,Workers,Signature,AssetPack\n");
             var schoolCsv = new StringBuilder("Name,StudentCapacity,Workers,Height,AssetPack\n");
             var hospitalCsv = new StringBuilder("Name,PatientCapacity,Workers,Height,AssetPack\n");
             var prisonCsv = new StringBuilder("Name,PrisonerCapacity,Workers,Height,AssetPack\n");
 
-            // 게임 내 모든 BuildingData를 가진 프리팹 쿼리 (전수 조사)
+            // 엔티티 쿼리
             EntityQuery prefabQuery = GetEntityQuery(ComponentType.ReadOnly<PrefabData>(), ComponentType.ReadOnly<BuildingData>());
             var prefabEntities = prefabQuery.ToEntityArray(Unity.Collections.Allocator.Temp);
 
+            // [로그 2] 쿼리 결과 확인 (매우 중요: 0개면 여기서부터 문제임)
+            Mod.log.Info($"[RWH Debug] Query found {prefabEntities.Length} prefabs. Preparing to loop...");
+
+            // [로그 3] 반복문 시작 알림
+            Mod.log.Info("[RWH Debug] Loop Start (Processing Prefabs...)");
+
+            int processedCount = 0;
+
             foreach (var prefabEntity in prefabEntities)
             {
+                // 반복문 내부에서는 로그를 찍지 않습니다 (속도 저하 및 스팸 방지)
+                processedCount++;
+
                 var prefabBase = prefabSystem.GetPrefab<BuildingPrefab>(prefabEntity);
                 if (prefabBase == null) continue;
 
                 string name = prefabBase.name;
 
-                // 1. 로트 크기 (BuildingData)
                 if (!EntityManager.TryGetComponent<BuildingData>(prefabEntity, out var bData)) continue;
                 int w = bData.m_LotSize.x;
                 int l = bData.m_LotSize.y;
 
-                // 2. 건물 높이 (ObjectGeometryData에서 가져옴 - 수정됨)
                 float height = 0;
                 if (EntityManager.TryGetComponent<ObjectGeometryData>(prefabEntity, out var geomData))
                 {
@@ -64,35 +85,35 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 string assetPack = GetAssetPackName(prefabEntity, prefabSystem);
                 bool isSignature = EntityManager.HasComponent<SignatureBuildingData>(prefabEntity);
 
-                // --- 1. Residential & Mixed-Use ---
+                // 1. Residential
                 if (EntityManager.TryGetComponent<BuildingPropertyData>(prefabEntity, out var prop) && prop.m_ResidentialProperties > 0)
                 {
                     string resType = GetDetailedResidentialType(prefabEntity, height);
                     resCsv.AppendLine($"{name},{resType},{height:F2},{w},{l},{prop.m_ResidentialProperties},{isSignature},{assetPack}");
                 }
 
-                // --- 2. Workplace ---
+                // 2. Workplace
                 if (EntityManager.TryGetComponent<WorkplaceData>(prefabEntity, out var workData))
                 {
                     string workCat = GetDetailedWorkplaceCategory(prefabEntity);
                     workCsv.AppendLine($"{name},{workCat},{height:F2},{w},{l},{workData.m_MaxWorkers},{isSignature},{assetPack}");
                 }
 
-                // --- 3. School ---
+                // 3. School
                 if (EntityManager.TryGetComponent<SchoolData>(prefabEntity, out var schoolData))
                 {
                     int staff = EntityManager.TryGetComponent<WorkplaceData>(prefabEntity, out var sWork) ? sWork.m_MaxWorkers : 0;
                     schoolCsv.AppendLine($"{name},{schoolData.m_StudentCapacity},{staff},{height:F2},{assetPack}");
                 }
 
-                // --- 4. Hospital (HospitalData 사용 - 수정됨) ---
+                // 4. Hospital
                 if (EntityManager.TryGetComponent<HospitalData>(prefabEntity, out var medicalData))
                 {
                     int staff = EntityManager.TryGetComponent<WorkplaceData>(prefabEntity, out var hWork) ? hWork.m_MaxWorkers : 0;
                     hospitalCsv.AppendLine($"{name},{medicalData.m_PatientCapacity},{staff},{height:F2},{assetPack}");
                 }
 
-                // --- 5. Prison ---
+                // 5. Prison
                 if (EntityManager.TryGetComponent<PrisonData>(prefabEntity, out var prisonData))
                 {
                     int staff = EntityManager.TryGetComponent<WorkplaceData>(prefabEntity, out var pWork) ? pWork.m_MaxWorkers : 0;
@@ -100,18 +121,23 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 }
             }
 
-            // 내 문서 폴더에 저장
+            // [로그 4] 반복문 종료 알림
+            Mod.log.Info($"[RWH Debug] Loop End. Processed {processedCount} entities.");
+
+            // 파일 저장 시도
             string docPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            Mod.log.Info($"[RWH Debug] Attempting to save files to: {docPath}");
+
             SaveFile(Path.Combine(docPath, "RWH_All_Residential.csv"), resCsv);
             SaveFile(Path.Combine(docPath, "RWH_All_Workplaces.csv"), workCsv);
             SaveFile(Path.Combine(docPath, "RWH_All_Schools.csv"), schoolCsv);
             SaveFile(Path.Combine(docPath, "RWH_All_Hospitals.csv"), hospitalCsv);
             SaveFile(Path.Combine(docPath, "RWH_All_Prisons.csv"), prisonCsv);
 
-            Mod.log.Info($"[RWH] Export Complete. 5 files saved to Documents.");
             prefabEntities.Dispose();
         }
 
+        // ... (아래 Helper 함수들은 기존과 동일, 변경 없음) ...
         private string GetDetailedResidentialType(Entity entity, float height)
         {
             if (TryGetZoneData(entity, out var zoneData, out var ambienceData))
@@ -169,12 +195,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             return false;
         }
 
-        private void SaveFile(string path, StringBuilder content)
-        {
-            try { File.WriteAllText(path, content.ToString(), Encoding.UTF8); }
-            catch (Exception ex) { Mod.log.Error($"Failed to save {path}: {ex.Message}"); }
-        }
-
         private string GetAssetPackName(Entity prefab, PrefabSystem prefabSystem)
         {
             if (EntityManager.HasBuffer<AssetPackElement>(prefab))
@@ -184,6 +204,20 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     return prefabSystem.GetPrefab<PrefabBase>(packs[0].m_Pack).name;
             }
             return "Default";
+        }
+
+        // [로그 5] 파일 저장 결과 확인
+        private void SaveFile(string path, StringBuilder content)
+        {
+            try
+            {
+                File.WriteAllText(path, content.ToString(), Encoding.UTF8);
+                Mod.log.Info($"[RWH Debug] Saved file: {Path.GetFileName(path)}"); // 성공 로그
+            }
+            catch (Exception ex)
+            {
+                Mod.log.Error($"[RWH Error] Failed to save {path}: {ex.Message}"); // 실패 로그
+            }
         }
     }
 }
