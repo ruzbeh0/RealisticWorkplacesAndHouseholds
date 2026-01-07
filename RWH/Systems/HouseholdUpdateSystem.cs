@@ -97,85 +97,86 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 {
                     Mod.m_Setting.packIndexLookup.TryGetValue((int)Setting.PacksEnum.UK, out index);
                     low = Mod.m_Setting.pack_low_density_factor_[index];
-                    rowhomes = Mod.m_Setting.pack_low_density_factor_[index];
-                    medHigh = Mod.m_Setting.pack_low_density_factor_[index];
+                    rowhomes = Mod.m_Setting.pack_row_homes_factor_[index];
+                    medHigh = Mod.m_Setting.pack_medhigh_density_factor_[index];
                 }
                 else if (n.Contains("de"))
                 {
                     Mod.m_Setting.packIndexLookup.TryGetValue((int)Setting.PacksEnum.Germany, out index);
                     low = Mod.m_Setting.pack_low_density_factor_[index];
-                    rowhomes = Mod.m_Setting.pack_low_density_factor_[index];
-                    medHigh = Mod.m_Setting.pack_low_density_factor_[index];
+                    rowhomes = Mod.m_Setting.pack_row_homes_factor_[index];
+                    medHigh = Mod.m_Setting.pack_medhigh_density_factor_[index];
                 }
                 else if (n.Contains("nl"))
                 {
                     Mod.m_Setting.packIndexLookup.TryGetValue((int)Setting.PacksEnum.Netherlands, out index);
                     low = Mod.m_Setting.pack_low_density_factor_[index];
-                    rowhomes = Mod.m_Setting.pack_low_density_factor_[index];
-                    medHigh = Mod.m_Setting.pack_low_density_factor_[index];
+                    rowhomes = Mod.m_Setting.pack_row_homes_factor_[index];
+                    medHigh = Mod.m_Setting.pack_medhigh_density_factor_[index];
                 }
                 else if (n.Contains("fr"))
                 {
                     Mod.m_Setting.packIndexLookup.TryGetValue((int)Setting.PacksEnum.France, out index);
                     low = Mod.m_Setting.pack_low_density_factor_[index];
-                    rowhomes = Mod.m_Setting.pack_low_density_factor_[index];
-                    medHigh = Mod.m_Setting.pack_low_density_factor_[index];
+                    rowhomes = Mod.m_Setting.pack_row_homes_factor_[index];
+                    medHigh = Mod.m_Setting.pack_medhigh_density_factor_[index];
                 }
                 else if (n.Contains("jp"))
                 {
                     Mod.m_Setting.packIndexLookup.TryGetValue((int)Setting.PacksEnum.Japan, out index);
                     low = Mod.m_Setting.pack_low_density_factor_[index];
-                    rowhomes = Mod.m_Setting.pack_low_density_factor_[index];
-                    medHigh = Mod.m_Setting.pack_low_density_factor_[index];
+                    rowhomes = Mod.m_Setting.pack_row_homes_factor_[index];
+                    medHigh = Mod.m_Setting.pack_medhigh_density_factor_[index];
                 }
                 else if (n.Contains("cn"))
                 {
                     Mod.m_Setting.packIndexLookup.TryGetValue((int)Setting.PacksEnum.China, out index);
                     low = Mod.m_Setting.pack_low_density_factor_[index];
-                    rowhomes = Mod.m_Setting.pack_low_density_factor_[index];
-                    medHigh = Mod.m_Setting.pack_low_density_factor_[index];
+                    rowhomes = Mod.m_Setting.pack_row_homes_factor_[index];
+                    medHigh = Mod.m_Setting.pack_medhigh_density_factor_[index];
                 }
                 else if (n.Contains("ee"))
                 {
                     Mod.m_Setting.packIndexLookup.TryGetValue((int)Setting.PacksEnum.EasterEurope, out index);
                     low = Mod.m_Setting.pack_low_density_factor_[index];
-                    rowhomes = Mod.m_Setting.pack_low_density_factor_[index];
-                    medHigh = Mod.m_Setting.pack_low_density_factor_[index];
+                    rowhomes = Mod.m_Setting.pack_row_homes_factor_[index];
+                    medHigh = Mod.m_Setting.pack_medhigh_density_factor_[index];
                 }
                 else if (n.Contains("ussw"))
                 {
                     Mod.m_Setting.packIndexLookup.TryGetValue((int)Setting.PacksEnum.USSW, out index);
                     low = Mod.m_Setting.pack_low_density_factor_[index];
-                    rowhomes = Mod.m_Setting.pack_low_density_factor_[index];
-                    medHigh = Mod.m_Setting.pack_low_density_factor_[index];
+                    rowhomes = Mod.m_Setting.pack_row_homes_factor_[index];
+                    medHigh = Mod.m_Setting.pack_medhigh_density_factor_[index];
                 }
                 else if (n.Contains("usne"))
                 {
                     Mod.m_Setting.packIndexLookup.TryGetValue((int)Setting.PacksEnum.USNE, out index);
                     low = Mod.m_Setting.pack_low_density_factor_[index];
-                    rowhomes = Mod.m_Setting.pack_low_density_factor_[index];
-                    medHigh = Mod.m_Setting.pack_low_density_factor_[index];
+                    rowhomes = Mod.m_Setting.pack_row_homes_factor_[index];
+                    medHigh = Mod.m_Setting.pack_medhigh_density_factor_[index];
                 }
-                else if (n.Contains("mediterraneanheritagepack"))
+                else if (n.Contains("mediterraneanheritage"))
                 {
                     Mod.m_Setting.packIndexLookup.TryGetValue((int)Setting.PacksEnum.Mediterranean, out index);
                     low = Mod.m_Setting.pack_low_density_factor_[index];
-                    rowhomes = Mod.m_Setting.pack_low_density_factor_[index];
-                    medHigh = Mod.m_Setting.pack_low_density_factor_[index];
+                    rowhomes = Mod.m_Setting.pack_row_homes_factor_[index];
+                    medHigh = Mod.m_Setting.pack_medhigh_density_factor_[index];
                 }
-                else if (n.Contains("dragongatepack"))
+                else if (n.Contains("dragongate"))
                 {
                     Mod.m_Setting.packIndexLookup.TryGetValue((int)Setting.PacksEnum.DragonGate, out index);
                     low = Mod.m_Setting.pack_low_density_factor_[index];
-                    rowhomes = Mod.m_Setting.pack_low_density_factor_[index];
-                    medHigh = Mod.m_Setting.pack_low_density_factor_[index];
+                    rowhomes = Mod.m_Setting.pack_row_homes_factor_[index];
+                    medHigh = Mod.m_Setting.pack_medhigh_density_factor_[index];
                 }
-                else if (n.Contains("skyscraperspack"))
+                else if (n.Contains("skyscrapers"))
                 {
+                    Mod.log.Info($"Detected Skyscrapers Pack in asset pack name '{n}'");
                     Mod.m_Setting.packIndexLookup.TryGetValue((int)Setting.PacksEnum.Skyscrapers, out index);
                     low = Mod.m_Setting.pack_low_density_factor_[index];
-                    rowhomes = Mod.m_Setting.pack_low_density_factor_[index];
-                    medHigh = Mod.m_Setting.pack_low_density_factor_[index];
+                    rowhomes = Mod.m_Setting.pack_row_homes_factor_[index];
+                    medHigh = Mod.m_Setting.pack_medhigh_density_factor_[index];
                 }
             }
             catch (Exception e)
@@ -204,6 +205,9 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
                 float3 factors = GetFactorsForPackName(fs.ToString());
                 _assetPackFactors.TryAdd(pack, factors);
+
+                Mod.log.Info(
+                    $"Asset Pack:{fs.ToString()} - Factors: LowDensity={factors.x}, RowHomes={factors.y}, MedHigh={factors.z}");
             }
         }
 
