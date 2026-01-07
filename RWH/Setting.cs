@@ -570,7 +570,22 @@ namespace RealisticWorkplacesAndHouseholds
 
         [SettingsUISection(OtherSection, OtherGroup)]
         public ResetType evicted_reset_type { get; set; } = ResetType.FindNewHome;
+        // Data export flag
+        [SettingsUIHidden]
+        public bool export_data_requested;
 
+        // UI button to trigger data export
+        [SettingsUIButton]
+        [SettingsUISection(OtherSection, OtherGroup)]
+        public bool ExportDataButton
+        {
+            set
+            {
+                // Set the flag to true when the button is pressed
+                export_data_requested = true;
+                Mod.log.Info("Building Data Export Requested via UI.");
+            }
+        }
         [SettingsUIButton]
         [SettingsUISection(OtherSection, OtherGroup)]
         public bool Button
@@ -783,6 +798,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.prison_sqm_per_prisoner)), $"Number of square meters per prisoner. Higher numbers will decrease the number of prisoners." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.prisoners_per_officer)), "Number of Prisoners per Correctional Officer" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.prisoners_per_officer)), $"Number of Prisoners per Correctional Officer. This will be used to calculate the number of workers required at prisons." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.ExportDataButton)), "Export Building Statistics" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.ExportDataButton)), "Exports CSV files containing detailed data (height, lot size, population, etc.) for all building prefabs to your Documents folder." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.Button)), "Reset Settings" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.Button)), $"Reset settings to default values" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.prison_non_usable_space)), $"Percentage of Non-usable Area" },
@@ -1029,6 +1046,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.prison_sqm_per_prisoner)), $"Número de metros quadrados por prisioneiro. Números maiores diminuirão o número de prisioneiros." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.prisoners_per_officer)), "Número de presos por agente penitenciário" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.prisoners_per_officer)), $"Número de Prisioneiros por agente penitenciário. Isso será usado para calcular o número de trabalhadores necessários nas prisões." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.ExportDataButton)), "Exportar Estatísticas de Edifícios" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.ExportDataButton)), "Exporta arquivos CSV contendo dados detalhados (altura, tamanho do lote, população, etc.) de todos os edifícios para a sua pasta Documentos." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.Button)), "Redefinir configurações" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.Button)), $"Redefinir as configurações para os valores padrão" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.prison_non_usable_space)), $"Porcentagem de área não utilizável" },

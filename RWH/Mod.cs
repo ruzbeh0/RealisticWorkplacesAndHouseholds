@@ -120,6 +120,9 @@ namespace RealisticWorkplacesAndHouseholds
             updateSystem.UpdateAt<EconomyParameterUpdaterSystem>(SystemUpdatePhase.GameSimulation);
             //updateSystem.UpdateAt<RealisticWorkplacesAndHouseholds.Systems.RWHRentAdjustSystem>(SystemUpdatePhase.GameSimulation);
             //updateSystem.UpdateAfter<WarehouseDebugSystem>(SystemUpdatePhase.GameSimulation);
+
+            // Data Export System
+            updateSystem.UpdateAt<BuildingDataExportSystem>(SystemUpdatePhase.MainLoop);
         }
 
         public void OnDispose()
