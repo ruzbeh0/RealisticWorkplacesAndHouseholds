@@ -156,7 +156,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         if (zonedata.m_AreaType == Game.Zones.AreaType.Residential)
                         {
                             float3 asset_pack_factor = 1f;
-                            string asset_pack_names = "";
+                            //string asset_pack_names = "";
                             if (AssetPackElementBufferLookup.TryGetBuffer(entity, out var assetPackElements1))
                             {
                                 for (int index = 0; index < assetPackElements1.Length; ++index)
