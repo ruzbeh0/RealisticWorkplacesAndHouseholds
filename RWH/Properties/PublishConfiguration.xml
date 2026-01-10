@@ -8,48 +8,106 @@
 	<!--Long description of the mod. Single line or multi line. Supports minimal markdown subset-->
 	<!--LongDescription Value="This is a long description" /-->
 	<LongDescription>
-This mod updates the number of households and workplaces in buildings by calculating the building dimensions. It uses several parameters to estimate a realistic number of households or workers for each building. Several of these parameters can be changed in the Mod's menu.
+This mod recalculates **households**, **workplaces**, and **many city-service staffing/capacities** based on a building’s **real dimensions (width/length/height)** and a set of configurable “space-per-unit” parameters. The goal is to make capacity feel consistent across different asset styles, lot sizes, and heights—so a big building actually holds more people/workers than a small one.
 
-These are the current supported building types:
+The mod includes optional “balancing helpers” (upkeep/consumption/noise/rent) to compensate for the gameplay side effects of higher or lower occupancies.
 
-* Residential Zones
-* Commercial Zones
-* Industry Zones (Except specialized industries)
-* Office Zones
-* Mixed Use Zones
-* Admin Buildings
-* Fire and Police Stations
-* Hospital and Medical Clinics
-* Post Facilities
-* Power Stations
-* Schools
-* Welfare Office
-* Prisons
-* Transport and Maintenace Depots
-* Garbage Facilities
-* Cargo Stations
-* Research Facilities
-* Transportation Stations and Airports
-* Telecom Facilities
-* Parks
+## Supported building types
 
-## Calculations
+### Zoned buildings
 
-Different types of buildings will have their capacity calculated differently. In summary, all of them will use the buildings dimensions to estimate the number of floors and the area of each floor. For each type of building it is possible to customize for the number of workers or apartments per area (sq meter). This will be used to calculate the total number of households or workers. There are special considerations, for example, space for stairs, elevators, lobbys (for some cases) will be removed from the usable area. Also, mixed used buildings will only consider the first floor to calculate workers and the rest for households. And for Schools the number of teachers and students will be calculated similary, but also using a teacher to student ratio. These are just a few examples, each building type listed above have their own formula and set of parameters.
+* **Residential (including row-home handling and density tuning via asset-pack factors)**
+* **Commercial**
+* **Office**
+* **Industrial (standard industry / non-specialized)**
 
-## Existing Cities and Updating Settings
+### City services and ploppables (capacity / workers calculated from dimensions)
 
-When you apply this mod to an existing city or change the settings, there could be buildings where the number of houshold decreases. In these cases, the extra residents will be evicted and you might notice a drop in population in your city.
+Includes (among others):
 
-## Known Issues
+* **Admin Buildings**
+* **Welfare Office**
+* **Research Facilities**
+* **Transport Stations**
+* **Telecom Facilities**
+* **Parks**
+* **Police Stations, Fire Stations**
+* **Hospitals / Clinics**
+* **Schools (students + staff)**
+* **Prisons**
+* **Power plants**
+* **Depots / maintenance / cargo and transport-related buildings**
+* **Garbage facilities**
 
-* Existing cities that start using this mod might suffer a lack of residential demand and/or buildings that don't get filled with new residents. If this happens, you can increase the limit of the Find Property requests in the 'other' tab. Note that increasing this limit will cause the game to slow down. Once the issue is resolved, the limits can be lowered back.
-* Using the "Disable Fewer Households On Luxury High Rises" may cause citizens to be homeless and also contribute to the issue above.
-* There is currently an issue with employee calculations for buildings placed with the 'Plop the Growables' mod being very high. Saving and re-loading the game might solve the issue. However, placing buildings through this mod is not recommended.
+## How the calculations work (high level)
+
+Different building categories use different formulas, but the overall approach is:
+
+1. **Read building dimensions from the prefab mesh**
+2. **Estimate floors** from height (category-specific average floor height)
+3. Compute usable floor area, then convert area into:
+
+* **households** (sqm per apartment + hallway/elevator/other reductions)
+* **workers** (sqm per worker + non-usable space + category tweaks)
+* **schools:** students are area-based, workers derived from **students-per-teacher** plus **support staff %**
+
+## Asset pack factors (with Save to CSV)
+
+If an asset pack tends to be “too dense” or “too sparse,” you can apply a multiplier per pack for:
+
+* Low density
+* Row homes
+* Medium/High density
+
+There’s a **Load** button (load the current pack’s factors into the sliders) and a **Save** button that writes your edits to a CSV so they persist across sessions.
+
+## Export tools
+
+### Export Building Statistics (CSV)
+
+There’s an **“Export Building Statistics”** button that exports CSV files with detailed prefab info (ex: **height, lot size, population, etc.**) to your **Documents folder**.
+
+## Optional balancing helpers
+
+Because changing building capacity can indirectly change city costs and resource demand, the mod includes:
+
+* **Service Upkeep Cost Reduction** (to offset higher service staffing costs)
+* **Electricity / Water Consumption Reduction** (applied to prefab consumption data)
+* **Noise Factor** (scale building noise output)
+* **Residential Rent Discount**
+* **Global Workplace/Households reduction (%)**
+
+## Enable/disable controls
+
+You can disable major parts independently:
+
+* Disable **household** calculations
+* Disable **workplace** calculations
+* Disable **city-services** calculations
+
+## Existing cities and changing settings
+
+Applying this mod to an existing save (or changing settings) can **increase or decrease** capacities. If a building ends up with fewer households than before, extra residents may be forced to move, and you may see short-term swings in population/employment while the simulation stabilizes.
+
+## Known issues / notes
+
+* If you see unusual demand or filling behavior after enabling the mod, consider temporarily increasing the game’s “Find Property” request limits (then reduce later).
+* Buildings placed via “Plop the Growables” can sometimes end up with odd employee numbers; saving and reloading may help. (Placing growables this way is not recommended.)
+
+## Compatibility
+
+This mod overlaps in purpose with other “realistic occupancy/density” mods. Don’t run multiple mods that all overwrite household/workplace capacities at the same time.
 
 ## Credits
 
-This mod was inspired by the **Realistic Population** from CS1 and from **Realistic Building Occupancy** and **Realistic Density** from CS2. Thank you for to the authors of Realistic Building Occupancy and Realistic Density: Trejak, Mimonsi and 89pleasure. I studied their code and it was very useful to create this mod. I tried to create a mod that joined the best qualities of both of them. Also, because this mod is similar to them, it should not be used with them.
+Inspired by:
+
+* **Realistic Population (CS1)**
+* **Realistic Building Occupancy** and **Realistic Density (CS2)** — thanks to **Trejak, Mimonsi, and 89pleasure** for the ideas and reference implementations.
+
+Additional credits:
+
+* **Logiteee** — implementation work for the **Export to CSV** button / export feature.
 	</LongDescription>
 	<!--Thumbnail-->
 	<Thumbnail Value="Properties/Thumbnail.jpg" />
@@ -64,15 +122,15 @@ This mod was inspired by the **Realistic Population** from CS1 and from **Realis
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/realistic-workplaces-and-households.1699586/" />
 	<!--Version of the mod-->
-	<ModVersion Value="1.5" />
+	<ModVersion Value="1.6" />
 	<!--Recommended version of the base game to use the mod-->
 	<GameVersion Value="1.5.*" />
 	<!--Dependency for the mod, can be set multiple times-->
 	<Dependency Id="" />
 	<ChangeLog>
-* Added Asset Packs factors
-* Fixed bug that was preventing buildings from leveling up
-* Changed average floor height step from 1 to 0.1 meters for residential, commercial and industry
+* Fixed Asset Pack Factors for row homes and med/high density.
+* Added option to export building data to CSV for analysis.
+* Updated mod description.
 	</ChangeLog>
 	<!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon-->
 	<ExternalLink Type="github" Url="https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/" />
