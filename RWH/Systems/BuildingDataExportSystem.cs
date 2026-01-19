@@ -1,269 +1,294 @@
-﻿using Colossal.Entities;
-using Game;
+﻿using Game;
 using Game.Buildings;
+using Game.Common;
+using Game.Companies;
 using Game.Prefabs;
 using Game.Simulation;
+using Game.Tools;
 using Game.Zones;
 using RealisticWorkplacesAndHouseholds.Components;
-using System;
 using System.IO;
 using System.Text;
+using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
+using UnityEngine;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
     /// <summary>
-    /// System to export building prefab data to CSV files for analysis.
-    /// Includes detailed metrics like Density per Cell, Zone Types, and Themes.
+    /// System responsible for exporting all Building Prefabs (Assets) to CSV files.
+    /// This includes metrics like Dimensions, Height, and Capacities.
     /// </summary>
     public partial class BuildingDataExportSystem : GameSystemBase
     {
+        private EntityQuery m_PrefabQuery;
+        private PrefabSystem m_PrefabSystem;
+
+        protected override void OnCreate()
+        {
+            base.OnCreate();
+
+            m_PrefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
+
+            // Query to find all valid Building Prefabs with relevant data components.
+            m_PrefabQuery = GetEntityQuery(new EntityQueryDesc
+            {
+                All = new[] {
+                    ComponentType.ReadOnly<PrefabData>(),
+                    ComponentType.ReadOnly<BuildingData>()
+                },
+                Any = new[] {
+                    ComponentType.ReadOnly<BuildingPropertyData>(),
+                    ComponentType.ReadOnly<WorkplaceData>(),
+                    ComponentType.ReadOnly<SchoolData>(),
+                    ComponentType.ReadOnly<HospitalData>(),
+                    ComponentType.ReadOnly<PrisonData>()
+                },
+                None = new[] {
+                    ComponentType.Exclude<Deleted>(),
+                    ComponentType.Exclude<Temp>()
+                }
+            });
+        }
+
         protected override void OnUpdate()
         {
-            // Check if the export button was clicked in the settings
+            // Listen for the export trigger from Mod Settings.
             if (Mod.m_Setting.export_data_requested)
             {
-                Mod.log.Info("[RWH] Export started. Analyzing Zone Data Hierarchy...");
-                ExportAllPrefabsToCSV();
-                // Reset the flag to prevent multiple exports
+                Mod.log.Info("[RWH Export] Export requested via Settings.");
+                ExportDataToCSV();
                 Mod.m_Setting.export_data_requested = false;
             }
         }
 
-        private void ExportAllPrefabsToCSV()
+        /// <summary>
+        /// Gathers data from prefabs and writes to CSV files in the user's My Documents folder.
+        /// </summary>
+        public void ExportDataToCSV()
         {
-            var prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
+            Mod.log.Info("[RWH Export] Starting Prefab Export...");
 
-            // 1. Prepare CSV Headers
-            // Common columns for all building types
-            string commonHeader = "Name,Type,Theme,AssetPack,Height,Width,Length,Workers,Households,Signature";
+            var entities = m_PrefabQuery.ToEntityArray(Allocator.Temp);
+            Mod.log.Info($"[RWH Export] Found {entities.Length} prefabs to process.");
 
-            // Specialized headers with 'Per Cell' density metrics
-            var resCsv = new StringBuilder(commonHeader + ",HouseholdsPerCell\n");
-            var workCsv = new StringBuilder(commonHeader + ",WorkersPerCell\n");
+            // --- 1. Initialize Component Lookups ---
+
+            // Physical & Geometric Data
+            var buildingDataLookup = GetComponentLookup<BuildingData>(true);
+            var geometryLookup = GetComponentLookup<ObjectGeometryData>(true); // Used for Height
+
+            // Gameplay Data
+            var propertyLookup = GetComponentLookup<BuildingPropertyData>(true);
+            var workplaceDataLookup = GetComponentLookup<WorkplaceData>(true);
+
+            // Service Data
+            var schoolLookup = GetComponentLookup<SchoolData>(true);
+            var hospitalLookup = GetComponentLookup<HospitalData>(true);
+            var prisonLookup = GetComponentLookup<PrisonData>(true);
+
+            // Categorization & Metadata
+            var spawnableLookup = GetComponentLookup<SpawnableBuildingData>(true);
+            var zoneDataLookup = GetComponentLookup<ZoneData>(true);
+            var ambienceLookup = GetComponentLookup<GroupAmbienceData>(true);
+            var signatureLookup = GetComponentLookup<Signature>(true);
+            var assetPackBufferLookup = GetBufferLookup<AssetPackElement>(true);
+
+            // --- 2. Initialize CSV StringBuilders ---
+
+            // Header includes 'Height' column
+            string commonHeader = "Name,Type,Theme,AssetPack,Level,Height,Width,Length,Signature";
+
+            // SpaceMultiplier removed from Residential CSV Header
+            var resCsv = new StringBuilder(commonHeader + ",Households,HouseholdsPerCell\n");
+            var workCsv = new StringBuilder(commonHeader + ",Workers,WorkersPerCell\n");
             var schoolCsv = new StringBuilder(commonHeader + ",StudentCapacity,StudentCapacityPerCell\n");
             var hospitalCsv = new StringBuilder(commonHeader + ",PatientCapacity,PatientCapacityPerCell\n");
             var prisonCsv = new StringBuilder(commonHeader + ",PrisonerCapacity,PrisonerCapacityPerCell\n");
 
-            // 2. Query all Building Prefabs
-            // We query PrefabData and BuildingData to get every buildable asset in the game
-            EntityQuery prefabQuery = GetEntityQuery(ComponentType.ReadOnly<PrefabData>(), ComponentType.ReadOnly<BuildingData>());
-            var prefabEntities = prefabQuery.ToEntityArray(Unity.Collections.Allocator.Temp);
+            int countRes = 0, countWork = 0, countSchool = 0, countHosp = 0, countPrison = 0;
 
-            foreach (var entity in prefabEntities)
+            // --- 3. Iterate Prefabs ---
+            foreach (var entity in entities)
             {
-                var prefabBase = prefabSystem.GetPrefab<BuildingPrefab>(entity);
-                if (prefabBase == null) continue;
+                // Get Prefab Name
+                string name = "";
+                if (m_PrefabSystem.GetPrefab<PrefabBase>(entity) is PrefabBase prefabBase)
+                {
+                    name = prefabBase.name;
+                }
+                else
+                {
+                    name = EntityManager.GetName(entity);
+                }
 
-                string name = prefabBase.name;
+                bool isSignature = signatureLookup.HasComponent(entity);
 
-                // Get Lot Size (Width x Length)
-                if (!EntityManager.TryGetComponent<BuildingData>(entity, out var bData)) continue;
-                int w = bData.m_LotSize.x;
-                int l = bData.m_LotSize.y;
-                // Calculate Area (Avoid division by zero)
-                float area = math.max(1, w * l);
+                // Get Dimensions (Width, Length)
+                int width = 0, length = 0;
+                if (buildingDataLookup.TryGetComponent(entity, out var bData))
+                {
+                    width = bData.m_LotSize.x;
+                    length = bData.m_LotSize.y;
+                }
 
-                // Get Building Height (from ObjectGeometryData, not BuildingData)
+                // Get Height using ObjectGeometryData
                 float height = 0f;
-                if (EntityManager.TryGetComponent<ObjectGeometryData>(entity, out var geom))
+                if (geometryLookup.TryGetComponent(entity, out var geom))
                 {
                     height = geom.m_Size.y;
                 }
 
-                // 3. Extract Meta Data
-                // Get Theme and Asset Pack using the Zone Hierarchy (No string parsing)
-                GetThemeAndAssetPack(entity, prefabBase, prefabSystem, out string theme, out string assetPack);
-                // Determine Building Type based on Zone properties (e.g., LOW RESIDENTIAL, OFFICE)
-                string type = GetZoneBasedBuildingType(entity, prefabSystem);
-
-                // 4. Extract Stats
-                bool isSignature = EntityManager.HasComponent<SignatureBuildingData>(entity);
-                int households = EntityManager.TryGetComponent<BuildingPropertyData>(entity, out var prop) ? prop.m_ResidentialProperties : 0;
-                int workers = EntityManager.TryGetComponent<WorkplaceData>(entity, out var work) ? work.m_MaxWorkers : 0;
-
-                // 5. Calculate Density Metrics (Value per 1x1 Lot)
-                float householdsPerCell = households / area;
-                float workersPerCell = workers / area;
-
-                // Prepare the common data string
-                string commonData = $"{name},{type},{theme},{assetPack},{height:F2},{w},{l},{workers},{households},{isSignature}";
-
-                // 6. Append to respective CSVs
-                // Residential
-                if (households > 0)
-                    resCsv.AppendLine($"{commonData},{householdsPerCell:F2}");
-
-                // Workplaces
-                if (workers > 0)
-                    workCsv.AppendLine($"{commonData},{workersPerCell:F2}");
-
-                // Schools
-                if (EntityManager.TryGetComponent<SchoolData>(entity, out var school))
+                // Get Level
+                int level = 1;
+                if (spawnableLookup.TryGetComponent(entity, out var sData))
                 {
-                    float capPerCell = school.m_StudentCapacity / area;
-                    schoolCsv.AppendLine($"{commonData},{school.m_StudentCapacity},{capPerCell:F2}");
+                    level = sData.m_Level;
                 }
 
-                // Hospitals
-                if (EntityManager.TryGetComponent<HospitalData>(entity, out var hospital))
+                // Calculate Base Area
+                float area = (width * length);
+                if (area == 0) area = 1f;
+
+                // --- Determine Category, Theme, and Asset Pack ---
+                string type = "OTHER";
+                string theme = "No Theme";
+                string assetPack = "Default";
+
+                Entity zoneEntity = Entity.Null;
+                if (sData.m_ZonePrefab != Entity.Null) zoneEntity = sData.m_ZonePrefab;
+
+                // Determine Building Type
+                if (zoneEntity != Entity.Null &&
+                    zoneDataLookup.TryGetComponent(zoneEntity, out var zoneData) &&
+                    ambienceLookup.TryGetComponent(zoneEntity, out var ambienceData))
                 {
-                    float capPerCell = hospital.m_PatientCapacity / area;
-                    hospitalCsv.AppendLine($"{commonData},{hospital.m_PatientCapacity},{capPerCell:F2}");
+                    type = DetermineCategory(zoneData, ambienceData);
                 }
 
-                // Prisons
-                if (EntityManager.TryGetComponent<PrisonData>(entity, out var prison))
+                // Determine Asset Pack from Buffer
+                if (assetPackBufferLookup.TryGetBuffer(entity, out var packs) && packs.Length > 0)
                 {
-                    float capPerCell = prison.m_PrisonerCapacity / area;
-                    prisonCsv.AppendLine($"{commonData},{prison.m_PrisonerCapacity},{capPerCell:F2}");
+                    assetPack = GetPackName(packs[0].m_Pack);
+                }
+                else if (zoneEntity != Entity.Null && assetPackBufferLookup.TryGetBuffer(zoneEntity, out packs) && packs.Length > 0)
+                {
+                    assetPack = GetPackName(packs[0].m_Pack);
+                }
+
+                // Construct common data line with Height included
+                string commonLine = $"{name},{type},{theme},{assetPack},{level},{height:F1},{width},{length},{isSignature}";
+
+                // --- 4. Append to Specific CSV ---
+
+                // School Data
+                if (schoolLookup.TryGetComponent(entity, out var school))
+                {
+                    schoolCsv.AppendLine($"{commonLine},{school.m_StudentCapacity},{(school.m_StudentCapacity / area):F2}");
+                    countSchool++; continue;
+                }
+                // Hospital Data
+                if (hospitalLookup.TryGetComponent(entity, out var hospital))
+                {
+                    hospitalCsv.AppendLine($"{commonLine},{hospital.m_PatientCapacity},{(hospital.m_PatientCapacity / area):F2}");
+                    countHosp++; continue;
+                }
+                // Prison Data
+                if (prisonLookup.TryGetComponent(entity, out var prison))
+                {
+                    prisonCsv.AppendLine($"{commonLine},{prison.m_PrisonerCapacity},{(prison.m_PrisonerCapacity / area):F2}");
+                    countPrison++; continue;
+                }
+                // Residential Data
+                if (propertyLookup.TryGetComponent(entity, out var prop))
+                {
+                    if (prop.m_ResidentialProperties > 0)
+                    {
+                        // Removed SpaceMultiplier from the output line
+                        resCsv.AppendLine($"{commonLine},{prop.m_ResidentialProperties},{(prop.m_ResidentialProperties / area):F2}");
+                        countRes++;
+                    }
+                }
+                // Workplace Data
+                if (workplaceDataLookup.TryGetComponent(entity, out var work))
+                {
+                    if (work.m_MaxWorkers > 0)
+                    {
+                        workCsv.AppendLine($"{commonLine},{work.m_MaxWorkers},{(work.m_MaxWorkers / area):F2}");
+                        countWork++;
+                    }
                 }
             }
 
-            // 7. Save Files to 'Documents' folder
-            string docPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            SaveFile(Path.Combine(docPath, "RWH_All_Residential.csv"), resCsv);
-            SaveFile(Path.Combine(docPath, "RWH_All_Workplaces.csv"), workCsv);
-            SaveFile(Path.Combine(docPath, "RWH_All_Schools.csv"), schoolCsv);
-            SaveFile(Path.Combine(docPath, "RWH_All_Hospitals.csv"), hospitalCsv);
-            SaveFile(Path.Combine(docPath, "RWH_All_Prisons.csv"), prisonCsv);
+            Mod.log.Info($"[RWH Export] Summary: Res={countRes}, Work={countWork}, School={countSchool}, Hosp={countHosp}, Prison={countPrison}");
 
-            Mod.log.Info($"[RWH] Export Complete. Density metrics included.");
-            prefabEntities.Dispose();
+            // --- 5. Save Files ---
+            string basePath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments);
+            Mod.log.Info($"[RWH Export] Saving to: {basePath}");
+
+            try
+            {
+                File.WriteAllText(Path.Combine(basePath, "RWH_Residential.csv"), resCsv.ToString(), Encoding.UTF8);
+                File.WriteAllText(Path.Combine(basePath, "RWH_Workplaces.csv"), workCsv.ToString(), Encoding.UTF8);
+                File.WriteAllText(Path.Combine(basePath, "RWH_Schools.csv"), schoolCsv.ToString(), Encoding.UTF8);
+                File.WriteAllText(Path.Combine(basePath, "RWH_Hospitals.csv"), hospitalCsv.ToString(), Encoding.UTF8);
+                File.WriteAllText(Path.Combine(basePath, "RWH_Prisons.csv"), prisonCsv.ToString(), Encoding.UTF8);
+                Mod.log.Info("[RWH Export] Success!");
+            }
+            catch (System.Exception ex)
+            {
+                Mod.log.Error($"[RWH Export] File Write Error: {ex.Message}");
+            }
+
+            entities.Dispose();
         }
 
         /// <summary>
-        /// Retrieves Theme and AssetPack by traversing the Zone Hierarchy.
-        /// This ensures accurate detection even if the building name doesn't contain country codes.
+        /// Categorizes the building based on Zone AreaType and Ambience.
         /// </summary>
-        private void GetThemeAndAssetPack(Entity entity, BuildingPrefab buildingPrefab, PrefabSystem prefabSystem, out string theme, out string assetPack)
+        private string DetermineCategory(ZoneData zoneData, GroupAmbienceData ambienceData)
         {
-            theme = "No Theme";
-            assetPack = "Default";
-
-            // Case 1: Growable Buildings (Residential/Commercial/Industrial)
-            // These buildings belong to a Zone, so we check the ZonePrefab.
-            if (EntityManager.TryGetComponent<SpawnableBuildingData>(entity, out var spawnData))
+            if (zoneData.m_AreaType == AreaType.Residential)
             {
-                if (prefabSystem.TryGetPrefab<ZonePrefab>(spawnData.m_ZonePrefab, out var zonePrefab))
+                if (ambienceData.m_AmbienceType == GroupAmbienceType.ResidentialLowRent) return "LOW RENT";
+                if (ambienceData.m_AmbienceType == GroupAmbienceType.ResidentialMixed) return "MIXED HOUSING";
+                if ((zoneData.m_ZoneFlags & ZoneFlags.SupportNarrow) != 0) return "ROW HOUSE";
+
+                return ambienceData.m_AmbienceType switch
                 {
-                    // A. Check Theme from Zone
-                    var zoneThemeObj = zonePrefab.GetComponent<ThemeObject>();
-                    if (zoneThemeObj != null && zoneThemeObj.m_Theme != null)
-                        theme = zoneThemeObj.m_Theme.name;
-
-                    // B. Check AssetPack from Zone
-                    // ZonePrefabs use 'AssetPackItem' instead of a buffer.
-                    var zoneAssetPackItem = zonePrefab.GetComponent<AssetPackItem>();
-                    if (zoneAssetPackItem != null && zoneAssetPackItem.m_Packs != null && zoneAssetPackItem.m_Packs.Length > 0)
-                    {
-                        assetPack = zoneAssetPackItem.m_Packs[0].name;
-                    }
-                }
+                    GroupAmbienceType.ResidentialLow => "LOW RESIDENTIAL",
+                    GroupAmbienceType.ResidentialMedium => "MEDIUM RESIDENTIAL",
+                    GroupAmbienceType.ResidentialHigh => "HIGH RESIDENTIAL",
+                    _ => "RESIDENTIAL"
+                };
             }
-
-            // Case 2: Ploppable Buildings (Schools, Services, Signatures) or Fallback
-            // These buildings carry the Theme/AssetPack directly on themselves.
-            if (theme == "No Theme")
+            if (zoneData.m_AreaType == AreaType.Commercial)
             {
-                var bThemeObj = buildingPrefab.GetComponent<ThemeObject>();
-                if (bThemeObj != null && bThemeObj.m_Theme != null)
-                    theme = bThemeObj.m_Theme.name;
+                if (ambienceData.m_AmbienceType == GroupAmbienceType.CommercialLow) return "LOW COMMERCIAL";
+                if (ambienceData.m_AmbienceType == GroupAmbienceType.CommercialHigh) return "HIGH COMMERCIAL";
+                return "COMMERCIAL";
             }
-
-            // Check for AssetPack buffer on the building entity
-            if (assetPack == "Default" && EntityManager.HasBuffer<AssetPackElement>(entity))
+            if (zoneData.m_AreaType == AreaType.Industrial)
             {
-                var packs = EntityManager.GetBuffer<AssetPackElement>(entity);
-                if (packs.Length > 0)
-                    assetPack = prefabSystem.GetPrefab<PrefabBase>(packs[0].m_Pack).name;
-            }
-        }
+                if ((zoneData.m_ZoneFlags & ZoneFlags.Office) != 0)
+                    return ambienceData.m_AmbienceType == GroupAmbienceType.OfficeHigh ? "HIGH OFFICE" : "LOW OFFICE";
 
-        /// <summary>
-        /// Classifies the building type based on Components (for services) or Zone Properties (for growables).
-        /// </summary>
-        private string GetZoneBasedBuildingType(Entity entity, PrefabSystem prefabSystem)
-        {
-            // 1. Identify Service and Special Buildings by Component
-            if (EntityManager.HasComponent<PoliceStationData>(entity)) return "POLICE";
-            if (EntityManager.HasComponent<FireStationData>(entity)) return "FIRE";
-            if (EntityManager.HasComponent<HospitalData>(entity)) return "HOSPITAL";
-            if (EntityManager.HasComponent<SchoolData>(entity)) return "SCHOOL";
-            if (EntityManager.HasComponent<ParkData>(entity)) return "PARK";
-            if (EntityManager.HasComponent<WelfareOfficeData>(entity)) return "WELFARE";
-            if (EntityManager.HasComponent<MaintenanceDepotData>(entity)) return "MAINTENANCE";
-            if (EntityManager.HasComponent<PostFacilityData>(entity)) return "POST";
-            if (EntityManager.HasComponent<TransportDepotData>(entity)) return "DEPOT";
-            if (EntityManager.HasComponent<GarbageFacilityData>(entity)) return "GARBAGE";
-            if (EntityManager.HasComponent<PowerPlantData>(entity)) return "POWER PLANT";
-            if (EntityManager.HasComponent<WaterPumpingStationData>(entity)) return "WATER";
-            if (EntityManager.HasComponent<SewageOutletData>(entity)) return "SEWAGE";
-            if (EntityManager.HasComponent<ParkingFacilityData>(entity)) return "PARKING";
-            if (EntityManager.HasComponent<PrisonData>(entity)) return "PRISON";
-
-            // 2. Identify Growables based on Zone Properties
-            Entity zoneEntity = Entity.Null;
-            if (EntityManager.TryGetComponent<SpawnableBuildingData>(entity, out var spawnData))
-                zoneEntity = spawnData.m_ZonePrefab;
-            else if (EntityManager.TryGetComponent<PlaceholderBuildingData>(entity, out var phData))
-                zoneEntity = phData.m_ZonePrefab;
-
-            if (zoneEntity != Entity.Null)
-            {
-                if (prefabSystem.TryGetPrefab<ZonePrefab>(zoneEntity, out var zonePrefab))
-                {
-                    var zoneData = EntityManager.GetComponentData<ZoneData>(zoneEntity);
-                    var ambienceData = EntityManager.GetComponentData<GroupAmbienceData>(zoneEntity);
-
-                    // We use the Zone Name to infer density (Low/Med/High) as it's the most reliable way.
-                    string zoneName = zonePrefab.name.ToUpper();
-
-                    // [Residential]
-                    if (zoneData.m_AreaType == AreaType.Residential)
-                    {
-                        if (ambienceData.m_AmbienceType == GroupAmbienceType.ResidentialMixed) return "MIXED HOUSING";
-                        if ((zoneData.m_ZoneFlags & ZoneFlags.SupportNarrow) != 0) return "ROW HOUSE";
-
-                        if (zoneName.Contains("LOW")) return "LOW RESIDENTIAL";
-                        if (zoneName.Contains("MEDIUM") || zoneName.Contains("MED")) return "MEDIUM RESIDENTIAL";
-                        if (zoneName.Contains("HIGH")) return "HIGH RESIDENTIAL";
-                        return "RESIDENTIAL";
-                    }
-
-                    // [Commercial]
-                    if (zoneData.m_AreaType == AreaType.Commercial)
-                    {
-                        if (zoneName.Contains("LOW")) return "LOW COMMERCIAL";
-                        if (zoneName.Contains("HIGH")) return "HIGH COMMERCIAL";
-                        return "COMMERCIAL";
-                    }
-
-                    // [Industrial & Office]
-                    if (zoneData.m_AreaType == AreaType.Industrial)
-                    {
-                        // Office is technically a subtype of Industrial in Zone properties
-                        if (zonePrefab.m_Office)
-                        {
-                            if (zoneName.Contains("LOW")) return "LOW OFFICE";
-                            if (zoneName.Contains("HIGH")) return "HIGH OFFICE";
-                            return "OFFICE";
-                        }
-
-                        if (ambienceData.m_AmbienceType == GroupAmbienceType.Industrial) return "INDUSTRY";
-                        if (EntityManager.HasComponent<ExtractorFacilityData>(entity)) return "EXTRACTOR";
-                        return "INDUSTRY_SPECIALIZED";
-                    }
-                }
+                if (ambienceData.m_AmbienceType == GroupAmbienceType.Industrial) return "INDUSTRY";
+                return "INDUSTRY_SPECIALIZED";
             }
             return "OTHER";
         }
 
-        private void SaveFile(string path, StringBuilder content)
+        /// <summary>
+        /// Retrieves the Asset Pack name via PrefabSystem.
+        /// </summary>
+        private string GetPackName(Entity packEntity)
         {
-            try { File.WriteAllText(path, content.ToString(), Encoding.UTF8); }
-            catch (Exception ex) { Mod.log.Error($"Failed to save {path}: {ex.Message}"); }
+            if (m_PrefabSystem.GetPrefab<PrefabBase>(packEntity) is PrefabBase packPrefab)
+            {
+                return packPrefab.name;
+            }
+            return EntityManager.GetName(packEntity);
         }
     }
 }
