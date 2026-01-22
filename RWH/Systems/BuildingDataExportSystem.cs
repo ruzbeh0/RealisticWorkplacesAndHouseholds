@@ -1,4 +1,5 @@
-﻿using Game;
+﻿using Colossal.Entities;
+using Game;
 using Game.Buildings;
 using Game.Common;
 using Game.Companies;
@@ -42,7 +43,20 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     ComponentType.ReadOnly<WorkplaceData>(),
                     ComponentType.ReadOnly<SchoolData>(),
                     ComponentType.ReadOnly<HospitalData>(),
-                    ComponentType.ReadOnly<PrisonData>()
+                    ComponentType.ReadOnly<PrisonData>(),
+                    ComponentType.ReadOnly<PoliceStationData>(),
+                    ComponentType.ReadOnly<FireStationData>(),
+                    ComponentType.ReadOnly<ParkData>(),
+                    ComponentType.ReadOnly<WelfareOfficeData>(),
+                    ComponentType.ReadOnly<MaintenanceDepotData>(),
+                    ComponentType.ReadOnly<PostFacilityData>(),
+                    ComponentType.ReadOnly<TransportDepotData>(),
+                    ComponentType.ReadOnly<GarbageFacilityData>(),
+                    ComponentType.ReadOnly<PowerPlantData>(),
+                    ComponentType.ReadOnly<WaterPumpingStationData>(),
+                    ComponentType.ReadOnly<SewageOutletData>(),
+                    ComponentType.ReadOnly<ParkingFacilityData>(),
+                    ComponentType.ReadOnly<SpawnableBuildingData>(),
                 },
                 None = new[] {
                     ComponentType.Exclude<Deleted>(),
@@ -72,34 +86,26 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             var entities = m_PrefabQuery.ToEntityArray(Allocator.Temp);
             Mod.log.Info($"[RWH Export] Found {entities.Length} prefabs to process.");
 
-            // --- 1. Initialize Component Lookups ---
-
-            // Physical & Geometric Data
+            // --- 1. Lookups ---
             var buildingDataLookup = GetComponentLookup<BuildingData>(true);
-            var geometryLookup = GetComponentLookup<ObjectGeometryData>(true); // Used for Height
-
-            // Gameplay Data
             var propertyLookup = GetComponentLookup<BuildingPropertyData>(true);
             var workplaceDataLookup = GetComponentLookup<WorkplaceData>(true);
 
-            // Service Data
             var schoolLookup = GetComponentLookup<SchoolData>(true);
             var hospitalLookup = GetComponentLookup<HospitalData>(true);
             var prisonLookup = GetComponentLookup<PrisonData>(true);
 
-            // Categorization & Metadata
             var spawnableLookup = GetComponentLookup<SpawnableBuildingData>(true);
             var zoneDataLookup = GetComponentLookup<ZoneData>(true);
             var ambienceLookup = GetComponentLookup<GroupAmbienceData>(true);
             var signatureLookup = GetComponentLookup<Signature>(true);
+
             var assetPackBufferLookup = GetBufferLookup<AssetPackElement>(true);
+            var geometryLookup = GetComponentLookup<ObjectGeometryData>(true);
 
-            // --- 2. Initialize CSV StringBuilders ---
-
-            // Header includes 'Height' column
+            // --- 2. Headers ---
             string commonHeader = "Name,Type,Theme,AssetPack,Level,Height,Width,Length,Signature";
 
-            // SpaceMultiplier removed from Residential CSV Header
             var resCsv = new StringBuilder(commonHeader + ",Households,HouseholdsPerCell\n");
             var workCsv = new StringBuilder(commonHeader + ",Workers,WorkersPerCell\n");
             var schoolCsv = new StringBuilder(commonHeader + ",StudentCapacity,StudentCapacityPerCell\n");
@@ -108,10 +114,10 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
             int countRes = 0, countWork = 0, countSchool = 0, countHosp = 0, countPrison = 0;
 
-            // --- 3. Iterate Prefabs ---
+            // --- 3. Iterate ---
             foreach (var entity in entities)
             {
-                // Get Prefab Name
+                // Name
                 string name = "";
                 if (m_PrefabSystem.GetPrefab<PrefabBase>(entity) is PrefabBase prefabBase)
                 {
@@ -124,7 +130,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
                 bool isSignature = signatureLookup.HasComponent(entity);
 
-                // Get Dimensions (Width, Length)
+                // Dimensions
                 int width = 0, length = 0;
                 if (buildingDataLookup.TryGetComponent(entity, out var bData))
                 {
@@ -132,41 +138,54 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     length = bData.m_LotSize.y;
                 }
 
-                // Get Height using ObjectGeometryData
                 float height = 0f;
                 if (geometryLookup.TryGetComponent(entity, out var geom))
                 {
                     height = geom.m_Size.y;
                 }
 
-                // Get Level
-                int level = 1;
+                int level = 5;
+                Entity zoneEntity = Entity.Null;
+
+                // [중요] Spawnable 데이터가 있으면 레벨과 Zone 정보를 가져옵니다.
                 if (spawnableLookup.TryGetComponent(entity, out var sData))
                 {
                     level = sData.m_Level;
+                    zoneEntity = sData.m_ZonePrefab;
                 }
 
-                // Calculate Base Area
                 float area = (width * length);
                 if (area == 0) area = 1f;
 
-                // --- Determine Category, Theme, and Asset Pack ---
+                // --- Category Logic ---
                 string type = "OTHER";
+
+                // 1. Check Service
+                string serviceType = GetServiceCategory(entity);
+                if (serviceType != null)
+                {
+                    type = serviceType;
+                }
+                else
+                {
+                    // 2. Check Zone (RCI)
+                    if (zoneEntity != Entity.Null &&
+                        zoneDataLookup.TryGetComponent(zoneEntity, out var zData) &&
+                        ambienceLookup.TryGetComponent(zoneEntity, out var aData))
+                    {
+                        type = DetermineCategory(zData, aData);
+                    }
+                    // 3. Fallback: 직장 데이터는 있는데 Zone 정보가 없는 경우 (예: 일부 특수 산업)
+                    else if (workplaceDataLookup.HasComponent(entity))
+                    {
+                        type = "WORKPLACE_UNCATEGORIZED";
+                    }
+                }
+
+                // --- Asset Pack ---
                 string theme = "No Theme";
                 string assetPack = "Default";
 
-                Entity zoneEntity = Entity.Null;
-                if (sData.m_ZonePrefab != Entity.Null) zoneEntity = sData.m_ZonePrefab;
-
-                // Determine Building Type
-                if (zoneEntity != Entity.Null &&
-                    zoneDataLookup.TryGetComponent(zoneEntity, out var zoneData) &&
-                    ambienceLookup.TryGetComponent(zoneEntity, out var ambienceData))
-                {
-                    type = DetermineCategory(zoneData, ambienceData);
-                }
-
-                // Determine Asset Pack from Buffer
                 if (assetPackBufferLookup.TryGetBuffer(entity, out var packs) && packs.Length > 0)
                 {
                     assetPack = GetPackName(packs[0].m_Pack);
@@ -176,53 +195,48 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     assetPack = GetPackName(packs[0].m_Pack);
                 }
 
-                // Construct common data line with Height included
                 string commonLine = $"{name},{type},{theme},{assetPack},{level},{height:F1},{width},{length},{isSignature}";
 
-                // --- 4. Append to Specific CSV ---
+                // --- 4. Append Data ---
 
-                // School Data
+                // Service Buildings
                 if (schoolLookup.TryGetComponent(entity, out var school))
                 {
                     schoolCsv.AppendLine($"{commonLine},{school.m_StudentCapacity},{(school.m_StudentCapacity / area):F2}");
-                    countSchool++; continue;
+                    countSchool++;
                 }
-                // Hospital Data
                 if (hospitalLookup.TryGetComponent(entity, out var hospital))
                 {
                     hospitalCsv.AppendLine($"{commonLine},{hospital.m_PatientCapacity},{(hospital.m_PatientCapacity / area):F2}");
-                    countHosp++; continue;
+                    countHosp++;
                 }
-                // Prison Data
                 if (prisonLookup.TryGetComponent(entity, out var prison))
                 {
                     prisonCsv.AppendLine($"{commonLine},{prison.m_PrisonerCapacity},{(prison.m_PrisonerCapacity / area):F2}");
-                    countPrison++; continue;
+                    countPrison++;
                 }
-                // Residential Data
+
+                // Residential
                 if (propertyLookup.TryGetComponent(entity, out var prop))
                 {
                     if (prop.m_ResidentialProperties > 0)
                     {
-                        // Removed SpaceMultiplier from the output line
                         resCsv.AppendLine($"{commonLine},{prop.m_ResidentialProperties},{(prop.m_ResidentialProperties / area):F2}");
                         countRes++;
                     }
                 }
-                // Workplace Data
-                if (workplaceDataLookup.TryGetComponent(entity, out var work))
+                int workers = EntityManager.TryGetComponent<WorkplaceData>(entity, out var work) ? work.m_MaxWorkers : 0;
+                // Workplace
+                if (workers > 0)
                 {
-                    if (work.m_MaxWorkers > 0)
-                    {
-                        workCsv.AppendLine($"{commonLine},{work.m_MaxWorkers},{(work.m_MaxWorkers / area):F2}");
-                        countWork++;
-                    }
+                    workCsv.AppendLine($"{commonLine},{work.m_MaxWorkers},{(work.m_MaxWorkers / area):F2}");
+                    countWork++;
                 }
             }
 
             Mod.log.Info($"[RWH Export] Summary: Res={countRes}, Work={countWork}, School={countSchool}, Hosp={countHosp}, Prison={countPrison}");
 
-            // --- 5. Save Files ---
+            // --- 5. Save ---
             string basePath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments);
             Mod.log.Info($"[RWH Export] Saving to: {basePath}");
 
@@ -242,7 +256,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
             entities.Dispose();
         }
-
         /// <summary>
         /// Categorizes the building based on Zone AreaType and Ambience.
         /// </summary>
@@ -289,6 +302,26 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 return packPrefab.name;
             }
             return EntityManager.GetName(packEntity);
+        }
+        private string GetServiceCategory(Entity entity)
+        {
+            if (EntityManager.HasComponent<PoliceStationData>(entity)) return "POLICE";
+            if (EntityManager.HasComponent<FireStationData>(entity)) return "FIRE";
+            if (EntityManager.HasComponent<HospitalData>(entity)) return "HOSPITAL";
+            if (EntityManager.HasComponent<SchoolData>(entity)) return "SCHOOL";
+            if (EntityManager.HasComponent<ParkData>(entity)) return "PARK";
+            if (EntityManager.HasComponent<WelfareOfficeData>(entity)) return "WELFARE";
+            if (EntityManager.HasComponent<MaintenanceDepotData>(entity)) return "MAINTENANCE";
+            if (EntityManager.HasComponent<PostFacilityData>(entity)) return "POST";
+            if (EntityManager.HasComponent<TransportDepotData>(entity)) return "DEPOT";
+            if (EntityManager.HasComponent<GarbageFacilityData>(entity)) return "GARBAGE";
+            if (EntityManager.HasComponent<PowerPlantData>(entity)) return "POWER PLANT";
+            if (EntityManager.HasComponent<WaterPumpingStationData>(entity)) return "WATER";
+            if (EntityManager.HasComponent<SewageOutletData>(entity)) return "SEWAGE";
+            if (EntityManager.HasComponent<ParkingFacilityData>(entity)) return "PARKING";
+            if (EntityManager.HasComponent<PrisonData>(entity)) return "PRISON";
+
+            return null;
         }
     }
 }
