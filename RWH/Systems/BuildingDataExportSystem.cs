@@ -2,17 +2,14 @@
 using Game;
 using Game.Buildings;
 using Game.Common;
-using Game.Companies;
 using Game.Prefabs;
 using Game.Simulation;
 using Game.Tools;
 using Game.Zones;
-using RealisticWorkplacesAndHouseholds.Components;
 using System.IO;
 using System.Text;
 using Unity.Collections;
 using Unity.Entities;
-using UnityEngine;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
@@ -147,7 +144,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 int level = 5;
                 Entity zoneEntity = Entity.Null;
 
-                // [중요] Spawnable 데이터가 있으면 레벨과 Zone 정보를 가져옵니다.
+                // Spawnable Data (For Level and Zone Prefab)
                 if (spawnableLookup.TryGetComponent(entity, out var sData))
                 {
                     level = sData.m_Level;
@@ -160,6 +157,11 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 // --- Category Logic ---
                 string type = "OTHER";
 
+                ZoneData zoneData = default;
+                bool zoneDataExists = false;
+                GroupAmbienceData ambienceData = default;
+                bool ambienceDataExists = false;
+
                 // 1. Check Service
                 string serviceType = GetServiceCategory(entity);
                 if (serviceType != null)
@@ -170,12 +172,12 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 {
                     // 2. Check Zone (RCI)
                     if (zoneEntity != Entity.Null &&
-                        zoneDataLookup.TryGetComponent(zoneEntity, out var zData) &&
-                        ambienceLookup.TryGetComponent(zoneEntity, out var aData))
+                        zoneDataLookup.TryGetComponent(zoneEntity, out zoneData, out zoneDataExists) &&
+                        ambienceLookup.TryGetComponent(zoneEntity, out ambienceData, out ambienceDataExists))
                     {
-                        type = DetermineCategory(zData, aData);
+                        type = DetermineCategory(zoneData, ambienceData);
                     }
-                    // 3. Fallback: 직장 데이터는 있는데 Zone 정보가 없는 경우 (예: 일부 특수 산업)
+                    // 3. Workplace Uncategorized
                     else if (workplaceDataLookup.HasComponent(entity))
                     {
                         type = "WORKPLACE_UNCATEGORIZED";
@@ -226,11 +228,32 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     }
                 }
                 int workers = EntityManager.TryGetComponent<WorkplaceData>(entity, out var work) ? work.m_MaxWorkers : 0;
-                // Workplace
-                if (workers > 0)
+                // Workplace Debug: RICO workplaces print issue
+                // When RICO's WorkPlace is print properly without using isRICOWorkplace, workers count is well defined & loaded.
+                bool isRICOWorkplace = false;
+                if (zoneEntity != Entity.Null &&
+                    zoneDataExists &&
+                    ambienceDataExists &&
+                    ((zoneData.m_AreaType == AreaType.Residential && ambienceData.m_AmbienceType == GroupAmbienceType.ResidentialMixed) || zoneData.m_AreaType == AreaType.Commercial || zoneData.m_AreaType == AreaType.Industrial))
+                {
+                    isRICOWorkplace = true;
+                }
+                if (workers > 0 || isRICOWorkplace)
                 {
                     workCsv.AppendLine($"{commonLine},{work.m_MaxWorkers},{(work.m_MaxWorkers / area):F2}");
                     countWork++;
+                    if (isRICOWorkplace && workers <= 0)
+                    {
+                        Mod.log.Info($"[RWH Export] RICO Workplace Detected: {name} | ZoneType: {zoneData.m_AreaType} | Ambience: {ambienceData.m_AmbienceType} | Workers: {workers}");
+                    }
+                }
+                if (workplaceDataLookup.TryGetComponent(entity, out var works))
+                {
+                    if (works.m_MaxWorkers > 0)
+                    {
+                        workCsv.AppendLine($"{commonLine},{works.m_MaxWorkers},{(works.m_MaxWorkers / area):F2}");
+                        countWork++;
+                    }
                 }
             }
 
