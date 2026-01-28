@@ -1,26 +1,16 @@
-﻿
-using Game.Buildings;
-using Game.Citizens;
-using Game.Common;
-using Game.Companies;
+﻿using Game.Common;
 using Game.Economy;
 using Game.Objects;
 using Game.Prefabs;
 using Game.Simulation;
 using Game.Tools;
-using RealisticWorkplacesAndHouseholds;
 using RealisticWorkplacesAndHouseholds.Components;
 using System;
-using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
-using UnityEngine;
-using static Game.Prefabs.TriggerPrefabData;
-using static Game.Rendering.OverlayRenderSystem;
 
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {

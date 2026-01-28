@@ -1,4 +1,3 @@
-﻿
 using Game.Buildings;
 using Game.Citizens;
 using Game.Common;
