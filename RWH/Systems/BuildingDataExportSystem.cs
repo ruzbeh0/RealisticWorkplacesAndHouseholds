@@ -1,4 +1,4 @@
-﻿// <copyright file="BuildingDataExportSystem.cs" company="dymanoid">
+// <copyright file="BuildingDataExportSystem.cs" company="dymanoid">
 // Copyright (c) dymanoid. All rights reserved.
 // </copyright>
 
@@ -172,7 +172,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                         area = Mod.m_Setting.commercial_sqm_per_worker_supermarket;
                     else if (resource == Game.Economy.Resource.Recreation || resource == Game.Economy.Resource.Entertainment)
                         area = Mod.m_Setting.commercial_sqm_per_worker_rec_entertainment;
-
+                    
                     // Adjust worker density based on footprint size to model economies of scale.
                     area *= BuildingUtils.smooth_area_factor(70 * 70, width, length);
                 }
@@ -409,7 +409,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                         // in their prefab, expecting a mod like this one to calculate the "real" value at runtime.
                         if (workers == 0 && GetServiceCategory(entity) == null)
                         {
-                            Mod.log.Info($"[RWH Export] Non-service workplace '{name}' has 0 workers in prefab and was not identified as a spawnable RICO for calculation. It may be a ploppable-only RICO asset that needs manual configuration.");
+                             Mod.log.Info($"[RWH Export] Non-service workplace '{name}' has 0 workers in prefab and was not identified as a spawnable RICO for calculation. It may be a ploppable-only RICO asset that needs manual configuration.");
                         }
                     }
 
@@ -456,7 +456,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             // Clean up the native array to prevent memory leaks.
             entities.Dispose();
         }
-
+        
         /// <summary>
         /// Determines a human-readable category string based on a building's zone and ambience data.
         /// This is used to make the exported CSV data easier for users to understand.
