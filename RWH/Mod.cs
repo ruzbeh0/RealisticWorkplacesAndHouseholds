@@ -76,9 +76,18 @@ namespace RealisticWorkplacesAndHouseholds
                 }
             }
 
-            if(!urbanInequalityMod)
+            bool plopTheGrowablesMod = false;
+            foreach (var modInfo in GameManager.instance.modManager)
             {
-                World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.BuildingUpkeepSystem>().Enabled = false;
+                if (modInfo.asset.name.Equals("PlopTheGrowables"))
+                {
+                    Mod.log.Info($"Plop The Growables Mod is present");
+                    plopTheGrowablesMod = true;
+                }
+            }
+
+            if (!urbanInequalityMod && !plopTheGrowablesMod)
+            {               World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.BuildingUpkeepSystem>().Enabled = false;
                 updateSystem.UpdateAt<RWH.Systems.RWHBuildingUpkeepSystem>(SystemUpdatePhase.GameSimulation);
             }
 

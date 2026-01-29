@@ -172,7 +172,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 }
                 else if (n.Contains("skyscrapers"))
                 {
-                    Mod.log.Info($"Detected Skyscrapers Pack in asset pack name '{n}'");
                     Mod.m_Setting.packIndexLookup.TryGetValue((int)Setting.PacksEnum.Skyscrapers, out index);
                     low = Mod.m_Setting.pack_low_density_factor_[index];
                     rowhomes = Mod.m_Setting.pack_row_homes_factor_[index];
