@@ -27,6 +27,10 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         private NativeParallelHashMap<Entity, float3> _assetPackFactors;
 
         private bool m_TriggerInitialHouseholdUpdate = false;
+        public static bool InitialResetQueuedThisLoad { get; private set; }
+        private int _lastAssetPackCount = -1;
+
+
 
         [Preserve]
         protected override void OnCreate()
@@ -193,29 +197,32 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             _assetPackFactors.Clear();
 
             using var entities = query.ToEntityArray(Allocator.Temp);
+            _lastAssetPackCount = entities.Length;
+
             for (int i = 0; i < entities.Length; i++)
             {
                 Entity pack = entities[i];
                 FixedString64Bytes fs = _prefabSystem.GetPrefabName(pack);
                 _prefabNames.TryAdd(pack, fs);
 
-                // Optional: log once to discover actual names
-                // Mod.log.Info($"Asset pack prefab: {fs}");
-
                 float3 factors = GetFactorsForPackName(fs.ToString());
                 _assetPackFactors.TryAdd(pack, factors);
 
-                Mod.log.Info(
-                    $"Asset Pack:{fs.ToString()} - Factors: LowDensity={factors.x}, RowHomes={factors.y}, MedHigh={factors.z}");
+                Mod.log.Info($"Asset Pack:{fs} - Factors: LowDensity={factors.x}, RowHomes={factors.y}, MedHigh={factors.z}");
             }
         }
+
 
 
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
+
+            InitialResetQueuedThisLoad = false;
+
             if (mode == GameMode.Game && purpose == Colossal.Serialization.Entities.Purpose.LoadGame)
             {
+                BuildPrefabMaps(m_AssetPackQuery);
                 UpdateHouseholds(reset: true);
                 m_TriggerInitialHouseholdUpdate = false;
             } else
@@ -227,12 +234,15 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         [Preserve]
         protected override void OnUpdate()
         {
-            if(_prefabNames.IsEmpty)
+            int packCountNow = m_AssetPackQuery.CalculateEntityCount();
+
+            // Rebuild if empty OR if the set of packs changed since we last built
+            if (_prefabNames.IsEmpty || _lastAssetPackCount != packCountNow)
             {
-                Mod.log.Info("Building Prefab Name Map");
-                BuildPrefabMaps(query: m_AssetPackQuery);
+                Mod.log.Info($"(Re)building Asset Pack maps. last={_lastAssetPackCount}, now={packCountNow}");
+                BuildPrefabMaps(m_AssetPackQuery);
             }
-            //Mod.log.Info($"OnUpdate: {m_TriggerInitialHouseholdUpdate}");
+
             if (m_TriggerInitialHouseholdUpdate)
             {
                 UpdateHouseholds(reset: true);
@@ -244,9 +254,13 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             }
         }
 
+
         private void UpdateHouseholds(bool reset)
         {
             var query = reset ? m_ResetHouseholdJobQuery : m_UpdateHouseholdJobQuery;
+
+            if (reset)
+                InitialResetQueuedThisLoad = true;
 
             if (reset)
                 query.ResetFilter();
@@ -272,7 +286,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 RealisticHouseholdDataLookup = SystemAPI.GetComponentLookup<RealisticHouseholdData>(true),
                 sqm_per_apartment = Mod.m_Setting.residential_sqm_per_apartment,
                 residential_avg_floor_height = Mod.m_Setting.residential_avg_floor_height,
-                enable_rh_apt_per_floor = Mod.m_Setting.disable_row_homes_apt_per_floor,
+                enable_rh_apt_per_floor = !Mod.m_Setting.disable_row_homes_apt_per_floor,
                 rowhome_apt_per_floor = Mod.m_Setting.rowhomes_apt_per_floor,
                 rowhome_basement = Mod.m_Setting.rowhomes_basement,
                 units_per_elevator = Mod.m_Setting.residential_units_per_elevator,

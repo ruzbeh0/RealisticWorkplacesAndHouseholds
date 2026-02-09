@@ -28,6 +28,10 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         EntityQuery m_BuildingsQuery;
         EntityArchetype m_RentEventArchetype;
         Unity.Mathematics.Random random;
+        private bool m_WaitForInitialHouseholdReset = false;
+        private int m_PostResetDelayUpdates = 0;
+        private int m_EvictionGraceChecks = 0;
+
 
         protected override void OnCreate()
         {
@@ -54,13 +58,30 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             base.OnGameLoadingComplete(purpose, mode);
             if (mode == GameMode.Game && purpose == Colossal.Serialization.Entities.Purpose.LoadGame)
             {
-                CheckBuildings();
+                m_WaitForInitialHouseholdReset = true;
+                m_PostResetDelayUpdates = 1;   // wait one OnUpdate after reset is queued
+                m_EvictionGraceChecks = 2;     // (used in part (3) below)
             }
         }
 
         protected override void OnUpdate()
         {
-            CheckBuildings();
+            // Wait until HouseholdUpdateSystem has queued its initial reset after load
+            if (m_WaitForInitialHouseholdReset)
+            {
+                if (!HouseholdUpdateSystem.InitialResetQueuedThisLoad)
+                    return;
+
+                if (m_PostResetDelayUpdates-- > 0)
+                    return;
+
+                m_WaitForInitialHouseholdReset = false;
+            }
+
+            // (3) eviction grace handled below
+            bool allowEvictions = (m_EvictionGraceChecks-- <= 0);
+
+            CheckBuildings(allowEvictions);
         }
 
         public override int GetUpdateInterval(SystemUpdatePhase phase)
@@ -69,7 +90,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             return 262144 / 8;
         }
 
-        private void CheckBuildings()
+        private void CheckBuildings(bool allowEvictions)
         {
 
             Mod.log.Info("Running Residential Properties Check Job");
@@ -93,6 +114,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 workProviderLookup = SystemAPI.GetComponentLookup<WorkProvider>(true),
                 m_RentEventArchetype = m_RentEventArchetype,
                 random = random,
+                allowEvictions = allowEvictions,
                 m_CitizenBufs = SystemAPI.GetBufferLookup<HouseholdCitizen>(true),
                 m_HealthProblems = SystemAPI.GetComponentLookup<HealthProblem>(true)
 

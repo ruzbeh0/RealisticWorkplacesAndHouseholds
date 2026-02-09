@@ -122,13 +122,17 @@ Additional credits:
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/realistic-workplaces-and-households.1699586/" />
 	<!--Version of the mod-->
-	<ModVersion Value="1.6.1" />
+	<ModVersion Value="1.7" />
 	<!--Recommended version of the base game to use the mod-->
 	<GameVersion Value="1.5.*" />
 	<!--Dependency for the mod, can be set multiple times-->
 	<Dependency Id="" />
 	<ChangeLog>
-* Updated mod to be better compatible with Plop the Growables mod.
+* Fixed bugs that were causing households values to be different in different game sessions.
+* Updated settings description to show the default values.
+* Fixed bug that was causing the opposite effect with the disable row homes apartment per floor option
+* Updated noise factor description
+* Added option to calculate workers of power plants based on the amount of electrictiy produced.
 	</ChangeLog>
 	<!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon-->
 	<ExternalLink Type="github" Url="https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/" />

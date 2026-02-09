@@ -200,6 +200,9 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public bool disable_airport;
         public bool disable_transport;
         public bool disable_admin;
+        [ReadOnly] public bool use_powerplant_employees_per_gw;
+        [ReadOnly] public float powerplant_employees_per_gw;
+
 
         public UpdateCityServicesWorkplaceJob()
         {
@@ -290,17 +293,18 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         }                     
                     } 
                 }
-                if (!disable_powerplant && PowerPlantDataLookup.HasComponent(entity))
+                if (!disable_powerplant && PowerPlantDataLookup.HasComponent(entity) && PowerPlantDataLookup.TryGetComponent(entity, out var powerPlant))
                 {
                     width /= (float)Math.Sqrt(uff);
                     length /= (float)Math.Sqrt(uff);
                     workers = BuildingUtils.powerPlantWorkers(width, length, height, industry_avg_floor_height, powerplant_sqm_per_employee);
-                    if(SolarPoweredDataLookup.HasComponent(entity))
+
+                    if (SolarPoweredDataLookup.HasComponent(entity))
                     {
                         workers /= solar_reduction;
                     }
 
-                    if(more_electricity && PowerPlantDataLookup.TryGetComponent(entity, out var powerPlant))
+                    if(more_electricity)
                     {
                         float factor = 1f;
                         if(workers > 0 && oldworkers > 0)
@@ -313,6 +317,16 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         }
                         powerPlant.m_ElectricityProduction = (int)(powerPlant.m_ElectricityProduction*factor);
                         ecb.SetComponent(unfilteredChunkIndex, entity, powerPlant);
+                    }
+
+                    if (use_powerplant_employees_per_gw)
+                    {
+                        float mw = powerPlant.m_ElectricityProduction;
+
+                        if (mw > 0f)
+                        {
+                            workers = (int)math.ceil(mw * powerplant_employees_per_gw/1000);
+                        }
                     }
                 }
                 if (!disable_hospital && HospitalDataLookup.HasComponent(entity))

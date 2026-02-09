@@ -130,7 +130,10 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 disable_park = Mod.m_Setting.disable_park,
                 disable_transport = Mod.m_Setting.disable_transit,
                 disable_airport = Mod.m_Setting.disable_airport,
-                disable_admin = Mod.m_Setting.disable_admin
+                disable_admin = Mod.m_Setting.disable_admin,
+                use_powerplant_employees_per_gw = Mod.m_Setting.powerplant_use_employees_per_gw,
+                powerplant_employees_per_gw = Mod.m_Setting.powerplant_employees_per_gw,
+
             };
             this.Dependency = updateCityServicesJob.ScheduleParallel(m_UpdateCityServicesWorkplaceJobQuery1, this.Dependency);
             

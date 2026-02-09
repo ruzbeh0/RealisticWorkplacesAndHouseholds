@@ -48,6 +48,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public Unity.Mathematics.Random random;
         public BufferLookup<HouseholdCitizen> m_CitizenBufs;
         public ComponentLookup<HealthProblem> m_HealthProblems;
+        public bool allowEvictions;
+
 
         public ResidentialPropertyCheckJob()
         {
@@ -110,7 +112,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                     }
                 }
-                else if (householdsCount > propertyData.m_ResidentialProperties)
+                else if (allowEvictions && householdsCount > propertyData.m_ResidentialProperties)
                 {
                     //Slow down evictions by processing only a few buildings at a time
                     //int prob = random.NextInt(100);
