@@ -125,6 +125,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ComponentLookup<SchoolData> SchoolDataLookup;
         [ReadOnly] public BufferTypeHandle<SubMesh> SubMeshHandle;
         [ReadOnly]
+        public ComponentLookup<RealisticWorkplacesAndHouseholds.Components.ABCWorkplaceOverride> ABCWorkplaceOverrideLookup;
+        [ReadOnly]
         public float studentPerTeacher;
         [ReadOnly]
         public float sqm_per_student;
@@ -225,6 +227,11 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 WorkProvider workProvider = workProviderArr[i];
                 PrefabRef prefab1 = prefabRefArr[i];
                 WorkplaceData workplaceData;
+
+                Entity prefabEntity = prefab1.m_Prefab;
+
+                if (ABCWorkplaceOverrideLookup.HasComponent(prefabEntity))
+                    continue;
 
                 if (WorkplaceDataLookup.TryGetComponent(prefab1, out workplaceData))
                 {

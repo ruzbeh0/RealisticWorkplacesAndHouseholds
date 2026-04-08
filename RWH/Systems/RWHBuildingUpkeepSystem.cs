@@ -33,7 +33,7 @@ using Unity.Mathematics;
 using Game;
 
 #nullable disable
-namespace RWH.Systems;
+namespace RealisticWorkplacesAndHouseholds.Systems;
 
 //[CompilerGenerated]
 public partial class RWHBuildingUpkeepSystem : GameSystemBase
@@ -548,9 +548,9 @@ public partial class RWHBuildingUpkeepSystem : GameSystemBase
             return;
         int areaType = (int)zoneDatas[spawnable.m_ZonePrefab].m_AreaType;
         // ISSUE: reference to a compiler-generated field
-        int levelingCost = BuildingUtils.GetLevelingCost((AreaType)areaType, propertyDatas[prefab], (int)spawnable.m_Level, this.EntityManager.GetBuffer<CityModifier>(this.m_CitySystem.City, true));
+        int levelingCost = Game.Buildings.BuildingUtils.GetLevelingCost((AreaType)areaType, propertyDatas[prefab], (int)spawnable.m_Level, this.EntityManager.GetBuffer<CityModifier>(this.m_CitySystem.City, true));
         // ISSUE: reference to a compiler-generated field
-        int abandonCost = BuildingUtils.GetAbandonCost((AreaType)areaType, propertyDatas[prefab], (int)spawnable.m_Level, levelingCost, this.EntityManager.GetBuffer<CityModifier>(this.m_CitySystem.City, true));
+        int abandonCost = Game.Buildings.BuildingUtils.GetAbandonCost((AreaType)areaType, propertyDatas[prefab], (int)spawnable.m_Level, levelingCost, this.EntityManager.GetBuffer<CityModifier>(this.m_CitySystem.City, true));
         condition.m_Condition = -3 * abandonCost / 2;
         conditions[building] = condition;
         // ISSUE: reference to a compiler-generated field
@@ -718,8 +718,8 @@ public partial class RWHBuildingUpkeepSystem : GameSystemBase
                 AreaType areaType = this.m_ZoneDatas[spawnableBuildingData.m_ZonePrefab].m_AreaType;
                 // ISSUE: reference to a compiler-generated field
                 BuildingPropertyData buildingPropertyData = this.m_BuildingPropertyDatas[prefab];
-                int levelingCost = BuildingUtils.GetLevelingCost(areaType, buildingPropertyData, (int)spawnableBuildingData.m_Level, cityModifierBuf);
-                int abandonCost = BuildingUtils.GetAbandonCost(areaType, buildingPropertyData, (int)spawnableBuildingData.m_Level, levelingCost, cityModifierBuf);
+                int levelingCost = Game.Buildings.BuildingUtils.GetLevelingCost(areaType, buildingPropertyData, (int)spawnableBuildingData.m_Level, cityModifierBuf);
+                int abandonCost = Game.Buildings.BuildingUtils.GetAbandonCost(areaType, buildingPropertyData, (int)spawnableBuildingData.m_Level, levelingCost, cityModifierBuf);
                 // ISSUE: reference to a compiler-generated field
                 int num1 = consumptionData.m_Upkeep / RWHBuildingUpkeepSystem.kUpdatesPerDay;
                 // ISSUE: reference to a compiler-generated field
@@ -777,7 +777,7 @@ public partial class RWHBuildingUpkeepSystem : GameSystemBase
                 else if (dynamicBuffer.Length > 0)
                 {
                     // ISSUE: reference to a compiler-generated field
-                    num4 = BuildingUtils.GetBuildingConditionChange(areaType, this.m_BuildingConfigurationData) * (int)math.pow(2f, (float)spawnableBuildingData.m_Level) * math.max(1, dynamicBuffer.Length);
+                    num4 = Game.Buildings.BuildingUtils.GetBuildingConditionChange(areaType, this.m_BuildingConfigurationData) * (int)math.pow(2f, (float)spawnableBuildingData.m_Level) * math.max(1, dynamicBuffer.Length);
                     int num5 = num2 / dynamicBuffer.Length;
                     for (int index3 = 0; index3 < dynamicBuffer.Length; ++index3)
                     {

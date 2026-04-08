@@ -5,7 +5,6 @@ using Game.Simulation;
 using Game.UI.InGame;
 using HarmonyLib;
 using RealisticWorkplacesAndHouseholds;
-using RWH;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +16,7 @@ using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
 
-namespace RWH.Patches
+namespace RealisticWorkplacesAndHouseholds.Patches
 {
     [HarmonyPatch]
     public class RWHPatches

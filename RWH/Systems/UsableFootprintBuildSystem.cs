@@ -18,7 +18,7 @@ using Unity.Mathematics;
 using static Game.Tools.ValidationSystem;
 
 #nullable enable
-namespace RWH.Systems
+namespace RealisticWorkplacesAndHouseholds.Systems
 {
     /// <summary>
     /// Builds a per-PREFAB UsableFootprintFactor (UFF) by comparing:

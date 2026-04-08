@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
 
-namespace RWH.Systems
+namespace RealisticWorkplacesAndHouseholds.Systems
 {
     public partial class NoisePollutionParameterUpdaterSystem : GameSystemBase
     {

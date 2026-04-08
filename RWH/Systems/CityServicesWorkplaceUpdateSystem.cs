@@ -100,6 +100,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
                 subMeshHandle = SystemAPI.GetBufferTypeHandle<SubMesh>(true),
                 UffLookup = SystemAPI.GetComponentLookup<UsableFootprintFactor>(true),
+                ABCWorkplaceOverrideLookup = SystemAPI.GetComponentLookup<RealisticWorkplacesAndHouseholds.Components.ABCWorkplaceOverride>(true),
                 park_sqm_per_worker = Mod.m_Setting.park_sqm_per_worker,
                 studentPerTeacher = Mod.m_Setting.students_per_teacher,
                 sqm_per_student = Mod.m_Setting.sqm_per_student,

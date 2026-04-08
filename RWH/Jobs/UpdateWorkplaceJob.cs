@@ -87,6 +87,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly]
         public ComponentLookup<ExtractorCompanyData> ExtractorCompanyDataLookup;
         [ReadOnly]
+        public ComponentLookup<RealisticWorkplacesAndHouseholds.Components.ABCWorkplaceOverride> ABCWorkplaceOverrideLookup;
+        [ReadOnly]
         public float commercial_sqm_per_employee;
         [ReadOnly]
         public float office_sqm_per_employee;
@@ -164,6 +166,12 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                 var prefab2Entity = prefab2.m_Prefab;
                 var prefab1Entity = prefab1.m_Prefab;
+
+                // ABC overrides WorkplaceData on the COMPANY PREFAB and then propagates
+                // the same value to matching WorkProvider entities. If ABC owns this prefab,
+                // RWH must not recalculate it.
+                if (ABCWorkplaceOverrideLookup.HasComponent(prefab1Entity))
+                    continue;
 
                 bool hasSpawnableBuildingData = SpawnableBuildingDataLookup.TryGetComponent(prefab2Entity, out var spawnBuildingData);
                 bool hasBuildingPropertyData = BuildingPropertyDataLookup.TryGetComponent(prefab2Entity, out var buildingPropertyData);

@@ -81,6 +81,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly]
         public ComponentTypeHandle<GroupAmbienceData> GroupAmbienceDataHandle;
         [ReadOnly]
+        public ComponentLookup<RealisticWorkplacesAndHouseholds.Components.ABCHouseholdOverride> ABCHouseholdOverrideLookup;
+        [ReadOnly]
         public float sqm_per_apartment;
         [ReadOnly]
         public float residential_avg_floor_height;
@@ -185,6 +187,13 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     }
                                 }
                             }
+
+                            if (ABCHouseholdOverrideLookup.HasComponent(entity))
+                            {
+                                //Mod.log.Info($"[RWH] Skipping household recalculation for ABC-tagged prefab {entity.Index}");
+                                continue;
+                            }
+
                             var dimensions = BuildingUtils.GetBuildingDimensions(subMeshes, meshDataLookup);
                             var size = ObjectUtils.GetSize(dimensions);
                             float width = size.x;

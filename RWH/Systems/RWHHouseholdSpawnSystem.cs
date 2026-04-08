@@ -19,7 +19,7 @@ using RealisticWorkplacesAndHouseholds;
 
 #nullable disable
 
-namespace RWH.Systems
+namespace RealisticWorkplacesAndHouseholds.Systems
 {
     //[CompilerGenerated]
     public partial class RWHHouseholdSpawnSystem : GameSystemBase

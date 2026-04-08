@@ -9,7 +9,6 @@ using Game.Simulation;
 using HarmonyLib;
 using RealisticWorkplacesAndHouseholds.Jobs;
 using RealisticWorkplacesAndHouseholds.Systems;
-using RWH.Systems;
 using System.IO;
 using System.Linq;
 using Unity.Entities;
@@ -88,12 +87,16 @@ namespace RealisticWorkplacesAndHouseholds
 
             if (!urbanInequalityMod && !plopTheGrowablesMod)
             {               World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.BuildingUpkeepSystem>().Enabled = false;
-                updateSystem.UpdateAt<RWH.Systems.RWHBuildingUpkeepSystem>(SystemUpdatePhase.GameSimulation);
+                updateSystem.UpdateAt<RealisticWorkplacesAndHouseholds.Systems.RWHBuildingUpkeepSystem>(SystemUpdatePhase.GameSimulation);
             }
 
             // Disable original systems
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.BudgetApplySystem>().Enabled = false;
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdSpawnSystem>().Enabled = false;
+
+            updateSystem.UpdateBefore<ABCCompatibilitySystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateBefore<ABCCompatibilitySystem, HouseholdUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateBefore<ABCCompatibilitySystem, WorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
 
             if (!Mod.m_Setting.disable_households_calculations)
             {

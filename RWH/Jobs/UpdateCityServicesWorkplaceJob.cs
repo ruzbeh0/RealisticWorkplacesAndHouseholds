@@ -121,6 +121,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly]
         public ComponentLookup<MeshData> meshDataLookup;
         [ReadOnly]
+        public ComponentLookup<RealisticWorkplacesAndHouseholds.Components.ABCWorkplaceOverride> ABCWorkplaceOverrideLookup;
+        [ReadOnly]
         public float studentPerTeacher;
         [ReadOnly]
         public float sqm_per_student;
@@ -228,6 +230,9 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 BuildingData buildingData = buildingDataArr[i];
                 DynamicBuffer<SubMesh> subMeshes = subMeshBufferAccessor[i];
                 PrefabData prefabData = prefabDataArr[i];
+
+                if (ABCWorkplaceOverrideLookup.HasComponent(entity))
+                    continue;
 
                 var dimensions = BuildingUtils.GetBuildingDimensions(subMeshes, meshDataLookup);
                 var size = ObjectUtils.GetSize(dimensions);

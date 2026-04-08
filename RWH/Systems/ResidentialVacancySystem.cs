@@ -12,7 +12,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 
-namespace RWH.Systems
+namespace RealisticWorkplacesAndHouseholds.Systems
 {
     public partial class ResidentialVacancySystem : GameSystemBase
     {
