@@ -57,6 +57,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         ComponentType.ReadOnly<ResearchFacilityData>(),
                         ComponentType.ReadOnly<TelecomFacilityData>(),
                         ComponentType.ReadOnly<ParkData>(),
+                        ComponentType.ReadOnly<ParkingFacilityData>(),
                     ],
                     None =
                     [
@@ -114,6 +115,11 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ComponentLookup<TelecomFacilityData> TelecomFacilityDataLookup;
         [ReadOnly]
         public ComponentLookup<ParkData> ParkDataLookup;
+        [ReadOnly]
+        public ComponentLookup<ParkingFacilityData> ParkingFacilityDataLookup;
+
+        [ReadOnly]
+        public bool zero_park_and_parking_workers;
         [ReadOnly]
         public ComponentLookup<SolarPoweredData> SolarPoweredDataLookup;
         [ReadOnly]
@@ -233,6 +239,17 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                 if (ABCWorkplaceOverrideLookup.HasComponent(entity))
                     continue;
+                bool isParkOrParkingPrefab =
+                    ParkDataLookup.HasComponent(entity) ||
+                    ParkingFacilityDataLookup.HasComponent(entity);
+
+                if (zero_park_and_parking_workers && isParkOrParkingPrefab)
+                {
+                    workplaceData.m_MaxWorkers = 0;
+                    workplaceDataArr[i] = workplaceData;
+                    continue;
+                }
+
 
                 var dimensions = BuildingUtils.GetBuildingDimensions(subMeshes, meshDataLookup);
                 var size = ObjectUtils.GetSize(dimensions);

@@ -87,7 +87,7 @@ namespace RealisticWorkplacesAndHouseholds
             sqm_univ_adjuster = 4f;
             support_staff = 30f;
             commercial_avg_floor_height = 3.05f;
-            commercial_sqm_per_worker = 45;
+            commercial_sqm_per_worker = 116;
             commercial_self_service_gas = false;
             police_sqm_per_worker = 50;
             fire_sqm_per_worker = 50;
@@ -117,9 +117,10 @@ namespace RealisticWorkplacesAndHouseholds
             residential_l4_reduction = 10;
             residential_l5_reduction = 20;
             office_non_usable_space = 20;
-            commercial_sqm_per_worker_supermarket = 65;
-            commercial_sqm_per_worker_restaurants = 37;
-            commercial_sqm_per_worker_rec_entertainment = 93;
+            commercial_sqm_per_worker_supermarket = 116;
+            commercial_sqm_per_worker_restaurants = 52;
+            commercial_sqm_per_worker_rec_entertainment = 167;
+            commercial_sqm_per_worker_hotel = 390;
             service_upkeep_reduction = 70;
             electricity_consumption_reduction = 20;
             water_consumption_reduction = 20;
@@ -306,9 +307,13 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(CommercialSection, CommercialGroup)]
         public int commercial_sqm_per_worker_restaurants { get; set; }
 
-        [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISlider(min = 1, max = 400, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(CommercialSection, CommercialGroup)]
         public int commercial_sqm_per_worker_rec_entertainment { get; set; }
+
+        [SettingsUISlider(min = 1, max = 400, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(CommercialSection, CommercialGroup)]
+        public int commercial_sqm_per_worker_hotel { get; set; }
 
         [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(OfficeSection, OfficeGroup)]
@@ -435,6 +440,9 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(CityServicesSection, ParkGroup)]
         [SettingsUIDisableByCondition(typeof(Setting), nameof(disable_park))]
         public int park_sqm_per_worker { get; set; }
+
+        [SettingsUISection(CityServicesSection, ParkGroup)]
+        public bool zero_park_and_parking_workers { get; set; } = false;
 
         [SettingsUISection(CityServicesSection, PowerPlantGroup)]
         [SettingsUIDisableByCondition(typeof(Setting), nameof(disable_powerplant))]
@@ -879,7 +887,10 @@ namespace RealisticWorkplacesAndHouseholds
                 
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.powerplant_employees_per_gw)), "Employees per GW" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.powerplant_employees_per_gw)), "Number of workers per GW of power plant capacity/production. Only used if 'Use Employees per MW' is selected." },
-
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.zero_park_and_parking_workers)), "Zero employees for parks and parking lots"},
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.zero_park_and_parking_workers)),"When enabled, parks and parking lots will have 0 employees. This overrides the normal park worker calculation."},
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.commercial_sqm_per_worker_hotel)), "Hotel square meters per worker" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_sqm_per_worker_hotel)), "Square meters per worker for hotels and lodging commercial buildings. Higher values produce fewer workers." },
 
             };
         }
@@ -1141,7 +1152,10 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.powerplant_employees_per_gw)), "Funcionários por GW" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.powerplant_employees_per_gw)), "Número de trabalhadores por GW de capacidade/produção da usina. Usado somente se 'Usar Funcionários por MW' estiver selecionado." },
 
-
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.zero_park_and_parking_workers)), "Zero funcionários em parques e estacionamentos"},
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.zero_park_and_parking_workers)), "Quando ativado, parques e estacionamentos terão 0 funcionários. Isto substitui o cálculo normal de trabalhadores para parques."},
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.commercial_sqm_per_worker_hotel)), "Metros quadrados por trabalhador em hotéis" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_sqm_per_worker_hotel)), "Metros quadrados por trabalhador para hotéis e edifícios comerciais de hospedagem. Valores mais altos produzem menos trabalhadores." },
             };
         }
 

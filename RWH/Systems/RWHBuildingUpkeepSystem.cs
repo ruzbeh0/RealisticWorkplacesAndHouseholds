@@ -153,7 +153,7 @@ public partial class RWHBuildingUpkeepSystem : GameSystemBase
         // ISSUE: reference to a compiler-generated field
         this.m_GoodsDeliveryRequestArchetype = this.EntityManager.CreateArchetype(ComponentType.ReadWrite<ServiceRequest>(), ComponentType.ReadWrite<GoodsDeliveryRequest>(), ComponentType.ReadWrite<RequestGroup>());
         // ISSUE: reference to a compiler-generated field
-        this.RequireForUpdate(this.m_BuildingGroup);
+        this.RequireAnyForUpdate(this.m_BuildingGroup, this.m_ResourceNeedingBuildingGroup);
         // ISSUE: reference to a compiler-generated field
         this.RequireForUpdate(this.m_BuildingSettingsQuery);
     }
@@ -250,6 +250,7 @@ public partial class RWHBuildingUpkeepSystem : GameSystemBase
             m_PrefabType = InternalCompilerInterface.GetComponentTypeHandle<PrefabRef>(ref this.__TypeHandle.__Game_Prefabs_PrefabRef_RO_ComponentTypeHandle, ref this.CheckedStateRef),
             m_EntityType = InternalCompilerInterface.GetEntityTypeHandle(ref this.__TypeHandle.__Unity_Entities_Entity_TypeHandle, ref this.CheckedStateRef),
             m_RenterType = InternalCompilerInterface.GetBufferTypeHandle<Renter>(ref this.__TypeHandle.__Game_Buildings_Renter_RO_BufferTypeHandle, ref this.CheckedStateRef),
+            m_Buildings = InternalCompilerInterface.GetComponentLookup<Building>(ref this.__TypeHandle.__Game_Buildings_Building_RW_ComponentLookup, ref this.CheckedStateRef),
             m_ConsumptionDatas = InternalCompilerInterface.GetComponentLookup<ConsumptionData>(ref this.__TypeHandle.__Game_Prefabs_ConsumptionData_RO_ComponentLookup, ref this.CheckedStateRef),
             m_Availabilities = InternalCompilerInterface.GetBufferLookup<ResourceAvailability>(ref this.__TypeHandle.__Game_Net_ResourceAvailability_RO_BufferLookup, ref this.CheckedStateRef),
             m_LevelUpResourceDataBufs = InternalCompilerInterface.GetBufferLookup<LevelUpResourceData>(ref this.__TypeHandle.__Game_Prefabs_LevelUpResourceData_RO_BufferLookup, ref this.CheckedStateRef),
@@ -619,6 +620,8 @@ public partial class RWHBuildingUpkeepSystem : GameSystemBase
         [ReadOnly]
         public BufferLookup<CityModifier> m_CityModifierBufs;
         [ReadOnly]
+        public ComponentLookup<Building> m_Buildings;
+        [ReadOnly]
         public ComponentLookup<Abandoned> m_Abandoned;
         [ReadOnly]
         public ComponentLookup<Destroyed> m_Destroyed;
@@ -797,47 +800,55 @@ public partial class RWHBuildingUpkeepSystem : GameSystemBase
                     buildingCondition.m_Condition += num4;
                 if (buildingCondition.m_Condition >= levelingCost)
                 {
-                    // ISSUE: reference to a compiler-generated field
-                    DynamicBuffer<ResourceNeeding> resourceNeedings = this.m_CommandBuffer.AddBuffer<ResourceNeeding>(unfilteredChunkIndex, entity);
-                    // ISSUE: reference to a compiler-generated field
-                    this.m_CommandBuffer.AddBuffer<GuestVehicle>(unfilteredChunkIndex, entity);
-                    DynamicBuffer<LevelUpResourceData> bufferData1;
-                    // ISSUE: reference to a compiler-generated field
-                    if (this.m_LevelUpResourceDataBufs.TryGetBuffer(prefab, out bufferData1) && bufferData1.Length > 0)
+                    Building currentBuilding;
+                    if (this.m_Buildings.TryGetComponent(entity, out currentBuilding) && (currentBuilding.m_Flags & Game.Buildings.BuildingFlags.Historical) != Game.Buildings.BuildingFlags.None)
                     {
-                        for (int index4 = 0; index4 < bufferData1.Length; ++index4)
-                        {
-                            // ISSUE: reference to a compiler-generated method
-                            this.RequestResourceDelivery(unfilteredChunkIndex, entity, resourceNeedings, bufferData1[index4].m_LevelUpResource.m_Resource, bufferData1[index4].m_LevelUpResource.m_Amount);
-                        }
+                        buildingCondition.m_Condition = levelingCost;
                     }
                     else
                     {
-                        DynamicBuffer<ZoneLevelUpResourceData> bufferData2;
                         // ISSUE: reference to a compiler-generated field
-                        if (this.m_ZoneLevelUpResourceDataBufs.TryGetBuffer(spawnableBuildingData.m_ZonePrefab, out bufferData2) && bufferData2.Length > 0)
+                        DynamicBuffer<ResourceNeeding> resourceNeedings = this.m_CommandBuffer.AddBuffer<ResourceNeeding>(unfilteredChunkIndex, entity);
+                        // ISSUE: reference to a compiler-generated field
+                        this.m_CommandBuffer.AddBuffer<GuestVehicle>(unfilteredChunkIndex, entity);
+                        DynamicBuffer<LevelUpResourceData> bufferData1;
+                        // ISSUE: reference to a compiler-generated field
+                        if (this.m_LevelUpResourceDataBufs.TryGetBuffer(prefab, out bufferData1) && bufferData1.Length > 0)
                         {
-                            for (int index5 = 0; index5 < bufferData2.Length; ++index5)
+                            for (int index4 = 0; index4 < bufferData1.Length; ++index4)
                             {
-                                if (bufferData2[index5].m_Level == (int)spawnableBuildingData.m_Level)
-                                {
-                                    // ISSUE: reference to a compiler-generated method
-                                    this.RequestResourceDelivery(unfilteredChunkIndex, entity, resourceNeedings, bufferData2[index5].m_LevelUpResource.m_Resource, bufferData2[index5].m_LevelUpResource.m_Amount);
-                                }
+                                // ISSUE: reference to a compiler-generated method
+                                this.RequestResourceDelivery(unfilteredChunkIndex, entity, resourceNeedings, bufferData1[index4].m_LevelUpResource.m_Resource, bufferData1[index4].m_LevelUpResource.m_Amount);
                             }
                         }
                         else
                         {
+                            DynamicBuffer<ZoneLevelUpResourceData> bufferData2;
                             // ISSUE: reference to a compiler-generated field
-                            for (int index6 = 0; index6 < this.m_BuildingConfigLevelResourceBuf.Length; ++index6)
+                            if (this.m_ZoneLevelUpResourceDataBufs.TryGetBuffer(spawnableBuildingData.m_ZonePrefab, out bufferData2) && bufferData2.Length > 0)
+                            {
+                                for (int index5 = 0; index5 < bufferData2.Length; ++index5)
+                                {
+                                    if (bufferData2[index5].m_Level == (int)spawnableBuildingData.m_Level)
+                                    {
+                                        // ISSUE: reference to a compiler-generated method
+                                        this.RequestResourceDelivery(unfilteredChunkIndex, entity, resourceNeedings, bufferData2[index5].m_LevelUpResource.m_Resource, bufferData2[index5].m_LevelUpResource.m_Amount);
+                                    }
+                                }
+                            }
+                            else
                             {
                                 // ISSUE: reference to a compiler-generated field
-                                if (this.m_BuildingConfigLevelResourceBuf[index6].m_Level == (int)spawnableBuildingData.m_Level)
+                                for (int index6 = 0; index6 < this.m_BuildingConfigLevelResourceBuf.Length; ++index6)
                                 {
                                     // ISSUE: reference to a compiler-generated field
-                                    // ISSUE: reference to a compiler-generated field
-                                    // ISSUE: reference to a compiler-generated method
-                                    this.RequestResourceDelivery(unfilteredChunkIndex, entity, resourceNeedings, this.m_BuildingConfigLevelResourceBuf[index6].m_LevelUpResource.m_Resource, this.m_BuildingConfigLevelResourceBuf[index6].m_LevelUpResource.m_Amount);
+                                    if (this.m_BuildingConfigLevelResourceBuf[index6].m_Level == (int)spawnableBuildingData.m_Level)
+                                    {
+                                        // ISSUE: reference to a compiler-generated field
+                                        // ISSUE: reference to a compiler-generated field
+                                        // ISSUE: reference to a compiler-generated method
+                                        this.RequestResourceDelivery(unfilteredChunkIndex, entity, resourceNeedings, this.m_BuildingConfigLevelResourceBuf[index6].m_LevelUpResource.m_Resource, this.m_BuildingConfigLevelResourceBuf[index6].m_LevelUpResource.m_Amount);
+                                    }
                                 }
                             }
                         }
@@ -850,9 +861,17 @@ public partial class RWHBuildingUpkeepSystem : GameSystemBase
                     // ISSUE: reference to a compiler-generated field
                     if ((this.m_Abandoned.HasComponent(nativeArray1[index1]) ? 0 : (!this.m_Destroyed.HasComponent(nativeArray1[index1]) ? 1 : 0)) != 0 && nativeArray2[index1].m_Condition <= -abandonCost && !this.m_SignatureDatas.HasComponent(prefab))
                     {
-                        // ISSUE: reference to a compiler-generated field
-                        this.m_LevelDownQueue.Enqueue(nativeArray1[index1]);
-                        buildingCondition.m_Condition += levelingCost;
+                        Building currentBuilding;
+                        if (this.m_Buildings.TryGetComponent(entity, out currentBuilding) && (currentBuilding.m_Flags & Game.Buildings.BuildingFlags.Historical) != Game.Buildings.BuildingFlags.None)
+                        {
+                            buildingCondition.m_Condition = -abandonCost;
+                        }
+                        else
+                        {
+                            // ISSUE: reference to a compiler-generated field
+                            this.m_LevelDownQueue.Enqueue(nativeArray1[index1]);
+                            buildingCondition.m_Condition += levelingCost;
+                        }
                     }
                 }
                 nativeArray2[index1] = buildingCondition;

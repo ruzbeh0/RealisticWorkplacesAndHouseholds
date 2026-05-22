@@ -55,10 +55,12 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         ComponentType.ReadOnly<Game.Buildings.TransportStation>(),
                         ComponentType.ReadOnly<Game.Buildings.TelecomFacility>(),
                         ComponentType.ReadOnly<Game.Buildings.Park>(),
+                        ComponentType.ReadOnly<Game.Buildings.ParkingFacility>(),
                     ],
                     None =
                     [
-
+                        ComponentType.Exclude<Deleted>(),
+                        ComponentType.Exclude<Temp>(),
                     ],
                 },
             ];
@@ -121,6 +123,13 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ComponentLookup<Game.Buildings.TelecomFacility> TelecomFacilityLookup;
         [ReadOnly]
         public ComponentLookup<Game.Buildings.Park> ParkLookup;
+
+        [ReadOnly]
+        public ComponentLookup<ParkingFacilityData> ParkingFacilityDataLookup;
+        [ReadOnly]
+        public ComponentLookup<Game.Buildings.ParkingFacility> ParkingFacilityLookup;
+
+        public bool zero_park_and_parking_workers;
         [ReadOnly]
         public ComponentLookup<SchoolData> SchoolDataLookup;
         [ReadOnly] public BufferTypeHandle<SubMesh> SubMeshHandle;
@@ -232,6 +241,18 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
                 if (ABCWorkplaceOverrideLookup.HasComponent(prefabEntity))
                     continue;
+
+                bool isParkOrParking =
+                    ParkLookup.HasComponent(entity) ||
+                    ParkingFacilityLookup.HasComponent(entity) ||
+                    ParkingFacilityDataLookup.HasComponent(prefabEntity);
+
+                if (zero_park_and_parking_workers && isParkOrParking)
+                {
+                    workProvider.m_MaxWorkers = 0;
+                    workProviderArr[i] = workProvider;
+                    continue;
+                }
 
                 if (WorkplaceDataLookup.TryGetComponent(prefab1, out workplaceData))
                 {

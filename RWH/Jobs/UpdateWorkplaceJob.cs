@@ -111,6 +111,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly]
         public float commercial_sqm_per_worker_rec_entertainment;
         [ReadOnly]
+        public float commercial_sqm_per_worker_hotels;
+        [ReadOnly]
         public float global_reduction;
         [ReadOnly]
         public bool reset;
@@ -225,6 +227,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             area = commercial_sqm_per_worker_supermarket;
                         else if (resource == Game.Economy.Resource.Recreation || resource == Game.Economy.Resource.Entertainment)
                             area = commercial_sqm_per_worker_rec_entertainment;
+                        else if ((resource & Game.Economy.Resource.Lodging) != Game.Economy.Resource.NoResource)
+                            area = commercial_sqm_per_worker_hotels;
 
                         area *= BuildingUtils.smooth_area_factor(70*70, width, length);
 

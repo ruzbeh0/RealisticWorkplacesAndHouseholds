@@ -172,7 +172,9 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                         area = Mod.m_Setting.commercial_sqm_per_worker_supermarket;
                     else if (resource == Game.Economy.Resource.Recreation || resource == Game.Economy.Resource.Entertainment)
                         area = Mod.m_Setting.commercial_sqm_per_worker_rec_entertainment;
-                    
+                    else if ((resource & Game.Economy.Resource.Lodging) != Game.Economy.Resource.NoResource)
+                        area = Mod.m_Setting.commercial_sqm_per_worker_hotel;
+
                     // Adjust worker density based on footprint size to model economies of scale.
                     area *= BuildingUtils.smooth_area_factor(70 * 70, width, length);
                 }
