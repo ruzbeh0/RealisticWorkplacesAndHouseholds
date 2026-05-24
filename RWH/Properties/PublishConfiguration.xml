@@ -131,6 +131,7 @@ Additional credits:
 * Added specific settings for hotels/lodging
 * Added option to have zero workers in parks or parking facilities
 * Recalibrated default parameters for commercial categories based on U.S. EIA CBECS data
+* Applied a improved smoothing method to prevent large commercial buildings to have too many workers. Also applied this system on small buildings to slighlty increase their worker count.
 	</ChangeLog>
 	<!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon-->
 	<ExternalLink Type="github" Url="https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/" />

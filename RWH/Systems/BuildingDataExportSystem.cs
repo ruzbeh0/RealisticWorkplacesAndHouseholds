@@ -160,23 +160,50 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             else if (zoneData.m_AreaType == Game.Zones.AreaType.Commercial)
             {
                 float area = Mod.m_Setting.commercial_sqm_per_worker;
+
                 if (propertyLookup.TryGetComponent(prefabEntity, out var buildingPropertyData))
                 {
                     var resource = buildingPropertyData.m_AllowedSold;
-                    // Apply different worker densities based on the type of goods sold.
-                    if (resource == Game.Economy.Resource.Petrochemicals && Mod.m_Setting.commercial_self_service_gas)
-                        area *= 1.8f; // Gas stations have few workers for their size.
-                    else if (resource == Game.Economy.Resource.Meals)
-                        area = Mod.m_Setting.commercial_sqm_per_worker_restaurants;
-                    else if (resource == Game.Economy.Resource.Beverages || resource == Game.Economy.Resource.ConvenienceFood || resource == Game.Economy.Resource.Food)
-                        area = Mod.m_Setting.commercial_sqm_per_worker_supermarket;
-                    else if (resource == Game.Economy.Resource.Recreation || resource == Game.Economy.Resource.Entertainment)
-                        area = Mod.m_Setting.commercial_sqm_per_worker_rec_entertainment;
-                    else if ((resource & Game.Economy.Resource.Lodging) != Game.Economy.Resource.NoResource)
-                        area = Mod.m_Setting.commercial_sqm_per_worker_hotel;
+                    bool specialSmoothing = true;
 
-                    // Adjust worker density based on footprint size to model economies of scale.
+                    if (resource == Game.Economy.Resource.Petrochemicals && Mod.m_Setting.commercial_self_service_gas)
+                    {
+                        area *= 1.8f;
+                        specialSmoothing = false;
+                    }
+                    else if (resource == Game.Economy.Resource.Meals)
+                    {
+                        area = Mod.m_Setting.commercial_sqm_per_worker_restaurants;
+                    }
+                    else if (resource == Game.Economy.Resource.Beverages ||
+                             resource == Game.Economy.Resource.ConvenienceFood ||
+                             resource == Game.Economy.Resource.Food)
+                    {
+                        area = Mod.m_Setting.commercial_sqm_per_worker_supermarket;
+                    }
+                    else if (resource == Game.Economy.Resource.Recreation ||
+                             resource == Game.Economy.Resource.Entertainment)
+                    {
+                        area = Mod.m_Setting.commercial_sqm_per_worker_rec_entertainment;
+                        specialSmoothing = false;
+                    }
+                    else if ((resource & Game.Economy.Resource.Lodging) != Game.Economy.Resource.NoResource)
+                    {
+                        area = Mod.m_Setting.commercial_sqm_per_worker_hotel;
+                        specialSmoothing = false;
+                    }
+
                     area *= BuildingUtils.smooth_area_factor(70 * 70, width, length);
+
+                    if (specialSmoothing)
+                    {
+                        // Increases workers for small commercial buildings, decreases for large ones. 
+                        area /= BuildingUtils.supermarket_worker_size_multiplier(width, length);
+                    }
+                    else
+                    {
+                        area *= BuildingUtils.smooth_area_factor(70 * 70, width, length);
+                    }
                 }
                 calculatedWorkers = BuildingUtils.GetPeople(width, length, height, Mod.m_Setting.commercial_avg_floor_height, area, 0, Mod.m_Setting.office_elevators_per_sqm);
             }

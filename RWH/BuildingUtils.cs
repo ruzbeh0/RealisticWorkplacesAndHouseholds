@@ -417,5 +417,27 @@ namespace RealisticWorkplacesAndHouseholds
             }
         }
 
+        // Supermarket size adjustment.
+        //
+        // This keeps commercial_sqm_per_worker_supermarket as the neutral average
+        // around a medium supermarket footprint, but increases staffing for small
+        // stores and reduces staffing for very large stores.
+        //
+        // Examples:
+        // - A very small store can get up to 3.33x workers: 3 -> ~10
+        // - A very large store can be reduced to 0.67x workers: 300 -> ~200
+        public static float supermarket_worker_size_multiplier(float x, float y)
+        {
+            float footprintArea = Math.Max(1f, x * y);
+
+            const float baseArea = 50f * 50f;          // 2,500 m²: medium supermarket reference
+            const float maxSmallStoreBoost = 10f / 3.5f; 
+            const float minLargeStoreFactor = 0.5f; 
+
+            float multiplier = (float)Math.Sqrt(baseArea / footprintArea);
+
+            return math.clamp(multiplier, minLargeStoreFactor, maxSmallStoreBoost);
+        }
+
     }
 }

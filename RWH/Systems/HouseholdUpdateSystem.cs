@@ -29,6 +29,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         private bool m_TriggerInitialHouseholdUpdate = false;
         public static bool InitialResetQueuedThisLoad { get; private set; }
         private int _lastAssetPackCount = -1;
+        private bool _hasRunInitialHouseholdReset = false;
+        private bool _loggedWaitingForFootprintBuild = false;
 
 
 
@@ -76,7 +78,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             };
             m_AssetPackQuery = GetEntityQuery(query);
 
-            this.RequireForUpdate(m_UpdateHouseholdJobQuery);
+            this.RequireForUpdate(m_ResetHouseholdJobQuery);
 
             _prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
             _prefabNames = new NativeParallelHashMap<Entity, FixedString64Bytes>(1024, Allocator.Persistent);
@@ -219,16 +221,23 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             base.OnGameLoadingComplete(purpose, mode);
 
             InitialResetQueuedThisLoad = false;
+            _hasRunInitialHouseholdReset = false;
+            _loggedWaitingForFootprintBuild = false;
+            _lastAssetPackCount = -1;
 
-            if (mode == GameMode.Game && purpose == Colossal.Serialization.Entities.Purpose.LoadGame)
-            {
-                BuildPrefabMaps(m_AssetPackQuery);
-                UpdateHouseholds(reset: true);
-                m_TriggerInitialHouseholdUpdate = false;
-            } else
+            if (_prefabNames.IsCreated)
+                _prefabNames.Clear();
+            if (_assetPackFactors.IsCreated)
+                _assetPackFactors.Clear();
+
+            if (mode == GameMode.Game)
             {
                 m_TriggerInitialHouseholdUpdate = true;
-            }  
+            }
+            else
+            {
+                m_TriggerInitialHouseholdUpdate = false;
+            }
         }
 
         [Preserve]
@@ -241,12 +250,28 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             {
                 Mod.log.Info($"(Re)building Asset Pack maps. last={_lastAssetPackCount}, now={packCountNow}");
                 BuildPrefabMaps(m_AssetPackQuery);
+
+                if (_hasRunInitialHouseholdReset)
+                    m_TriggerInitialHouseholdUpdate = true;
             }
 
             if (m_TriggerInitialHouseholdUpdate)
             {
+                if (!UsableFootprintBuildSystem.IsBuilt)
+                {
+                    if (!_loggedWaitingForFootprintBuild)
+                    {
+                        Mod.log.Info("[RWH] Waiting for usable footprint data before household reset.");
+                        _loggedWaitingForFootprintBuild = true;
+                    }
+
+                    return;
+                }
+
                 UpdateHouseholds(reset: true);
                 m_TriggerInitialHouseholdUpdate = false;
+                _hasRunInitialHouseholdReset = true;
+                _loggedWaitingForFootprintBuild = false;
             }
             else
             {

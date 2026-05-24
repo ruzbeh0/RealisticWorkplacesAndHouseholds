@@ -202,7 +202,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 // High density buildings have lobby
                 int floor_offset = (zonedata.m_MaxHeight > 25) ? 1 : 0;
 
-                float uff = UffLookup.HasComponent(entity) ? UffLookup[entity].Value : 1f;
+                float uff = UffLookup.HasComponent(prefab2Entity) ? UffLookup[prefab2Entity].Value : 1f;
                 width *= (float)Math.Sqrt(uff);
                 length *= (float)Math.Sqrt(uff);
 
@@ -218,20 +218,43 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     if (hasBuildingPropertyData)
                     {
                         var resource = buildingPropertyData.m_AllowedSold;
+                        bool specialSmoothing = true;
 
                         if (resource == Game.Economy.Resource.Petrochemicals && commercial_self_service_gas)
+                        {
                             area *= 1.8f;
+                            specialSmoothing = false;
+                        }
                         else if (resource == Game.Economy.Resource.Meals)
+                        {
                             area = commercial_sqm_per_worker_restaurants;
-                        else if (resource == Game.Economy.Resource.Beverages || resource == Game.Economy.Resource.ConvenienceFood || resource == Game.Economy.Resource.Food)
+                        }
+                        else if (resource == Game.Economy.Resource.Beverages ||
+                                 resource == Game.Economy.Resource.ConvenienceFood ||
+                                 resource == Game.Economy.Resource.Food)
+                        {
                             area = commercial_sqm_per_worker_supermarket;
-                        else if (resource == Game.Economy.Resource.Recreation || resource == Game.Economy.Resource.Entertainment)
+                        }
+                        else if (resource == Game.Economy.Resource.Recreation ||
+                                 resource == Game.Economy.Resource.Entertainment)
+                        {
                             area = commercial_sqm_per_worker_rec_entertainment;
+                            specialSmoothing = false;
+                        }
                         else if ((resource & Game.Economy.Resource.Lodging) != Game.Economy.Resource.NoResource)
+                        {
                             area = commercial_sqm_per_worker_hotels;
+                            specialSmoothing = false;
+                        }
 
-                        area *= BuildingUtils.smooth_area_factor(70*70, width, length);
-
+                        if (specialSmoothing)
+                        {
+                            // Increases workers for small commercial buildings, decreases for large ones. 
+                            area /= BuildingUtils.supermarket_worker_size_multiplier(width, length);
+                        } else
+                        {
+                            area *= BuildingUtils.smooth_area_factor(70 * 70, width, length);
+                        }
                     }
 
                     new_workers = BuildingUtils.GetPeople(width, length, height, commercial_avg_floor_height, area, 0, office_sqm_per_elevator);

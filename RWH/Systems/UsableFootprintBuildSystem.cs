@@ -34,6 +34,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
     //[BurstCompile]
     public partial class UsableFootprintBuildSystem : GameSystemBase
     {
+        public static bool IsBuilt { get; private set; }
+
         private EntityQuery _prefabQuery;
 
         private BufferLookup<SubMesh> _subMeshes;
@@ -70,6 +72,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         {
             base.OnCreate();
 
+            IsBuilt = false;
+
             // Prefab-scoped buildings (works for spawnables & services)
             _prefabQuery = GetEntityQuery(new EntityQueryDesc
             {
@@ -89,6 +93,18 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             RequireForUpdate(_prefabQuery);
 
             _prefabSystem = this.World.GetOrCreateSystemManaged<PrefabSystem>();
+        }
+
+        protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
+        {
+            base.OnGameLoadingComplete(purpose, mode);
+
+            if (mode != GameMode.Game)
+                return;
+
+            _builtOnce = false;
+            IsBuilt = false;
+            Enabled = true;
         }
 
         protected override void OnUpdate()
@@ -143,6 +159,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             prefabs.Dispose();
 
             _builtOnce = true;
+            IsBuilt = true;
             // Stop running forever after the one-time build
             Enabled = false;
         }
