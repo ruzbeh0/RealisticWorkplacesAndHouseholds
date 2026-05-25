@@ -7,6 +7,7 @@ using Game.Tools;
 using RealisticWorkplacesAndHouseholds.Components;
 using RealisticWorkplacesAndHouseholds.Jobs;
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using UnityEngine.Scripting;
@@ -39,20 +40,18 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 All = new[]
                 {
                     ComponentType.ReadOnly<PrefabRef>(),
-                    ComponentType.ReadOnly<CompanyData>(),
-                    ComponentType.ReadOnly<PropertyRenter>(),
                     ComponentType.ReadOnly<Game.Companies.StorageCompany>(),
                 },
                 None = new[]
                 {
-                    ComponentType.Exclude<WorkProvider>(),
+                    ComponentType.Exclude<Game.Objects.OutsideConnection>(),
                     ComponentType.Exclude<Deleted>(),
                     ComponentType.Exclude<Temp>()
                 }
             };
             m_ResetWarehouseJobQuery = GetEntityQuery(resetQuery);
 
-            //this.RequireForUpdate(m_UpdateWarehouseJobQuery);
+            this.RequireForUpdate(m_ResetWarehouseJobQuery);
         }
 
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
@@ -90,21 +89,90 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             }
             else
             {
-                activeQuery.SetChangedVersionFilter(typeof(Game.Companies.StorageCompany));
+                activeQuery.ResetFilter();
             }
 
-            var commandBufferSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
+            EnsureWarehouseWorkProviderTargets();
 
             UpdateWarehouseJob updateZonableWarehouse = new UpdateWarehouseJob
             {
-                ecb = commandBufferSystem.CreateCommandBuffer().AsParallelWriter(),
+                ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
                 PrefabRefHandle = SystemAPI.GetComponentTypeHandle<PrefabRef>(true),
-                WorkplaceDataLookup = SystemAPI.GetComponentLookup<WorkplaceData>(true),
+                PropertyRenterHandle = SystemAPI.GetComponentTypeHandle<PropertyRenter>(true),
+                CompanyDataLookup = SystemAPI.GetComponentLookup<CompanyData>(true),
+                WorkProviderLookup = SystemAPI.GetComponentLookup<WorkProvider>(true),
+                EmployeeLookup = SystemAPI.GetBufferLookup<Employee>(true),
+                PrefabRefLookup = SystemAPI.GetComponentLookup<PrefabRef>(true),
+                PrefabSubMeshesLookup = SystemAPI.GetBufferLookup<SubMesh>(true),
+                MeshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
+                UffLookup = SystemAPI.GetComponentLookup<UsableFootprintFactor>(true),
+                RealisticWorkplaceDataLookup = SystemAPI.GetComponentLookup<RealisticWorkplaceData>(true),
+                industry_avg_floor_height = Mod.m_Setting.industry_avg_floor_height,
+                warehouse_sqm_per_worker = Mod.m_Setting.warehouse_sqm_per_worker,
+                global_reduction = Mod.m_Setting.results_reduction / 100f,
             };
 
             this.Dependency = updateZonableWarehouse.ScheduleParallel(activeQuery, this.Dependency);
-            commandBufferSystem.AddJobHandleForProducer(this.Dependency);
+            m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
+        }
+
+        private void EnsureWarehouseWorkProviderTargets()
+        {
+            Dependency.Complete();
+
+            var storageEntities = m_ResetWarehouseJobQuery.ToEntityArray(Allocator.Temp);
+            var propertyRenterLookup = SystemAPI.GetComponentLookup<PropertyRenter>(true);
+            var companyDataLookup = SystemAPI.GetComponentLookup<CompanyData>(true);
+
+            foreach (var storageEntity in storageEntities)
+            {
+                EnsureTargetComponents(storageEntity);
+
+                Entity targetEntity = storageEntity;
+                if (!companyDataLookup.HasComponent(storageEntity) &&
+                    propertyRenterLookup.TryGetComponent(storageEntity, out var propertyRenter) &&
+                    propertyRenter.m_Property != Entity.Null)
+                {
+                    targetEntity = propertyRenter.m_Property;
+                }
+
+                if (targetEntity != storageEntity)
+                    EnsureTargetComponents(targetEntity);
+            }
+
+            storageEntities.Dispose();
+        }
+
+        private void EnsureTargetComponents(Entity entity)
+        {
+            if (entity == Entity.Null ||
+                !EntityManager.HasComponent<PrefabRef>(entity) ||
+                EntityManager.HasComponent<Deleted>(entity) ||
+                EntityManager.HasComponent<Temp>(entity))
+            {
+                return;
+            }
+
+            if (!EntityManager.HasComponent<WorkProvider>(entity))
+            {
+                EntityManager.AddComponentData(entity, new WorkProvider
+                {
+                    m_MaxWorkers = 1,
+                    m_EfficiencyCooldown = 0
+                });
+            }
+
+            if (!EntityManager.HasComponent<Employee>(entity))
+                EntityManager.AddBuffer<Employee>(entity);
+
+            if (!EntityManager.HasComponent<RealisticWorkplaceData>(entity))
+            {
+                EntityManager.AddComponentData(entity, new RealisticWorkplaceData
+                {
+                    max_workers = 1
+                });
+            }
         }
 
         protected override void OnDestroy()

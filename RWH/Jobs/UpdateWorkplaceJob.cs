@@ -87,6 +87,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly]
         public ComponentLookup<ExtractorCompanyData> ExtractorCompanyDataLookup;
         [ReadOnly]
+        public ComponentLookup<Game.Companies.StorageCompany> StorageCompanyLookup;
+        [ReadOnly]
         public ComponentLookup<RealisticWorkplacesAndHouseholds.Components.ABCWorkplaceOverride> ABCWorkplaceOverrideLookup;
         [ReadOnly]
         public float commercial_sqm_per_employee;
@@ -162,6 +164,9 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 PropertyRenter propertyRenter = propertyRenterArr[i];
                 WorkProvider workProvider = workProviderArr[i];
                 PrefabRef prefab1 = prefabRefArr[i];
+
+                if (StorageCompanyLookup.HasComponent(entity))
+                    continue;
 
                 if (!PrefabRefLookup.TryGetComponent(propertyRenter.m_Property, out var prefab2))
                     continue;

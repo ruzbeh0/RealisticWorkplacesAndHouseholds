@@ -114,9 +114,11 @@ namespace RealisticWorkplacesAndHouseholds
 
             if (!Mod.m_Setting.disable_workplace_calculations)
             {
-                //updateSystem.UpdateBefore<WarehouseUpdateSystem>(SystemUpdatePhase.GameSimulation);
-                //updateSystem.UpdateAt<StorageWorkplacePrefabSeederSystem>(SystemUpdatePhase.PrefabUpdate);
+                updateSystem.UpdateAt<StorageWorkplacePrefabSeederSystem>(SystemUpdatePhase.PrefabUpdate);
                 //updateSystem.UpdateAt<EnsureWarehouseWorkProviderSystem>(SystemUpdatePhase.GameSimulation);
+                updateSystem.UpdateBefore<WarehouseUpdateSystem>(SystemUpdatePhase.GameSimulation);
+                updateSystem.UpdateBefore<WarehouseUpdateSystem, Game.Simulation.WorkProviderSystem>(SystemUpdatePhase.GameSimulation);
+                updateSystem.UpdateBefore<WarehouseUpdateSystem, WorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
                 updateSystem.UpdateBefore<WorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
             }
             

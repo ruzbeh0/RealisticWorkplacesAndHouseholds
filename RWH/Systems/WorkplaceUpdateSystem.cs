@@ -106,6 +106,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 BuildingPropertyDataLookup = SystemAPI.GetComponentLookup<BuildingPropertyData>(false),
                 ExtractorCompanyDataLookup = SystemAPI.GetComponentLookup<ExtractorCompanyData>(true),
                 RealisticWorkplaceDataLookup = SystemAPI.GetComponentLookup<RealisticWorkplaceData>(true),
+                StorageCompanyLookup = SystemAPI.GetComponentLookup<Game.Companies.StorageCompany>(true),
                 UffLookup = SystemAPI.GetComponentLookup<RealisticWorkplacesAndHouseholds.Components.UsableFootprintFactor>(true),
                 ABCWorkplaceOverrideLookup = SystemAPI.GetComponentLookup<RealisticWorkplacesAndHouseholds.Components.ABCWorkplaceOverride>(true),
                 reset = reset,

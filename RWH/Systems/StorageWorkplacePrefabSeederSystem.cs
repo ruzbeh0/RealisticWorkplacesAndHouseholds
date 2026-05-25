@@ -25,8 +25,11 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 All = new[]
                 {
                     ComponentType.ReadOnly<PrefabData>(),
-                    ComponentType.ReadOnly<CompanyData>(),
-                    ComponentType.ReadOnly<Game.Companies.StorageCompany>(),
+                },
+                Any = new[]
+                {
+                    ComponentType.ReadOnly<StorageCompanyData>(),
+                    ComponentType.ReadOnly<WarehouseData>(),
                 },
                 None = new[]
                 {
@@ -41,19 +44,32 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             if (_done) return;
 
             var prefabs = _q.ToEntityArray(Allocator.Temp);
-            if (prefabs.Length == 0) { prefabs.Dispose(); return; }
+            if (prefabs.Length == 0)
+            {
+                prefabs.Dispose();
+                return;
+            }
 
             var ecb = new EntityCommandBuffer(Allocator.Temp);
 
             var hasWorkplace = GetComponentLookup<WorkplaceData>(true);
             var hasProcess = GetComponentLookup<IndustrialProcessData>(true);
+            var storageCompanyDataLookup = GetComponentLookup<StorageCompanyData>(true);
 
             foreach (var p in prefabs)
             {
                 if (!hasWorkplace.HasComponent(p))
-                    ecb.AddComponent(p, new WorkplaceData { m_MaxWorkers = 1 }); // UI visibility; will be scaled later
+                {
+                    ecb.AddComponent(p, new WorkplaceData
+                    {
+                        m_Complexity = WorkplaceComplexity.Manual,
+                        m_MaxWorkers = 1,
+                        m_MinimumWorkersLimit = 1,
+                        m_WorkConditions = 0
+                    });
+                }
 
-                if (!hasProcess.HasComponent(p))
+                if (storageCompanyDataLookup.HasComponent(p) && !hasProcess.HasComponent(p))
                     ecb.AddComponent<IndustrialProcessData>(p);                 // default struct; prevents stats crash
             }
 
@@ -63,6 +79,17 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
             _done = true;        // one-shot per load
             Enabled = false;
+        }
+
+        protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
+        {
+            base.OnGameLoadingComplete(purpose, mode);
+
+            if (mode != GameMode.Game)
+                return;
+
+            _done = false;
+            Enabled = true;
         }
     }
 }

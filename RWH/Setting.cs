@@ -98,6 +98,7 @@ namespace RealisticWorkplacesAndHouseholds
             clinic_sqm_per_worker = 110;
             clinic_sqm_per_patient = 35;
             industry_sqm_per_worker = 50;
+            warehouse_sqm_per_worker = 300;
             powerplant_sqm_per_worker = 200;
             park_sqm_per_worker = 80;
             postoffice_sqm_per_worker = 46;
@@ -410,6 +411,10 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISlider(min = 1, max = 200, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(IndustrySection, IndustryGroup)]
         public int industry_sqm_per_worker { get; set; }
+
+        [SettingsUISlider(min = 25, max = 700, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(IndustrySection, IndustryGroup)]
+        public int warehouse_sqm_per_worker { get; set; }
 
         [SettingsUISection(CityServicesSection, PowerPlantGroup)]
         public bool disable_powerplant { get; set; }
@@ -765,6 +770,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_sqm_per_worker_restaurants)), $"Number of square meters per worker. Higher numbers will decrease the number of workers. (Default: 37)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.industry_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.industry_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers. (Default: 50)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.warehouse_sqm_per_worker)), "Warehouse Square Meters per Worker" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.warehouse_sqm_per_worker)), $"Number of warehouse square meters per worker. Higher numbers will decrease the number of warehouse workers. (Default: 300)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.park_sqm_per_worker)), "Square Meters per Worker" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.park_sqm_per_worker)), $"Number of square meters per worker. Higher numbers will decrease the number of workers. (Default: 80)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.powerplant_sqm_per_worker)), "Square Meters per Worker" },
@@ -1022,6 +1029,8 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_sqm_per_worker_rec_entertainment)), $"Number of square meters per worker. Higher numbers will decrease the number of workers. (Padrão: 93)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.industry_sqm_per_worker)), "Metros quadrados por trabalhador" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.industry_sqm_per_worker)), $"Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores. (Padrão: 50)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.warehouse_sqm_per_worker)), "Armazéns: metros quadrados por trabalhador" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.warehouse_sqm_per_worker)), $"Número de metros quadrados de armazém por trabalhador. Números maiores diminuirão o número de trabalhadores em armazéns. (Padrão: 300)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.park_sqm_per_worker)), "Metros quadrados por trabalhador" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.park_sqm_per_worker)), $"Número de metros quadrados por trabalhador. Números maiores diminuirão o número de trabalhadores. (Padrão: 80)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.powerplant_sqm_per_worker)), "Metros quadrados por trabalhador" },

@@ -432,7 +432,7 @@ namespace RealisticWorkplacesAndHouseholds
 
             const float baseArea = 50f * 50f;          // 2,500 m²: medium supermarket reference
             const float maxSmallStoreBoost = 10f / 3.5f; 
-            const float minLargeStoreFactor = 0.5f; 
+            const float minLargeStoreFactor = 1f; 
 
             float multiplier = (float)Math.Sqrt(baseArea / footprintArea);
 
