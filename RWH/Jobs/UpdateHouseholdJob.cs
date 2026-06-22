@@ -85,6 +85,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly]
         public float sqm_per_apartment;
         [ReadOnly]
+        public float sqm_per_apartment_lowrent;
+        [ReadOnly]
         public float residential_avg_floor_height;
         [ReadOnly]
         public float rowhome_apt_per_floor;
@@ -94,6 +96,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public int units_per_elevator;
         [ReadOnly]
         public bool single_family;
+        [ReadOnly]
+        public bool allow_shared_single_family_homes;
+        [ReadOnly]
+        public int shared_single_family_home_rate;
         [ReadOnly]
         public bool luxury_highrise_less_apt;
         [ReadOnly]
@@ -204,6 +210,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             float uff = UffLookup.HasComponent(entity) ? UffLookup[entity].Value : 1f;
 
                             int original_households = property.m_ResidentialProperties;
+                            bool isLowRent = group.m_AmbienceType == GroupAmbienceType.ResidentialLowRent;
+                            float residentialApartmentArea = isLowRent ? sqm_per_apartment_lowrent : sqm_per_apartment;
 
                             uff = Math.Max(uff, 0.75f);
                             width *= (float)Math.Sqrt(uff);
@@ -221,7 +229,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     height += residential_avg_floor_height;
                                 }
 
-                                float rowhome_area = sqm_per_apartment * (1 + hallway_pct);
+                                float rowhome_area = residentialApartmentArea * (1 + hallway_pct);
                                 if (enable_rh_apt_per_floor)
                                 {
                                     rowhome_area = width * length / rowhome_apt_per_floor + HALLWAY_BUFFER;
@@ -239,8 +247,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                 {
                                     int floorOffset = 0;
                                     //Adding hallway area to apt area
-                                    float apt_area = sqm_per_apartment*(1+hallway_pct);
-                                    if (luxury_highrise_less_apt && group.m_AmbienceType != GroupAmbienceType.ResidentialLowRent)
+                                    float apt_area = residentialApartmentArea * (1 + hallway_pct);
+                                    if (luxury_highrise_less_apt && !isLowRent)
                                     {
                                         //High rise buildings that are level 4 or 5 will have less apartments
                                         if (spawnBuildingData.m_Level == 4) 
@@ -263,23 +271,40 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     //If less than 5 floors, assuming low density
                                     if (height/ residential_avg_floor_height < 5)
                                     {
-                                        households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, sqm_per_apartment_lowdensity * (1 + hallway_pct), 0, 0);
+                                        float lowRiseApartmentArea = isLowRent ? apt_area : sqm_per_apartment_lowdensity * (1 + hallway_pct);
+                                        households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, lowRiseApartmentArea, 0, 0);
                                         households = (int)(households*asset_pack_factor.x);
                                     } else
                                     {
-                                        households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, apt_area, floorOffset, units_per_elevator * (int)sqm_per_apartment);
+                                        households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, apt_area, floorOffset, units_per_elevator * (int)residentialApartmentArea);
                                         households = (int)(households * asset_pack_factor.z);
                                     }
                                 }
                                 //Set low density households to 1 if they are higher than that and single family option is true
-                                if (single_family && property.m_ResidentialProperties > 1 &&
-                                    (zonedata.m_ZoneFlags & ZoneFlags.SupportNarrow) != ZoneFlags.SupportNarrow)
+                                bool isDetachedLowDensity = !isRowHome && (zonedata.m_ZoneFlags & ZoneFlags.SupportNarrow) != ZoneFlags.SupportNarrow;
+                                bool isSingleFamilyLowDensity = single_family && !isLowRent && property.m_AllowedSold == Resource.NoResource && isDetachedLowDensity &&
+                                    height / residential_avg_floor_height < 3 && width * length / lotSize < 0.8f;
+
+                                if (isSingleFamilyLowDensity && property.m_ResidentialProperties > 1)
                                 {
-                                    //If less than 3 floors and at least 20% of the lot area is free area, assuming low density
-                                    if (height / residential_avg_floor_height < 3 && width*length/lotSize < 0.8f)
+                                    households = 1;
+                                }
+
+                                if (isSingleFamilyLowDensity && allow_shared_single_family_homes && shared_single_family_home_rate > 0)
+                                {
+                                    float lowDensityApartmentArea = sqm_per_apartment_lowdensity * (1 + hallway_pct);
+                                    int sharedPotential = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, lowDensityApartmentArea, 0, 0);
+                                    sharedPotential = (int)(sharedPotential * asset_pack_factor.x);
+
+                                    if (sharedPotential > 1 && PassesStablePercent(entity, 104729, shared_single_family_home_rate))
                                     {
-                                        households = 1;
-                                    } 
+                                        households = Math.Max(households, Math.Min(sharedPotential, 2));
+
+                                        if (sharedPotential > 2 && PassesStablePercent(entity, 130363, shared_single_family_home_rate / 4f))
+                                        {
+                                            households = Math.Max(households, Math.Min(sharedPotential, 3));
+                                        }
+                                    }
                                 }
                             }
 
@@ -317,6 +342,14 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 }
  
             }
+        }
+
+        private static bool PassesStablePercent(Entity entity, int salt, float percent)
+        {
+            float clamped = math.clamp(percent, 0f, 100f);
+            uint threshold = (uint)math.round(clamped * 100f);
+            uint hash = math.hash(new int3(entity.Index, entity.Version, salt));
+            return hash % 10000u < threshold;
         }
     }
 }

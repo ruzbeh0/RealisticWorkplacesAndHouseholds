@@ -60,6 +60,14 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly] public ComponentLookup<MeshData> MeshDataLookup;
         [ReadOnly] public ComponentLookup<UsableFootprintFactor> UffLookup;
         [ReadOnly] public ComponentLookup<RealisticWorkplaceData> RealisticWorkplaceDataLookup;
+        [ReadOnly] public ComponentLookup<Game.Buildings.TransportDepot> TransportDepotLookup;
+        [ReadOnly] public ComponentLookup<Game.Buildings.CargoTransportStation> CargoTransportStationLookup;
+        [ReadOnly] public ComponentLookup<Game.Buildings.MaintenanceDepot> MaintenanceDepotLookup;
+        [ReadOnly] public ComponentLookup<Game.Buildings.TransportStation> TransportStationLookup;
+        [ReadOnly] public ComponentLookup<TransportDepotData> TransportDepotDataLookup;
+        [ReadOnly] public ComponentLookup<CargoTransportStationData> CargoTransportStationDataLookup;
+        [ReadOnly] public ComponentLookup<MaintenanceDepotData> MaintenanceDepotDataLookup;
+        [ReadOnly] public ComponentLookup<TransportStationData> TransportStationDataLookup;
 
         [ReadOnly] public float industry_avg_floor_height;
         [ReadOnly] public float warehouse_sqm_per_worker;
@@ -85,6 +93,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             {
                 var storageEntity = entities[i];
                 var propertyEntity = hasPropertyRenter ? propertyRenters[i].m_Property : storageEntity;
+
+                if (IsTransportServiceTarget(storageEntity) || IsTransportServiceTarget(propertyEntity))
+                    continue;
+
                 int maxWorkers = CalculateWarehouseWorkers(propertyEntity);
                 Entity targetEntity = GetWorkProviderTarget(storageEntity, propertyEntity);
 
@@ -104,6 +116,30 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 return propertyEntity;
 
             return storageEntity;
+        }
+
+        private bool IsTransportServiceTarget(Entity entity)
+        {
+            if (entity == Entity.Null)
+                return false;
+
+            if (TransportStationLookup.HasComponent(entity) ||
+                CargoTransportStationLookup.HasComponent(entity) ||
+                TransportDepotLookup.HasComponent(entity) ||
+                MaintenanceDepotLookup.HasComponent(entity))
+            {
+                return true;
+            }
+
+            if (!PrefabRefLookup.TryGetComponent(entity, out var prefabRef))
+                return false;
+
+            Entity prefab = prefabRef.m_Prefab;
+            return prefab != Entity.Null &&
+                (TransportStationDataLookup.HasComponent(prefab) ||
+                 CargoTransportStationDataLookup.HasComponent(prefab) ||
+                 TransportDepotDataLookup.HasComponent(prefab) ||
+                 MaintenanceDepotDataLookup.HasComponent(prefab));
         }
 
         private void ApplyWarehouseWorkplaceData(Entity entity, int maxWorkers, int sortKey)

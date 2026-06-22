@@ -108,6 +108,14 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 MeshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
                 UffLookup = SystemAPI.GetComponentLookup<UsableFootprintFactor>(true),
                 RealisticWorkplaceDataLookup = SystemAPI.GetComponentLookup<RealisticWorkplaceData>(true),
+                TransportDepotLookup = SystemAPI.GetComponentLookup<Game.Buildings.TransportDepot>(true),
+                CargoTransportStationLookup = SystemAPI.GetComponentLookup<Game.Buildings.CargoTransportStation>(true),
+                MaintenanceDepotLookup = SystemAPI.GetComponentLookup<Game.Buildings.MaintenanceDepot>(true),
+                TransportStationLookup = SystemAPI.GetComponentLookup<Game.Buildings.TransportStation>(true),
+                TransportDepotDataLookup = SystemAPI.GetComponentLookup<TransportDepotData>(true),
+                CargoTransportStationDataLookup = SystemAPI.GetComponentLookup<CargoTransportStationData>(true),
+                MaintenanceDepotDataLookup = SystemAPI.GetComponentLookup<MaintenanceDepotData>(true),
+                TransportStationDataLookup = SystemAPI.GetComponentLookup<TransportStationData>(true),
                 industry_avg_floor_height = Mod.m_Setting.industry_avg_floor_height,
                 warehouse_sqm_per_worker = Mod.m_Setting.warehouse_sqm_per_worker,
                 global_reduction = Mod.m_Setting.results_reduction / 100f,
@@ -127,21 +135,50 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
             foreach (var storageEntity in storageEntities)
             {
-                EnsureTargetComponents(storageEntity);
-
                 Entity targetEntity = storageEntity;
-                if (!companyDataLookup.HasComponent(storageEntity) &&
-                    propertyRenterLookup.TryGetComponent(storageEntity, out var propertyRenter) &&
-                    propertyRenter.m_Property != Entity.Null)
+                Entity propertyEntity = Entity.Null;
+                if (propertyRenterLookup.TryGetComponent(storageEntity, out var propertyRenter))
                 {
-                    targetEntity = propertyRenter.m_Property;
+                    propertyEntity = propertyRenter.m_Property;
                 }
+
+                if (IsTransportServiceTarget(storageEntity) || IsTransportServiceTarget(propertyEntity))
+                    continue;
+
+                if (!companyDataLookup.HasComponent(storageEntity) && propertyEntity != Entity.Null)
+                    targetEntity = propertyEntity;
+
+                EnsureTargetComponents(storageEntity);
 
                 if (targetEntity != storageEntity)
                     EnsureTargetComponents(targetEntity);
             }
 
             storageEntities.Dispose();
+        }
+
+        private bool IsTransportServiceTarget(Entity entity)
+        {
+            if (entity == Entity.Null)
+                return false;
+
+            if (EntityManager.HasComponent<Game.Buildings.TransportStation>(entity) ||
+                EntityManager.HasComponent<Game.Buildings.CargoTransportStation>(entity) ||
+                EntityManager.HasComponent<Game.Buildings.TransportDepot>(entity) ||
+                EntityManager.HasComponent<Game.Buildings.MaintenanceDepot>(entity))
+            {
+                return true;
+            }
+
+            if (!EntityManager.HasComponent<PrefabRef>(entity))
+                return false;
+
+            Entity prefab = EntityManager.GetComponentData<PrefabRef>(entity).m_Prefab;
+            return prefab != Entity.Null &&
+                (EntityManager.HasComponent<TransportStationData>(prefab) ||
+                 EntityManager.HasComponent<CargoTransportStationData>(prefab) ||
+                 EntityManager.HasComponent<TransportDepotData>(prefab) ||
+                 EntityManager.HasComponent<MaintenanceDepotData>(prefab));
         }
 
         private void EnsureTargetComponents(Entity entity)

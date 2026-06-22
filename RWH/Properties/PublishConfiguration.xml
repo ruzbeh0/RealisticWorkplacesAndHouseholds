@@ -122,15 +122,15 @@ Additional credits:
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/realistic-workplaces-and-households.1699586/" />
 	<!--Version of the mod-->
-	<ModVersion Value="2.0" />
+	<ModVersion Value="2.1" />
 	<!--Recommended version of the base game to use the mod-->
-	<GameVersion Value="1.5.*" />
+	<GameVersion Value="1.6.*" />
 	<!--Dependency for the mod, can be set multiple times-->
 	<Dependency Id="" />
 	<ChangeLog>
-* Added workers at warehouses. Also added an option to configure the average sqm per worker for warehouses.
-* Fixed bug that was causing household/workplace counts to be recalculated with different values in the same building.
-* Adjusted smoothing for large commercial buildings to better match expected number of employees.
+*Added option to enable a small percentage of low residential houses to have more than one household
+*Added low rent housing configuration option in the residential menu
+*Fixed bug that caused ports from the DLC to have very few workplaces (requires placing a new sub-building to recalculate the number of workplaces)
 	</ChangeLog>
 	<!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon-->
 	<ExternalLink Type="github" Url="https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/" />

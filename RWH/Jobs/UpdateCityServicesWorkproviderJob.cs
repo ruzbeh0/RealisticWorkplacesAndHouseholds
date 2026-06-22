@@ -84,8 +84,6 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly]
         public ComponentTypeHandle<PrefabRef> PrefabRefHandle;
         [ReadOnly]
-        public BufferLookup<SubMesh> PrefabSubMeshesLookup;
-        [ReadOnly]
         public ComponentLookup<MeshData> meshDataLookup;
         [ReadOnly]
         public ComponentLookup<SpawnableBuildingData> SpawnableBuildingDataLookup;

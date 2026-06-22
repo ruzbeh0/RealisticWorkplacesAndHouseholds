@@ -19,13 +19,14 @@ using System.Text;
 namespace RealisticWorkplacesAndHouseholds
 {
     [FileLocation($"ModsSettings\\{nameof(RealisticWorkplacesAndHouseholds)}\\{nameof(RealisticWorkplacesAndHouseholds)}")]
-    [SettingsUIGroupOrder(ResidentialGroup, ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, RowHomesGroup, CommercialGroup, OfficeGroup, IndustryGroup, SchoolGroup, HospitalGroup, PowerPlantGroup, ParkGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, DepotGroup, PortGroup, GarbageGroup, PublicTransportGroup, AirportGroup, AssetPacksChoiceGroup, AssetPacksSettingsGroup, OtherGroup, FindPropertyGroup)]
-    [SettingsUIShowGroupName(ResidentialLowDensityGroup, RowHomesGroup, ResidentialHighDensityGroup, HospitalGroup, PowerPlantGroup, ParkGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, GarbageGroup, DepotGroup, PortGroup, PublicTransportGroup, AirportGroup, AssetPacksSettingsGroup, FindPropertyGroup)]
+    [SettingsUIGroupOrder(ResidentialGroup, ResidentialLowDensityGroup, RowHomesGroup, ResidentialLowRentGroup, ResidentialHighDensityGroup, RowHomesGroup, CommercialGroup, OfficeGroup, IndustryGroup, SchoolGroup, HospitalGroup, PowerPlantGroup, ParkGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, DepotGroup, PortGroup, GarbageGroup, PublicTransportGroup, AirportGroup, AssetPacksChoiceGroup, AssetPacksSettingsGroup, OtherGroup, FindPropertyGroup)]
+    [SettingsUIShowGroupName(ResidentialLowDensityGroup, RowHomesGroup, ResidentialLowRentGroup, ResidentialHighDensityGroup, HospitalGroup, PowerPlantGroup, ParkGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, GarbageGroup, DepotGroup, PortGroup, PublicTransportGroup, AirportGroup, AssetPacksSettingsGroup, FindPropertyGroup)]
     public class Setting : ModSetting
     {
         public const string ResidentialSection = "Residential";
         public const string ResidentialGroup = "ResidentialGroup";
         public const string ResidentialLowDensityGroup = "ResidentialLowDensityGroup";
+        public const string ResidentialLowRentGroup = "ResidentialLowRentGroup";
         public const string ResidentialHighDensityGroup = "ResidentialHighDensityGroup";
         public const string RowHomesGroup = "RowHomesGroup";
         public const string CommercialSection = "Commercial";
@@ -108,11 +109,14 @@ namespace RealisticWorkplacesAndHouseholds
             industry_avg_floor_height = 4.5f;
             residential_avg_floor_height = 3;
             residential_sqm_per_apartment = 90;
+            residential_lowrent_sqm_per_apartment = 70;
             rowhomes_apt_per_floor = 1;
             disable_row_homes_apt_per_floor = false;
             rowhomes_basement = true;
             residential_units_per_elevator = 70;
             single_household_low_density = true;
+            allow_shared_single_family_homes = true;
+            shared_single_family_home_rate = 10;
             disable_high_level_less_apt = false;
             residential_hallway_space = 10;
             residential_l4_reduction = 10;
@@ -232,6 +236,21 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(ResidentialSection, ResidentialLowDensityGroup)]
         public bool single_household_low_density { get; set; }
 
+        [SettingsUIHidden]
+        public bool disable_shared_single_family_homes => !single_household_low_density;
+
+        [SettingsUIHidden]
+        public bool disable_shared_single_family_home_rate => !single_household_low_density || !allow_shared_single_family_homes;
+
+        [SettingsUISection(ResidentialSection, ResidentialLowDensityGroup)]
+        [SettingsUIDisableByCondition(typeof(Setting), nameof(disable_shared_single_family_homes))]
+        public bool allow_shared_single_family_homes { get; set; }
+
+        [SettingsUISlider(min = 0, max = 30, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(ResidentialSection, ResidentialLowDensityGroup)]
+        [SettingsUIDisableByCondition(typeof(Setting), nameof(disable_shared_single_family_home_rate))]
+        public int shared_single_family_home_rate { get; set; }
+
         [SettingsUISlider(min = 60, max = 500, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(ResidentialSection, ResidentialLowDensityGroup)]
         [SettingsUIDisableByCondition(typeof(Setting), nameof(single_household_low_density))]
@@ -244,6 +263,10 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISlider(min = 60, max = 400, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
         [SettingsUISection(ResidentialSection, ResidentialGroup)]
         public int residential_sqm_per_apartment { get; set; }
+
+        [SettingsUISlider(min = 60, max = 400, step = 1, scalarMultiplier = 1, unit = Unit.kInteger)]
+        [SettingsUISection(ResidentialSection, ResidentialLowRentGroup)]
+        public int residential_lowrent_sqm_per_apartment { get; set; }
 
         [SettingsUISlider(min = 0, max = 30, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
         [SettingsUISection(ResidentialSection, ResidentialGroup)]
@@ -668,6 +691,7 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionGroupLocaleID(Setting.ResidentialGroup), "Residential" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.RowHomesGroup), "Row Homes" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.ResidentialLowDensityGroup), "Low Density" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.ResidentialLowRentGroup), "Low Rent Housing" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.ResidentialHighDensityGroup), "Medium and High Density" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.CommercialGroup), "Commercial Settings" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.OfficeGroup), "Office Settings" },
@@ -724,10 +748,16 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_self_service_gas)), $"If selected, gas stations will have fewer workers (Default: not selected)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.single_household_low_density)), "Single Household for Low Density" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.single_household_low_density)), $"If true, low density houses will only have one household (Default: selected)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.allow_shared_single_family_homes)), "Allow Shared Single-Family Homes" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.allow_shared_single_family_homes)), $"If selected, some large low density homes can contain more than one household. Only applies when single household low density is selected. (Default: selected)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.shared_single_family_home_rate)), "Shared Single-Family Homes" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.shared_single_family_home_rate)), "Percentage of qualifying large single-family homes that may receive an extra household. Very large homes have a small chance to receive a third household. (Default: 10)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_avg_floor_height)), "Average Floor Height (meters)" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_avg_floor_height)), $"Average Floor Height for residential buildings. (Default: 3)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_sqm_per_apartment)), "Average Apartment Size (Square Meters)" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_sqm_per_apartment)), $"Average Apartment Size in Square Meters. (Default: 90)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_lowrent_sqm_per_apartment)), "Average Apartment Size (Square Meters)" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_lowrent_sqm_per_apartment)), "Average apartment size for low rent housing in square meters. (Default: 70)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_lowdensity_sqm_per_apartment)), "Average Apartment Size (Square Meters)" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_lowdensity_sqm_per_apartment)), $"Average Apartment Size in Square Meters. (Default: 150)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_units_per_elevator)), "Number of Apartments per Elevator" },
@@ -932,6 +962,7 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionGroupLocaleID(Setting.ResidentialGroup), "Residência" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.RowHomesGroup), "Casa Geminada" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.ResidentialLowDensityGroup), "Baixa Densidade" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.ResidentialLowRentGroup), "Habitação de Baixa Renda" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.ResidentialHighDensityGroup), "Média e Alta Densidade" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.CommercialGroup), "Configurações Comerciais" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.OfficeGroup), "Configurações de Escritórios" },
@@ -983,10 +1014,16 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.commercial_self_service_gas)), $"Se selecionado, postos de gasolina vão ter menos empregados. (Padrão: não selecionado)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.single_household_low_density)), "Apenas uma família para baixa densidade" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.single_household_low_density)), $"Se selecionado, casas de baixa densidade vão ter apenas uma família. (Padrão: selecionado)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.allow_shared_single_family_homes)), "Permitir casas compartilhadas" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.allow_shared_single_family_homes)), "Se selecionado, algumas casas grandes de baixa densidade poderão ter mais de uma família. Só se aplica quando uma família por casa de baixa densidade estiver selecionado. (Padrão: selecionado)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.shared_single_family_home_rate)), "Casas compartilhadas" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.shared_single_family_home_rate)), "Porcentagem de casas grandes qualificadas que podem receber uma família extra. Casas muito grandes têm uma pequena chance de receber uma terceira família. (Padrão: 10)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_avg_floor_height)), "Altura média de um andar (metros)" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_avg_floor_height)), $"Altura média de um andar para prédios residenciaiss (Padrão: 3)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_sqm_per_apartment)), "Tamanho média de um apartamento (metros quadrados)" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_sqm_per_apartment)), $"Tamanho média de um apartamento em metros quadrados. (Padrão: 90)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_lowrent_sqm_per_apartment)), "Tamanho média de um apartamento (metros quadrados)" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_lowrent_sqm_per_apartment)), "Tamanho médio de um apartamento de baixa renda em metros quadrados. (Padrão: 70)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_lowdensity_sqm_per_apartment)), "Tamanho média de um apartamento (metros quadrados)" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.residential_lowdensity_sqm_per_apartment)), $"Tamanho média de um apartamento em metros quadrados. (Padrão: 150)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.residential_units_per_elevator)), "Número de apartamentos por elevador" },
