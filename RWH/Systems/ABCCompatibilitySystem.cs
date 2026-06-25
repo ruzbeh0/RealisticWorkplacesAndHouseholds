@@ -22,16 +22,19 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         private CitySystem _citySystem;
         private EntityQuery _taggedPrefabsQuery;
         private EntityQuery _taggedHouseholdPrefabsQuery;
+        private EntityQuery _workProviderQuery;
 
         private bool _abcDetected;
         private bool _reflectionReady;
         private bool _reflectionFailedLogged;
+        private bool _waitingForABCLogged;
 
         private Type _modifiedPrefabType;
         private Type _updateValueTypeEnum;
 
         private FieldInfo _valueTypeField;
         private FieldInfo _enabledField;
+        private FieldInfo _modifiedField;
         private FieldInfo _modEntityField;
 
         private int _workplaceMaxWorkersEnumValue;
@@ -63,6 +66,16 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 }
             });
 
+            _workProviderQuery = GetEntityQuery(new EntityQueryDesc
+            {
+                All = new[] { ComponentType.ReadWrite<Game.Companies.WorkProvider>() },
+                None = new[]
+                {
+                    ComponentType.Exclude<Deleted>(),
+                    ComponentType.Exclude<Temp>()
+                }
+            });
+
             _abcDetected = IsABCInstalled();
             _reflectionReady = false;
         }
@@ -80,9 +93,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
         protected override void OnUpdate()
         {
-            if (!_abcDetected)
-                return;
-
             if (!_reflectionReady)
                 TryInitReflection();
 
@@ -94,31 +104,61 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         {
             foreach (var modInfo in GameManager.instance.modManager)
             {
-                if (modInfo.asset.name.Equals("AdvancedBuildingControl", StringComparison.OrdinalIgnoreCase))
+                string assetName = modInfo.asset.name;
+                if (assetName.Equals("AdvancedBuildingControl", StringComparison.OrdinalIgnoreCase) ||
+                    assetName.Equals("Advanced Building Control", StringComparison.OrdinalIgnoreCase))
                     return true;
             }
 
-            return false;
+            return TryResolveType("AdvancedBuildingControl.Components.ModifiedPrefab") != null;
+        }
+
+        private static Type TryResolveType(string fullName)
+        {
+            Type type = Type.GetType($"{fullName}, AdvancedBuildingControl", false);
+            if (type != null)
+                return type;
+
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (!assembly.GetName().Name.Equals("AdvancedBuildingControl", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                type = assembly.GetType(fullName, false);
+                if (type != null)
+                    return type;
+            }
+
+            return null;
         }
 
         private void TryInitReflection()
         {
-            if (_reflectionReady || !_abcDetected)
+            if (_reflectionReady)
                 return;
 
             try
             {
-                _modifiedPrefabType = Type.GetType("AdvancedBuildingControl.Components.ModifiedPrefab, AdvancedBuildingControl", false);
-                _updateValueTypeEnum = Type.GetType("AdvancedBuildingControl.Variables.UpdateValueType, AdvancedBuildingControl", false);
+                _modifiedPrefabType = TryResolveType("AdvancedBuildingControl.Components.ModifiedPrefab");
+                _updateValueTypeEnum = TryResolveType("AdvancedBuildingControl.Variables.UpdateValueType");
 
                 if (_modifiedPrefabType == null || _updateValueTypeEnum == null)
+                {
+                    if (_abcDetected && !_waitingForABCLogged)
+                    {
+                        Mod.log.Info("[RWH] Waiting for Advanced Building Control types to load.");
+                        _waitingForABCLogged = true;
+                    }
+
                     return;
+                }
 
                 _valueTypeField = _modifiedPrefabType.GetField("ValueType", BindingFlags.Public | BindingFlags.Instance);
                 _enabledField = _modifiedPrefabType.GetField("Enabled", BindingFlags.Public | BindingFlags.Instance);
+                _modifiedField = _modifiedPrefabType.GetField("Modified", BindingFlags.Public | BindingFlags.Instance);
                 _modEntityField = _modifiedPrefabType.GetField("ModEntity", BindingFlags.Public | BindingFlags.Instance);
 
-                if (_valueTypeField == null || _enabledField == null || _modEntityField == null)
+                if (_valueTypeField == null || _enabledField == null || _modifiedField == null || _modEntityField == null)
                     return;
 
                 object workplaceEnumValue = Enum.Parse(_updateValueTypeEnum, "WorkplaceData_MaxWorkers");
@@ -127,6 +167,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 object householdEnumValue = Enum.Parse(_updateValueTypeEnum, "BuildingPropertyData_ResidentialProperties");
                 _residentialPropertiesEnumValue = Convert.ToInt32(householdEnumValue);
 
+                _abcDetected = true;
                 _reflectionReady = true;
                 Mod.log.Info("[RWH] ABC compatibility reflection initialized.");
             }
@@ -215,6 +256,9 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     {
                         if (!EntityManager.HasComponent<ABCWorkplaceOverride>(targetPrefab))
                             EntityManager.AddComponent<ABCWorkplaceOverride>(targetPrefab);
+
+                        int maxWorkers = ToInt32Saturated(Convert.ToInt64(_modifiedField.GetValue(reflectedEntry)));
+                        ApplyWorkProviderOverride(targetPrefab, maxWorkers);
                     }
                     else if (reflectedValueType == _residentialPropertiesEnumValue)
                     {
@@ -231,6 +275,59 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     _reflectionFailedLogged = true;
                 }
             }
+        }
+
+        private void ApplyWorkProviderOverride(Entity targetPrefab, int maxWorkers)
+        {
+            using var providers = _workProviderQuery.ToEntityArray(Allocator.Temp);
+
+            for (int i = 0; i < providers.Length; i++)
+            {
+                Entity providerEntity = providers[i];
+                if (!IsWorkProviderForPrefab(providerEntity, targetPrefab))
+                    continue;
+
+                Game.Companies.WorkProvider workProvider = EntityManager.GetComponentData<Game.Companies.WorkProvider>(providerEntity);
+                if (workProvider.m_MaxWorkers == maxWorkers)
+                    continue;
+
+                workProvider.m_MaxWorkers = maxWorkers;
+                EntityManager.SetComponentData(providerEntity, workProvider);
+
+                if (EntityManager.HasComponent<RealisticWorkplaceData>(providerEntity))
+                {
+                    RealisticWorkplaceData realisticData = EntityManager.GetComponentData<RealisticWorkplaceData>(providerEntity);
+                    realisticData.max_workers = maxWorkers;
+                    EntityManager.SetComponentData(providerEntity, realisticData);
+                }
+
+                if (!EntityManager.HasComponent<Updated>(providerEntity))
+                    EntityManager.AddComponent<Updated>(providerEntity);
+            }
+        }
+
+        private bool IsWorkProviderForPrefab(Entity providerEntity, Entity targetPrefab)
+        {
+            if (EntityManager.TryGetComponent(providerEntity, out PrefabRef providerPrefabRef) &&
+                providerPrefabRef.m_Prefab == targetPrefab)
+            {
+                return true;
+            }
+
+            if (!EntityManager.TryGetComponent(providerEntity, out Game.Buildings.PropertyRenter propertyRenter))
+                return false;
+
+            return EntityManager.TryGetComponent(propertyRenter.m_Property, out PrefabRef propertyPrefabRef) &&
+                propertyPrefabRef.m_Prefab == targetPrefab;
+        }
+
+        private static int ToInt32Saturated(long value)
+        {
+            if (value > int.MaxValue)
+                return int.MaxValue;
+            if (value < int.MinValue)
+                return int.MinValue;
+            return (int)value;
         }
 
         private void ClearExistingTags()

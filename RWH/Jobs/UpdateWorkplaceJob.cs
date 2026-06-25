@@ -174,10 +174,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 var prefab2Entity = prefab2.m_Prefab;
                 var prefab1Entity = prefab1.m_Prefab;
 
-                // ABC overrides WorkplaceData on the COMPANY PREFAB and then propagates
-                // the same value to matching WorkProvider entities. If ABC owns this prefab,
-                // RWH must not recalculate it.
-                if (ABCWorkplaceOverrideLookup.HasComponent(prefab1Entity))
+                // ABC can own the company prefab's WorkplaceData or a building-prefab
+                // target whose renters receive the matching WorkProvider override.
+                if (ABCWorkplaceOverrideLookup.HasComponent(prefab1Entity) ||
+                    ABCWorkplaceOverrideLookup.HasComponent(prefab2Entity))
                     continue;
 
                 bool hasSpawnableBuildingData = SpawnableBuildingDataLookup.TryGetComponent(prefab2Entity, out var spawnBuildingData);

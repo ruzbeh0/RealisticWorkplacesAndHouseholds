@@ -116,6 +116,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 CargoTransportStationDataLookup = SystemAPI.GetComponentLookup<CargoTransportStationData>(true),
                 MaintenanceDepotDataLookup = SystemAPI.GetComponentLookup<MaintenanceDepotData>(true),
                 TransportStationDataLookup = SystemAPI.GetComponentLookup<TransportStationData>(true),
+                ABCWorkplaceOverrideLookup = SystemAPI.GetComponentLookup<ABCWorkplaceOverride>(true),
                 industry_avg_floor_height = Mod.m_Setting.industry_avg_floor_height,
                 warehouse_sqm_per_worker = Mod.m_Setting.warehouse_sqm_per_worker,
                 global_reduction = Mod.m_Setting.results_reduction / 100f,

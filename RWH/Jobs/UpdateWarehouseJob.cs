@@ -68,6 +68,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly] public ComponentLookup<CargoTransportStationData> CargoTransportStationDataLookup;
         [ReadOnly] public ComponentLookup<MaintenanceDepotData> MaintenanceDepotDataLookup;
         [ReadOnly] public ComponentLookup<TransportStationData> TransportStationDataLookup;
+        [ReadOnly] public ComponentLookup<ABCWorkplaceOverride> ABCWorkplaceOverrideLookup;
 
         [ReadOnly] public float industry_avg_floor_height;
         [ReadOnly] public float warehouse_sqm_per_worker;
@@ -97,6 +98,9 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 if (IsTransportServiceTarget(storageEntity) || IsTransportServiceTarget(propertyEntity))
                     continue;
 
+                if (HasABCWorkplaceOverride(storageEntity) || HasABCWorkplaceOverride(propertyEntity))
+                    continue;
+
                 int maxWorkers = CalculateWarehouseWorkers(propertyEntity);
                 Entity targetEntity = GetWorkProviderTarget(storageEntity, propertyEntity);
 
@@ -116,6 +120,14 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 return propertyEntity;
 
             return storageEntity;
+        }
+
+        private bool HasABCWorkplaceOverride(Entity entity)
+        {
+            if (entity == Entity.Null || !PrefabRefLookup.TryGetComponent(entity, out var prefabRef))
+                return false;
+
+            return ABCWorkplaceOverrideLookup.HasComponent(prefabRef.m_Prefab);
         }
 
         private bool IsTransportServiceTarget(Entity entity)

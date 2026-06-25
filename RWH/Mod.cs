@@ -97,6 +97,8 @@ namespace RealisticWorkplacesAndHouseholds
             updateSystem.UpdateBefore<ABCCompatibilitySystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateBefore<ABCCompatibilitySystem, HouseholdUpdateSystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateBefore<ABCCompatibilitySystem, WorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateBefore<ABCCompatibilitySystem, CityServicesWorkplaceUpdateSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateBefore<ABCCompatibilitySystem, CityServicesWorkproviderUpdateSystem>(SystemUpdatePhase.GameSimulation);
 
             if (!Mod.m_Setting.disable_households_calculations)
             {
