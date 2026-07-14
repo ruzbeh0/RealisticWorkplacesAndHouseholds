@@ -112,6 +112,7 @@ namespace RealisticWorkplacesAndHouseholds
             updateSystem.UpdateAfter<ConsumptionDataUpdaterSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateBefore<ConsumptionDataUpdaterSystem>(SystemUpdatePhase.PrefabReferences);
             updateSystem.UpdateAfter<UsableFootprintBuildSystem>(SystemUpdatePhase.PrefabUpdate);
+            updateSystem.UpdateAfter<SignatureUnlockRequirementScalerSystem, Game.Prefabs.BuildingInitializeSystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateAt<RWHBudgetApplySystem>(SystemUpdatePhase.GameSimulation);
 
             if (!Mod.m_Setting.disable_workplace_calculations)

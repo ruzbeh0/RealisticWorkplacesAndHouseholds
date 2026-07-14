@@ -16,6 +16,7 @@ using RealisticWorkplacesAndHouseholds.Jobs;
 using Unity.Burst.Intrinsics;
 using Unity.Entities;
 using Game.Citizens;
+using Game.Agents;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
@@ -27,6 +28,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         EntityQuery m_EconomyParamQuery;
         EntityQuery m_BuildingsQuery;
         EntityArchetype m_RentEventArchetype;
+        private const int kMaxEvictionsPerBuildingPerCheck = 2;
         Unity.Mathematics.Random random;
         private bool m_WaitForInitialHouseholdReset = false;
         private int m_PostResetDelayUpdates = 0;
@@ -92,8 +94,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
         private void CheckBuildings(bool allowEvictions)
         {
-
-            Mod.log.Info("Running Residential Properties Check Job");
             ResidentialPropertyCheckJob job = new ResidentialPropertyCheckJob()
             {
                 ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
@@ -112,9 +112,12 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 spawnableBuildingDataLookup = SystemAPI.GetComponentLookup<SpawnableBuildingData>(true),
                 economyParameterData = m_EconomyParamQuery.GetSingleton<EconomyParameterData>(),
                 workProviderLookup = SystemAPI.GetComponentLookup<WorkProvider>(true),
+                propertyRenterLookup = SystemAPI.GetComponentLookup<PropertyRenter>(true),
+                propertySeekerLookup = SystemAPI.GetComponentLookup<PropertySeeker>(true),
                 m_RentEventArchetype = m_RentEventArchetype,
                 random = random,
                 allowEvictions = allowEvictions,
+                maxEvictionsPerBuilding = kMaxEvictionsPerBuildingPerCheck,
                 m_CitizenBufs = SystemAPI.GetBufferLookup<HouseholdCitizen>(true),
                 m_HealthProblems = SystemAPI.GetComponentLookup<HealthProblem>(true)
 

@@ -70,7 +70,7 @@ public partial class RWHBudgetApplySystem : GameSystemBase
     {
     }
 
-    //[BurstCompile]
+    [BurstCompile]
     private struct BudgetApplyJob : IJob
     {
         public NativeArray<int> m_Income;
@@ -126,4 +126,3 @@ public partial class RWHBudgetApplySystem : GameSystemBase
         }
     }
 }
-

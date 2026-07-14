@@ -60,15 +60,9 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             FreeHomes = freeProperties.x + freeProperties.y + freeProperties.z;
             TotalHomes = HouseholdsCount + this.FreeHomes;
 
-            bool enable = true;
             vacancy_rate = ((float)this.FreeHomes) / ((float)this.TotalHomes);
 
-            if (this.TotalHomes == 0 || this.HouseholdsCount <= 10)
-                enable = true;
-            else if (vacancy_rate <= freeHomesPct)
-                enable = false;
-
-            this.World.GetOrCreateSystemManaged<HouseholdSpawnSystem>().Enabled = enable;
+            this.World.GetOrCreateSystemManaged<HouseholdSpawnSystem>().Enabled = false;
 
             using var prefabs = _query.ToEntityArray(Allocator.Temp);
 
@@ -80,7 +74,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
                 EntityManager.SetComponentData<DemandParameterData>(tsd, data);
 
-                //Mod.log.Info($"freeHomesPct: {freeHomesPct}, freeProperties:{freeProperties}, HouseholdSpawnSystem Enabled: {enable}, Free Homes: {FreeHomes}, Total Homes: {TotalHomes}, vacancy_rate: {vacancy_rate}, m_FreeResidentialRequirement:{data.m_FreeResidentialRequirement}");
+                //Mod.log.Info($"freeHomesPct: {freeHomesPct}, freeProperties:{freeProperties}, Free Homes: {FreeHomes}, Total Homes: {TotalHomes}, vacancy_rate: {vacancy_rate}, m_FreeResidentialRequirement:{data.m_FreeResidentialRequirement}");
 
             }
 

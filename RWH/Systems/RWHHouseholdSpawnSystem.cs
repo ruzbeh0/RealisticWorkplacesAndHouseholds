@@ -62,58 +62,48 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             JobHandle jobHandle = this.Dependency;
             int householdDemand = this.m_ResidentialDemandSystem.householdDemand;
             //Mod.log.Info($"RWHHouseholdSpawnSystem: householdDemand={householdDemand}, vacancy_rate={m_ResidentialVacancySystem.vacancy_rate}, residential_vacancy_rate={Mod.m_Setting.residential_vacancy_rate}");
-            if (householdDemand > 0 || m_ResidentialVacancySystem.vacancy_rate > Mod.m_Setting.residential_vacancy_rate/100f)
+            if (householdDemand <= 0)
             {
-                if (householdDemand <= 0)
-                {
-                    // targetVacancy and actualVacancy in [0..1]
-                    float target = math.saturate(Mod.m_Setting.residential_vacancy_rate / 100f);
-                    float actual = math.max(0.001f, m_ResidentialVacancySystem.vacancy_rate);
-
-                    // spawn proportional to how far below target we are
-                    float ratio = math.saturate((target - actual) / target); // 0..1
-                    householdDemand = (int)math.round(100f * ratio);
-                }
-
-                
-
-                JobHandle deps1;
-                NativeArray<int> densityDemandFactors1 = this.m_ResidentialDemandSystem.GetLowDensityDemandFactors(out deps1);
-                JobHandle deps2;
-                NativeArray<int> densityDemandFactors2 = this.m_ResidentialDemandSystem.GetMediumDensityDemandFactors(out deps2);
-                JobHandle deps3;
-                NativeArray<int> densityDemandFactors3 = this.m_ResidentialDemandSystem.GetHighDensityDemandFactors(out deps3);
-
-                JobHandle outJobHandle1;
-                JobHandle outJobHandle2;
-                JobHandle outJobHandle3;
-                JobHandle deps4;
-
-                jobHandle = new RWHHouseholdSpawnSystem.SpawnHouseholdJob()
-                {
-                    m_PrefabEntities = this.m_HouseholdPrefabQuery.ToEntityListAsync((AllocatorManager.AllocatorHandle)this.World.UpdateAllocator.ToAllocator, out outJobHandle1),
-                    m_Archetypes = this.m_HouseholdPrefabQuery.ToComponentDataListAsync<Game.Prefabs.ArchetypeData>((AllocatorManager.AllocatorHandle)this.World.UpdateAllocator.ToAllocator, out outJobHandle2),
-                    m_OutsideConnectionEntities = this.m_OutsideConnectionQuery.ToEntityListAsync((AllocatorManager.AllocatorHandle)this.World.UpdateAllocator.ToAllocator, out outJobHandle3),
-                    m_HouseholdDatas = InternalCompilerInterface.GetComponentLookup<Game.Prefabs.HouseholdData>(ref this.__TypeHandle.__Game_Prefabs_HouseholdData_RO_ComponentLookup, ref this.CheckedStateRef),
-                    m_Dynamics = InternalCompilerInterface.GetComponentLookup<DynamicHousehold>(ref this.__TypeHandle.__Game_Prefabs_DynamicHousehold_RO_ComponentLookup, ref this.CheckedStateRef),
-                    m_Populations = InternalCompilerInterface.GetComponentLookup<Population>(ref this.__TypeHandle.__Game_City_Population_RO_ComponentLookup, ref this.CheckedStateRef),
-                    m_OutsideConnectionDatas = InternalCompilerInterface.GetComponentLookup<OutsideConnectionData>(ref this.__TypeHandle.__Game_Prefabs_OutsideConnectionData_RO_ComponentLookup, ref this.CheckedStateRef),
-                    m_PrefabRefs = InternalCompilerInterface.GetComponentLookup<PrefabRef>(ref this.__TypeHandle.__Game_Prefabs_PrefabRef_RO_ComponentLookup, ref this.CheckedStateRef),
-                    m_DemandParameterData = this.m_DemandParameterQuery.GetSingleton<DemandParameterData>(),
-                    m_LowFactors = densityDemandFactors1,
-                    m_MedFactors = densityDemandFactors2,
-                    m_HiFactors = densityDemandFactors3,
-                    m_StudyPositions = this.m_CountStudyPositionsSystem.GetStudyPositionsByEducation(out deps4),
-                    m_City = this.m_CitySystem.City,
-                    m_Demand = 4*householdDemand,
-                    m_Random = RandomSeed.Next().GetRandom((int)this.m_SimulationSystem.frameIndex),
-                    hh_speed_rate = Mod.m_Setting.hh_spawn_speed_rate,
-                    m_CommandBuffer = this.m_EndFrameBarrier.CreateCommandBuffer()
-                }.Schedule<RWHHouseholdSpawnSystem.SpawnHouseholdJob>(JobUtils.CombineDependencies(outJobHandle1, outJobHandle2, jobHandle, outJobHandle3, deps1, deps2, deps3, deps4));
-
-                this.m_ResidentialDemandSystem.AddReader(jobHandle);
-                this.m_EndFrameBarrier.AddJobHandleForProducer(jobHandle);
+                this.Dependency = jobHandle;
+                return;
             }
+
+            JobHandle deps1;
+            NativeArray<int> densityDemandFactors1 = this.m_ResidentialDemandSystem.GetLowDensityDemandFactors(out deps1);
+            JobHandle deps2;
+            NativeArray<int> densityDemandFactors2 = this.m_ResidentialDemandSystem.GetMediumDensityDemandFactors(out deps2);
+            JobHandle deps3;
+            NativeArray<int> densityDemandFactors3 = this.m_ResidentialDemandSystem.GetHighDensityDemandFactors(out deps3);
+
+            JobHandle outJobHandle1;
+            JobHandle outJobHandle2;
+            JobHandle outJobHandle3;
+            JobHandle deps4;
+
+            jobHandle = new RWHHouseholdSpawnSystem.SpawnHouseholdJob()
+            {
+                m_PrefabEntities = this.m_HouseholdPrefabQuery.ToEntityListAsync((AllocatorManager.AllocatorHandle)this.World.UpdateAllocator.ToAllocator, out outJobHandle1),
+                m_Archetypes = this.m_HouseholdPrefabQuery.ToComponentDataListAsync<Game.Prefabs.ArchetypeData>((AllocatorManager.AllocatorHandle)this.World.UpdateAllocator.ToAllocator, out outJobHandle2),
+                m_OutsideConnectionEntities = this.m_OutsideConnectionQuery.ToEntityListAsync((AllocatorManager.AllocatorHandle)this.World.UpdateAllocator.ToAllocator, out outJobHandle3),
+                m_HouseholdDatas = InternalCompilerInterface.GetComponentLookup<Game.Prefabs.HouseholdData>(ref this.__TypeHandle.__Game_Prefabs_HouseholdData_RO_ComponentLookup, ref this.CheckedStateRef),
+                m_Dynamics = InternalCompilerInterface.GetComponentLookup<DynamicHousehold>(ref this.__TypeHandle.__Game_Prefabs_DynamicHousehold_RO_ComponentLookup, ref this.CheckedStateRef),
+                m_Populations = InternalCompilerInterface.GetComponentLookup<Population>(ref this.__TypeHandle.__Game_City_Population_RO_ComponentLookup, ref this.CheckedStateRef),
+                m_OutsideConnectionDatas = InternalCompilerInterface.GetComponentLookup<OutsideConnectionData>(ref this.__TypeHandle.__Game_Prefabs_OutsideConnectionData_RO_ComponentLookup, ref this.CheckedStateRef),
+                m_PrefabRefs = InternalCompilerInterface.GetComponentLookup<PrefabRef>(ref this.__TypeHandle.__Game_Prefabs_PrefabRef_RO_ComponentLookup, ref this.CheckedStateRef),
+                m_DemandParameterData = this.m_DemandParameterQuery.GetSingleton<DemandParameterData>(),
+                m_LowFactors = densityDemandFactors1,
+                m_MedFactors = densityDemandFactors2,
+                m_HiFactors = densityDemandFactors3,
+                m_StudyPositions = this.m_CountStudyPositionsSystem.GetStudyPositionsByEducation(out deps4),
+                m_City = this.m_CitySystem.City,
+                m_Demand = householdDemand,
+                m_Random = RandomSeed.Next().GetRandom((int)this.m_SimulationSystem.frameIndex),
+                hh_speed_rate = Mod.m_Setting.hh_spawn_speed_rate,
+                m_CommandBuffer = this.m_EndFrameBarrier.CreateCommandBuffer()
+            }.Schedule<RWHHouseholdSpawnSystem.SpawnHouseholdJob>(JobUtils.CombineDependencies(outJobHandle1, outJobHandle2, jobHandle, outJobHandle3, deps1, deps2, deps3, deps4));
+
+            this.m_ResidentialDemandSystem.AddReader(jobHandle);
+            this.m_EndFrameBarrier.AddJobHandleForProducer(jobHandle);
             this.Dependency = jobHandle;
         }
 

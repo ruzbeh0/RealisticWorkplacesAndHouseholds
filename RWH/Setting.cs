@@ -19,8 +19,8 @@ using System.Text;
 namespace RealisticWorkplacesAndHouseholds
 {
     [FileLocation($"ModsSettings\\{nameof(RealisticWorkplacesAndHouseholds)}\\{nameof(RealisticWorkplacesAndHouseholds)}")]
-    [SettingsUIGroupOrder(ResidentialGroup, ResidentialLowDensityGroup, RowHomesGroup, ResidentialLowRentGroup, ResidentialHighDensityGroup, RowHomesGroup, CommercialGroup, OfficeGroup, IndustryGroup, SchoolGroup, HospitalGroup, PowerPlantGroup, ParkGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, DepotGroup, PortGroup, GarbageGroup, PublicTransportGroup, AirportGroup, AssetPacksChoiceGroup, AssetPacksSettingsGroup, OtherGroup, FindPropertyGroup)]
-    [SettingsUIShowGroupName(ResidentialLowDensityGroup, RowHomesGroup, ResidentialLowRentGroup, ResidentialHighDensityGroup, HospitalGroup, PowerPlantGroup, ParkGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, GarbageGroup, DepotGroup, PortGroup, PublicTransportGroup, AirportGroup, AssetPacksSettingsGroup, FindPropertyGroup)]
+    [SettingsUIGroupOrder(ResidentialGroup, ResidentialLowDensityGroup, RowHomesGroup, ResidentialLowRentGroup, ResidentialHighDensityGroup, RowHomesGroup, CommercialGroup, OfficeGroup, IndustryGroup, SchoolGroup, HospitalGroup, PowerPlantGroup, ParkGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, DepotGroup, PortGroup, GarbageGroup, PublicTransportGroup, AirportGroup, AssetPacksChoiceGroup, AssetPacksSettingsGroup, SignatureUnlockResidentialGroup, SignatureUnlockMixedGroup, SignatureUnlockCommercialGroup, SignatureUnlockOfficeGroup, SignatureUnlockIndustrialGroup, OtherGroup, FindPropertyGroup)]
+    [SettingsUIShowGroupName(ResidentialLowDensityGroup, RowHomesGroup, ResidentialLowRentGroup, ResidentialHighDensityGroup, HospitalGroup, PowerPlantGroup, ParkGroup, AdminGroup, PoliceGroup, FireGroup, PostOfficeGroup, GarbageGroup, DepotGroup, PortGroup, PublicTransportGroup, AirportGroup, AssetPacksSettingsGroup, SignatureUnlockResidentialGroup, SignatureUnlockMixedGroup, SignatureUnlockCommercialGroup, SignatureUnlockOfficeGroup, SignatureUnlockIndustrialGroup, FindPropertyGroup)]
     public class Setting : ModSetting
     {
         public const string ResidentialSection = "Residential";
@@ -39,6 +39,7 @@ namespace RealisticWorkplacesAndHouseholds
         public const string SchoolGroup = "SchoolGroup";
         public const string CityServicesSection = "CityServices";
         public const string AssetPacksSection = "AssetPacks";
+        public const string SignatureUnlockSection = "SignatureUnlocks";
         public const string HospitalGroup = "HospitalGroup";
         public const string PowerPlantGroup = "PowerPlantGroup";
         public const string ParkGroup = "ParkGroup";
@@ -56,6 +57,11 @@ namespace RealisticWorkplacesAndHouseholds
         public const string FindPropertyGroup = "FindPropertyGroup";
         public const string AssetPacksChoiceGroup = "AssetPacksChoiceGroup";
         public const string AssetPacksSettingsGroup = "AssetPacksSettingsGroup";
+        public const string SignatureUnlockResidentialGroup = "SignatureUnlockResidentialGroup";
+        public const string SignatureUnlockMixedGroup = "SignatureUnlockMixedGroup";
+        public const string SignatureUnlockCommercialGroup = "SignatureUnlockCommercialGroup";
+        public const string SignatureUnlockOfficeGroup = "SignatureUnlockOfficeGroup";
+        public const string SignatureUnlockIndustrialGroup = "SignatureUnlockIndustrialGroup";
         public Dictionary<int, int> packIndexLookup = new Dictionary<int, int>();
 
         private const string kAssetPackFactorsFileName = "asset_pack_factors.csv";
@@ -78,6 +84,7 @@ namespace RealisticWorkplacesAndHouseholds
             }
 
             if (students_per_teacher == 0) SetDefaults();
+            EnsureSignatureUnlockDefaults();
         }
 
         public override void SetDefaults()
@@ -148,7 +155,42 @@ namespace RealisticWorkplacesAndHouseholds
             residential_vacancy_rate = 5;
             powerplant_use_employees_per_gw = false;
             powerplant_employees_per_gw = 0.09f;
+            ResetSignatureUnlockDefaults();
 
+        }
+
+        private void ResetSignatureUnlockDefaults()
+        {
+            signature_residential_low_requirement_scale = 100;
+            signature_residential_medium_requirement_scale = 100;
+            signature_residential_high_requirement_scale = 100;
+            signature_mixed_low_requirement_scale = 100;
+            signature_mixed_medium_requirement_scale = 100;
+            signature_mixed_high_requirement_scale = 100;
+            signature_commercial_low_requirement_scale = 100;
+            signature_commercial_medium_requirement_scale = 100;
+            signature_commercial_high_requirement_scale = 100;
+            signature_office_low_requirement_scale = 100;
+            signature_office_medium_requirement_scale = 100;
+            signature_office_high_requirement_scale = 100;
+            signature_industrial_requirement_scale = 100;
+        }
+
+        private void EnsureSignatureUnlockDefaults()
+        {
+            if (signature_residential_low_requirement_scale <= 0) signature_residential_low_requirement_scale = 100;
+            if (signature_residential_medium_requirement_scale <= 0) signature_residential_medium_requirement_scale = 100;
+            if (signature_residential_high_requirement_scale <= 0) signature_residential_high_requirement_scale = 100;
+            if (signature_mixed_low_requirement_scale <= 0) signature_mixed_low_requirement_scale = 100;
+            if (signature_mixed_medium_requirement_scale <= 0) signature_mixed_medium_requirement_scale = 100;
+            if (signature_mixed_high_requirement_scale <= 0) signature_mixed_high_requirement_scale = 100;
+            if (signature_commercial_low_requirement_scale <= 0) signature_commercial_low_requirement_scale = 100;
+            if (signature_commercial_medium_requirement_scale <= 0) signature_commercial_medium_requirement_scale = 100;
+            if (signature_commercial_high_requirement_scale <= 0) signature_commercial_high_requirement_scale = 100;
+            if (signature_office_low_requirement_scale <= 0) signature_office_low_requirement_scale = 100;
+            if (signature_office_medium_requirement_scale <= 0) signature_office_medium_requirement_scale = 100;
+            if (signature_office_high_requirement_scale <= 0) signature_office_high_requirement_scale = 100;
+            if (signature_industrial_requirement_scale <= 0) signature_industrial_requirement_scale = 100;
         }
 
         public void SetParameters(int index)
@@ -548,6 +590,58 @@ namespace RealisticWorkplacesAndHouseholds
         [SettingsUISection(OtherSection, OtherGroup)]
         public bool disable_cityservices_calculations { get; set; }
 
+        [SettingsUISlider(min = 1, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(SignatureUnlockSection, SignatureUnlockResidentialGroup)]
+        public int signature_residential_low_requirement_scale { get; set; }
+
+        [SettingsUISlider(min = 1, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(SignatureUnlockSection, SignatureUnlockResidentialGroup)]
+        public int signature_residential_medium_requirement_scale { get; set; }
+
+        [SettingsUISlider(min = 1, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(SignatureUnlockSection, SignatureUnlockResidentialGroup)]
+        public int signature_residential_high_requirement_scale { get; set; }
+
+        [SettingsUISlider(min = 1, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(SignatureUnlockSection, SignatureUnlockMixedGroup)]
+        public int signature_mixed_low_requirement_scale { get; set; }
+
+        [SettingsUISlider(min = 1, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(SignatureUnlockSection, SignatureUnlockMixedGroup)]
+        public int signature_mixed_medium_requirement_scale { get; set; }
+
+        [SettingsUISlider(min = 1, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(SignatureUnlockSection, SignatureUnlockMixedGroup)]
+        public int signature_mixed_high_requirement_scale { get; set; }
+
+        [SettingsUISlider(min = 1, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(SignatureUnlockSection, SignatureUnlockCommercialGroup)]
+        public int signature_commercial_low_requirement_scale { get; set; }
+
+        [SettingsUISlider(min = 1, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(SignatureUnlockSection, SignatureUnlockCommercialGroup)]
+        public int signature_commercial_medium_requirement_scale { get; set; }
+
+        [SettingsUISlider(min = 1, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(SignatureUnlockSection, SignatureUnlockCommercialGroup)]
+        public int signature_commercial_high_requirement_scale { get; set; }
+
+        [SettingsUISlider(min = 1, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(SignatureUnlockSection, SignatureUnlockOfficeGroup)]
+        public int signature_office_low_requirement_scale { get; set; }
+
+        [SettingsUISlider(min = 1, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(SignatureUnlockSection, SignatureUnlockOfficeGroup)]
+        public int signature_office_medium_requirement_scale { get; set; }
+
+        [SettingsUISlider(min = 1, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(SignatureUnlockSection, SignatureUnlockOfficeGroup)]
+        public int signature_office_high_requirement_scale { get; set; }
+
+        [SettingsUISlider(min = 1, max = 100, step = 1, scalarMultiplier = 1, unit = Unit.kPercentage)]
+        [SettingsUISection(SignatureUnlockSection, SignatureUnlockIndustrialGroup)]
+        public int signature_industrial_requirement_scale { get; set; }
+
         [SettingsUISection(AssetPacksSection, AssetPacksChoiceGroup)]
         public PacksEnum pack_choice { get; set; } = PacksEnum.France;
 
@@ -686,6 +780,7 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionTabLocaleID(Setting.OfficeSection), "Office" },
                 { m_Setting.GetOptionTabLocaleID(Setting.CityServicesSection), "City Services" },
                 { m_Setting.GetOptionTabLocaleID(Setting.OtherSection), "Other" },
+                { m_Setting.GetOptionTabLocaleID(Setting.SignatureUnlockSection), "Signature Unlocks" },
 
                 { m_Setting.GetOptionGroupLocaleID(Setting.SchoolGroup), "School" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.ResidentialGroup), "Residential" },
@@ -710,6 +805,11 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionGroupLocaleID(Setting.FindPropertyGroup), "Find Property System Settings" },
                 { m_Setting.GetOptionTabLocaleID(Setting.AssetPacksSection), "Asset Packs" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.AssetPacksSettingsGroup), "Asset Packs Settings" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.SignatureUnlockResidentialGroup), "Residential" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.SignatureUnlockMixedGroup), "Mixed" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.SignatureUnlockCommercialGroup), "Commercial" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.SignatureUnlockOfficeGroup), "Office" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.SignatureUnlockIndustrialGroup), "Industrial" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.LoadButton)), "Load" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.LoadButton)), $"Load Asset Pack Settings" },
 
@@ -883,6 +983,34 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetEnumValueLocaleID(ResetType.FindNewHome), "Find New Home" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.hh_spawn_speed_rate)), $"Household Spawn Speed Factor" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.hh_spawn_speed_rate)), "This factor affects the speed of houshold spawning. Lower values means more households. Vanilla value is 0.5 (Default: 0.5)" },
+
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_residential_low_requirement_scale)), "Low Density Requirement Scale" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_residential_low_requirement_scale)), "Scales signature building zone-built requirements for low density residential zones. 100% = vanilla, 50% = half." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_residential_medium_requirement_scale)), "Medium Density Requirement Scale" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_residential_medium_requirement_scale)), "Scales signature building zone-built requirements for medium density residential zones. 100% = vanilla, 50% = half." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_residential_high_requirement_scale)), "High Density Requirement Scale" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_residential_high_requirement_scale)), "Scales signature building zone-built requirements for high density residential zones. 100% = vanilla, 50% = half." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_mixed_low_requirement_scale)), "Low Density Requirement Scale" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_mixed_low_requirement_scale)), "Scales signature building zone-built requirements for low density mixed-use zones. 100% = vanilla, 50% = half." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_mixed_medium_requirement_scale)), "Medium Density Requirement Scale" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_mixed_medium_requirement_scale)), "Scales signature building zone-built requirements for medium density mixed-use zones. 100% = vanilla, 50% = half." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_mixed_high_requirement_scale)), "High Density Requirement Scale" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_mixed_high_requirement_scale)), "Scales signature building zone-built requirements for high density mixed-use zones. 100% = vanilla, 50% = half." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_commercial_low_requirement_scale)), "Low Density Requirement Scale" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_commercial_low_requirement_scale)), "Scales signature building zone-built requirements for low density commercial zones. 100% = vanilla, 50% = half." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_commercial_medium_requirement_scale)), "Medium Density Requirement Scale" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_commercial_medium_requirement_scale)), "Scales signature building zone-built requirements for medium density commercial zones. 100% = vanilla, 50% = half." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_commercial_high_requirement_scale)), "High Density Requirement Scale" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_commercial_high_requirement_scale)), "Scales signature building zone-built requirements for high density commercial zones. 100% = vanilla, 50% = half." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_office_low_requirement_scale)), "Low Density Requirement Scale" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_office_low_requirement_scale)), "Scales signature building zone-built requirements for low density office zones. 100% = vanilla, 50% = half." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_office_medium_requirement_scale)), "Medium Density Requirement Scale" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_office_medium_requirement_scale)), "Scales signature building zone-built requirements for medium density office zones. 100% = vanilla, 50% = half." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_office_high_requirement_scale)), "High Density Requirement Scale" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_office_high_requirement_scale)), "Scales signature building zone-built requirements for high density office zones. 100% = vanilla, 50% = half." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_industrial_requirement_scale)), "Requirement Scale" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_industrial_requirement_scale)), "Scales signature building zone-built requirements for industrial zones. 100% = vanilla, 50% = half." },
+
                 // --- Asset pack multipliers: Low density ---
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.pack_low)), "Low Density" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.pack_low)), "Multiplier for households of low-density asset pack buildings. 1.00 = default, values less than 1 reduce, values more than 1 increase." },
@@ -957,6 +1085,7 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionTabLocaleID(Setting.OfficeSection), "Escritório" },
                 { m_Setting.GetOptionTabLocaleID(Setting.CityServicesSection), "Serviços Públicos" },
                 { m_Setting.GetOptionTabLocaleID(Setting.OtherSection), "Outros" },
+                { m_Setting.GetOptionTabLocaleID(Setting.SignatureUnlockSection), "Desbloqueios Especiais" },
 
                 { m_Setting.GetOptionGroupLocaleID(Setting.SchoolGroup), "Escola" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.ResidentialGroup), "Residência" },
@@ -979,6 +1108,11 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetOptionGroupLocaleID(Setting.AirportGroup), "Aeroportos" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.PostOfficeGroup), "Correios" },
                 { m_Setting.GetOptionGroupLocaleID(Setting.FindPropertyGroup), "Configurações do sistema de encontrar propriedade" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.SignatureUnlockResidentialGroup), "Residencial" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.SignatureUnlockMixedGroup), "Misto" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.SignatureUnlockCommercialGroup), "Comercial" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.SignatureUnlockOfficeGroup), "Escritório" },
+                { m_Setting.GetOptionGroupLocaleID(Setting.SignatureUnlockIndustrialGroup), "Industrial" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.LoadButton)), "Carregar" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.LoadButton)), $"Carregar configurações de pacotes de assets" },
@@ -1149,6 +1283,33 @@ namespace RealisticWorkplacesAndHouseholds
                 { m_Setting.GetEnumValueLocaleID(ResetType.FindNewHome), "Encontrar um novo lar" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.hh_spawn_speed_rate)), $"Fator de Velocidade de Geração de Famílias" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.hh_spawn_speed_rate)), "Este fator afeta a velocidade de geração de famílias. Valores menores significam mais famílias. O valor padrão é 0.5 (Padrão: 0.5)" },
+
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_residential_low_requirement_scale)), "Escala de requisitos de baixa densidade" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_residential_low_requirement_scale)), "Escala requisitos de zonas construídas para edifícios especiais em zonas residenciais de baixa densidade. 100% = padrão, 50% = metade." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_residential_medium_requirement_scale)), "Escala de requisitos de média densidade" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_residential_medium_requirement_scale)), "Escala requisitos de zonas construídas para edifícios especiais em zonas residenciais de média densidade. 100% = padrão, 50% = metade." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_residential_high_requirement_scale)), "Escala de requisitos de alta densidade" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_residential_high_requirement_scale)), "Escala requisitos de zonas construídas para edifícios especiais em zonas residenciais de alta densidade. 100% = padrão, 50% = metade." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_mixed_low_requirement_scale)), "Escala de requisitos de baixa densidade" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_mixed_low_requirement_scale)), "Escala requisitos de zonas construídas para edifícios especiais em zonas mistas de baixa densidade. 100% = padrão, 50% = metade." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_mixed_medium_requirement_scale)), "Escala de requisitos de média densidade" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_mixed_medium_requirement_scale)), "Escala requisitos de zonas construídas para edifícios especiais em zonas mistas de média densidade. 100% = padrão, 50% = metade." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_mixed_high_requirement_scale)), "Escala de requisitos de alta densidade" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_mixed_high_requirement_scale)), "Escala requisitos de zonas construídas para edifícios especiais em zonas mistas de alta densidade. 100% = padrão, 50% = metade." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_commercial_low_requirement_scale)), "Escala de requisitos de baixa densidade" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_commercial_low_requirement_scale)), "Escala requisitos de zonas construídas para edifícios especiais em zonas comerciais de baixa densidade. 100% = padrão, 50% = metade." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_commercial_medium_requirement_scale)), "Escala de requisitos de média densidade" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_commercial_medium_requirement_scale)), "Escala requisitos de zonas construídas para edifícios especiais em zonas comerciais de média densidade. 100% = padrão, 50% = metade." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_commercial_high_requirement_scale)), "Escala de requisitos de alta densidade" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_commercial_high_requirement_scale)), "Escala requisitos de zonas construídas para edifícios especiais em zonas comerciais de alta densidade. 100% = padrão, 50% = metade." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_office_low_requirement_scale)), "Escala de requisitos de baixa densidade" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_office_low_requirement_scale)), "Escala requisitos de zonas construídas para edifícios especiais em zonas de escritórios de baixa densidade. 100% = padrão, 50% = metade." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_office_medium_requirement_scale)), "Escala de requisitos de média densidade" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_office_medium_requirement_scale)), "Escala requisitos de zonas construídas para edifícios especiais em zonas de escritórios de média densidade. 100% = padrão, 50% = metade." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_office_high_requirement_scale)), "Escala de requisitos de alta densidade" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_office_high_requirement_scale)), "Escala requisitos de zonas construídas para edifícios especiais em zonas de escritórios de alta densidade. 100% = padrão, 50% = metade." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.signature_industrial_requirement_scale)), "Escala de requisitos" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.signature_industrial_requirement_scale)), "Escala requisitos de zonas construídas para edifícios especiais em zonas industriais. 100% = padrão, 50% = metade." },
 
 
                 //{ m_Setting.GetOptionLabelLocaleID(nameof(Setting.SeekNewHouseholds)), "Seek New Households" },

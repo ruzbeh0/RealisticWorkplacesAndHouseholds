@@ -19,6 +19,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
     [Preserve]
     public partial class ABCCompatibilitySystem : GameSystemBase
     {
+        private const int kCompatibilityRefreshInterval = 4096;
+
         private CitySystem _citySystem;
         private EntityQuery _taggedPrefabsQuery;
         private EntityQuery _taggedHouseholdPrefabsQuery;
@@ -36,9 +38,15 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         private FieldInfo _enabledField;
         private FieldInfo _modifiedField;
         private FieldInfo _modEntityField;
+        private MethodInfo _hasModifiedPrefabBufferMethod;
+        private MethodInfo _getModifiedPrefabBufferMethod;
+        private PropertyInfo _bufferLengthProperty;
+        private PropertyInfo _bufferItemProperty;
 
         private int _workplaceMaxWorkersEnumValue;
         private int _residentialPropertiesEnumValue;
+        private int _lastAppliedSignature;
+        private bool _tagsApplied;
 
         protected override void OnCreate()
         {
@@ -78,6 +86,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
             _abcDetected = IsABCInstalled();
             _reflectionReady = false;
+            if (!_abcDetected)
+                Enabled = false;
         }
 
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
@@ -86,18 +96,32 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
             if (mode == GameMode.Game)
             {
+                if (!_abcDetected)
+                    return;
+
                 TryInitReflection();
-                RefreshTags();
+                RefreshTagsIfChanged(true);
             }
         }
 
         protected override void OnUpdate()
         {
+            if (!_abcDetected)
+            {
+                Enabled = false;
+                return;
+            }
+
             if (!_reflectionReady)
                 TryInitReflection();
 
             if (_reflectionReady)
-                RefreshTags();
+                RefreshTagsIfChanged(false);
+        }
+
+        public override int GetUpdateInterval(SystemUpdatePhase phase)
+        {
+            return kCompatibilityRefreshInterval;
         }
 
         private bool IsABCInstalled()
@@ -161,6 +185,17 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 if (_valueTypeField == null || _enabledField == null || _modifiedField == null || _modEntityField == null)
                     return;
 
+                _hasModifiedPrefabBufferMethod = typeof(EntityManager)
+                    .GetMethod(nameof(EntityManager.HasBuffer), BindingFlags.Public | BindingFlags.Instance)?
+                    .MakeGenericMethod(_modifiedPrefabType);
+
+                _getModifiedPrefabBufferMethod = typeof(EntityManager)
+                    .GetMethod(nameof(EntityManager.GetBuffer), new[] { typeof(Entity), typeof(bool) })?
+                    .MakeGenericMethod(_modifiedPrefabType);
+
+                if (_hasModifiedPrefabBufferMethod == null || _getModifiedPrefabBufferMethod == null)
+                    return;
+
                 object workplaceEnumValue = Enum.Parse(_updateValueTypeEnum, "WorkplaceData_MaxWorkers");
                 _workplaceMaxWorkersEnumValue = Convert.ToInt32(workplaceEnumValue);
 
@@ -181,46 +216,126 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             }
         }
 
-        private void RefreshTags()
+        private void RefreshTagsIfChanged(bool force)
+        {
+            int signature = GetABCModificationSignature();
+            if (!force && _tagsApplied && signature == _lastAppliedSignature)
+                return;
+
+            if (RefreshTags())
+            {
+                _lastAppliedSignature = signature;
+                _tagsApplied = true;
+            }
+        }
+
+        private int GetABCModificationSignature()
+        {
+            try
+            {
+                if (!TryGetModifiedPrefabBuffer(out object reflectedBuffer, out int reflectedLength, out PropertyInfo itemProperty))
+                    return 0;
+
+                unchecked
+                {
+                    int hash = 17;
+                    int relevantCount = 0;
+
+                    for (int bufferIndex = 0; bufferIndex < reflectedLength; bufferIndex++)
+                    {
+                        object reflectedEntry = itemProperty.GetValue(reflectedBuffer, new object[] { bufferIndex });
+                        if (reflectedEntry == null)
+                            continue;
+
+                        byte reflectedEnabledRaw = Convert.ToByte(_enabledField.GetValue(reflectedEntry));
+                        if (reflectedEnabledRaw == 0)
+                            continue;
+
+                        int reflectedValueType = Convert.ToInt32(_valueTypeField.GetValue(reflectedEntry));
+                        if (!IsRelevantValueType(reflectedValueType))
+                            continue;
+
+                        Entity reflectedModEntity = Entity.Null;
+                        object reflectedModEntityObj = _modEntityField.GetValue(reflectedEntry);
+                        if (reflectedModEntityObj is Entity entity)
+                            reflectedModEntity = entity;
+
+                        long reflectedModified = Convert.ToInt64(_modifiedField.GetValue(reflectedEntry));
+                        relevantCount++;
+                        hash = hash * 31 + reflectedValueType;
+                        hash = hash * 31 + reflectedModEntity.Index;
+                        hash = hash * 31 + reflectedModEntity.Version;
+                        hash = hash * 31 + reflectedModified.GetHashCode();
+                    }
+
+                    return hash * 31 + relevantCount;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (!_reflectionFailedLogged)
+                {
+                    Mod.log.Warn($"[RWH] Failed while checking ABC compatibility state: {ex}");
+                    _reflectionFailedLogged = true;
+                }
+
+                return _lastAppliedSignature;
+            }
+        }
+
+        private bool TryGetModifiedPrefabBuffer(out object reflectedBuffer, out int reflectedLength, out PropertyInfo itemProperty)
+        {
+            reflectedBuffer = null;
+            reflectedLength = 0;
+            itemProperty = null;
+
+            Entity cityEntity = _citySystem.City;
+            if (cityEntity == Entity.Null || !_reflectionReady || _modifiedPrefabType == null)
+                return false;
+
+            if (_hasModifiedPrefabBufferMethod == null || _getModifiedPrefabBufferMethod == null)
+                return false;
+
+            bool cityHasBuffer = (bool)_hasModifiedPrefabBufferMethod.Invoke(EntityManager, new object[] { cityEntity });
+            if (!cityHasBuffer)
+                return false;
+
+            reflectedBuffer = _getModifiedPrefabBufferMethod.Invoke(EntityManager, new object[] { cityEntity, true });
+            if (reflectedBuffer == null)
+                return false;
+
+            Type reflectedBufferType = reflectedBuffer.GetType();
+            if (_bufferLengthProperty == null || _bufferItemProperty == null)
+            {
+                _bufferLengthProperty = reflectedBufferType.GetProperty("Length", BindingFlags.Public | BindingFlags.Instance);
+                _bufferItemProperty = reflectedBufferType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance);
+            }
+
+            if (_bufferLengthProperty == null || _bufferItemProperty == null)
+                return false;
+
+            reflectedLength = (int)_bufferLengthProperty.GetValue(reflectedBuffer);
+            itemProperty = _bufferItemProperty;
+            return true;
+        }
+
+        private bool IsRelevantValueType(int reflectedValueType)
+        {
+            return reflectedValueType == _workplaceMaxWorkersEnumValue ||
+                   reflectedValueType == _residentialPropertiesEnumValue;
+        }
+
+        private bool RefreshTags()
         {
             ClearExistingTags();
 
-            Entity cityEntity = _citySystem.City;
-            if (cityEntity == Entity.Null)
-                return;
-
             if (!_reflectionReady || _modifiedPrefabType == null)
-                return;
+                return true;
 
             try
             {
-                MethodInfo hasBufferMethod = typeof(EntityManager)
-                    .GetMethod(nameof(EntityManager.HasBuffer), BindingFlags.Public | BindingFlags.Instance)?
-                    .MakeGenericMethod(_modifiedPrefabType);
-
-                MethodInfo getBufferMethod = typeof(EntityManager)
-                    .GetMethod(nameof(EntityManager.GetBuffer), new[] { typeof(Entity), typeof(bool) })?
-                    .MakeGenericMethod(_modifiedPrefabType);
-
-                if (hasBufferMethod == null || getBufferMethod == null)
-                    return;
-
-                bool cityHasBuffer = (bool)hasBufferMethod.Invoke(EntityManager, new object[] { cityEntity });
-                if (!cityHasBuffer)
-                    return;
-
-                object reflectedBuffer = getBufferMethod.Invoke(EntityManager, new object[] { cityEntity, true });
-                if (reflectedBuffer == null)
-                    return;
-
-                Type reflectedBufferType = reflectedBuffer.GetType();
-                PropertyInfo lengthProperty = reflectedBufferType.GetProperty("Length", BindingFlags.Public | BindingFlags.Instance);
-                PropertyInfo itemProperty = reflectedBufferType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance);
-
-                if (lengthProperty == null || itemProperty == null)
-                    return;
-
-                int reflectedLength = (int)lengthProperty.GetValue(reflectedBuffer);
+                if (!TryGetModifiedPrefabBuffer(out object reflectedBuffer, out int reflectedLength, out PropertyInfo itemProperty))
+                    return true;
 
                 for (int bufferIndex = 0; bufferIndex < reflectedLength; bufferIndex++)
                 {
@@ -233,8 +348,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                         continue;
 
                     int reflectedValueType = Convert.ToInt32(_valueTypeField.GetValue(reflectedEntry));
-                    if (reflectedValueType != _workplaceMaxWorkersEnumValue &&
-                        reflectedValueType != _residentialPropertiesEnumValue)
+                    if (!IsRelevantValueType(reflectedValueType))
                         continue;
 
                     object reflectedModEntityObj = _modEntityField.GetValue(reflectedEntry);
@@ -266,6 +380,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                             EntityManager.AddComponent<ABCHouseholdOverride>(targetPrefab);
                     }
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -274,6 +390,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     Mod.log.Warn($"[RWH] Failed while refreshing ABC compatibility tags: {ex}");
                     _reflectionFailedLogged = true;
                 }
+
+                return false;
             }
         }
 
