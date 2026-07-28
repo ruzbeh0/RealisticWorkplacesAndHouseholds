@@ -1,9 +1,11 @@
 ﻿
 using Game.Common;
+using Game.City;
 using Game.Buildings;
 using Game.Companies;
 using Game.Objects;
 using Game.Prefabs;
+using Game.Simulation;
 using Game.Tools;
 using RealisticWorkplacesAndHouseholds.Components;
 using System;
@@ -35,6 +37,10 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     None =
                     [
                         ComponentType.Exclude<Game.Objects.OutsideConnection>(),
+                        ComponentType.Exclude<CityServiceUpkeep>(),
+                        ComponentType.Exclude<Game.Buildings.ResourceConsumer>(),
+                        ComponentType.Exclude<Game.Buildings.Hospital>(),
+                        ComponentType.Exclude<ServiceDispatch>(),
                         ComponentType.Exclude<Deleted>(),
                         ComponentType.Exclude<Temp>()
                     ],
@@ -68,6 +74,14 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly] public ComponentLookup<CargoTransportStationData> CargoTransportStationDataLookup;
         [ReadOnly] public ComponentLookup<MaintenanceDepotData> MaintenanceDepotDataLookup;
         [ReadOnly] public ComponentLookup<TransportStationData> TransportStationDataLookup;
+        [ReadOnly] public ComponentLookup<CityServiceUpkeep> CityServiceUpkeepLookup;
+        [ReadOnly] public ComponentLookup<Game.Buildings.ResourceConsumer> ResourceConsumerLookup;
+        [ReadOnly] public ComponentLookup<Game.Buildings.Hospital> HospitalLookup;
+        [ReadOnly] public BufferLookup<ServiceDispatch> ServiceDispatchLookup;
+        [ReadOnly] public ComponentLookup<ServiceObjectData> ServiceObjectDataLookup;
+        [ReadOnly] public BufferLookup<ServiceUpkeepData> ServiceUpkeepDataLookup;
+        [ReadOnly] public ComponentLookup<ResourceConsumerData> ResourceConsumerDataLookup;
+        [ReadOnly] public ComponentLookup<HospitalData> HospitalDataLookup;
         [ReadOnly] public ComponentLookup<ABCWorkplaceOverride> ABCWorkplaceOverrideLookup;
 
         [ReadOnly] public float industry_avg_floor_height;
@@ -95,7 +109,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 var storageEntity = entities[i];
                 var propertyEntity = hasPropertyRenter ? propertyRenters[i].m_Property : storageEntity;
 
-                if (IsTransportServiceTarget(storageEntity) || IsTransportServiceTarget(propertyEntity))
+                if (IsServiceOrTransportTarget(storageEntity) || IsServiceOrTransportTarget(propertyEntity))
                     continue;
 
                 if (HasABCWorkplaceOverride(storageEntity) || HasABCWorkplaceOverride(propertyEntity))
@@ -130,10 +144,18 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             return ABCWorkplaceOverrideLookup.HasComponent(prefabRef.m_Prefab);
         }
 
-        private bool IsTransportServiceTarget(Entity entity)
+        private bool IsServiceOrTransportTarget(Entity entity)
         {
             if (entity == Entity.Null)
                 return false;
+
+            if (CityServiceUpkeepLookup.HasComponent(entity) ||
+                ResourceConsumerLookup.HasComponent(entity) ||
+                HospitalLookup.HasComponent(entity) ||
+                ServiceDispatchLookup.HasBuffer(entity))
+            {
+                return true;
+            }
 
             if (TransportStationLookup.HasComponent(entity) ||
                 CargoTransportStationLookup.HasComponent(entity) ||
@@ -148,7 +170,11 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
             Entity prefab = prefabRef.m_Prefab;
             return prefab != Entity.Null &&
-                (TransportStationDataLookup.HasComponent(prefab) ||
+                (ServiceObjectDataLookup.HasComponent(prefab) ||
+                 ServiceUpkeepDataLookup.HasBuffer(prefab) ||
+                 ResourceConsumerDataLookup.HasComponent(prefab) ||
+                 HospitalDataLookup.HasComponent(prefab) ||
+                 TransportStationDataLookup.HasComponent(prefab) ||
                  CargoTransportStationDataLookup.HasComponent(prefab) ||
                  TransportDepotDataLookup.HasComponent(prefab) ||
                  MaintenanceDepotDataLookup.HasComponent(prefab));

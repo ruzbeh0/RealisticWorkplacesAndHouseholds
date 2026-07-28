@@ -1,8 +1,10 @@
 ﻿using Game;
 using Game.Buildings;
+using Game.City;
 using Game.Common;
 using Game.Companies;
 using Game.Prefabs;
+using Game.Simulation;
 using Game.Tools;
 using RealisticWorkplacesAndHouseholds.Components;
 using RealisticWorkplacesAndHouseholds.Jobs;
@@ -45,6 +47,10 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 None = new[]
                 {
                     ComponentType.Exclude<Game.Objects.OutsideConnection>(),
+                    ComponentType.Exclude<CityServiceUpkeep>(),
+                    ComponentType.Exclude<Game.Buildings.ResourceConsumer>(),
+                    ComponentType.Exclude<Game.Buildings.Hospital>(),
+                    ComponentType.Exclude<ServiceDispatch>(),
                     ComponentType.Exclude<Deleted>(),
                     ComponentType.Exclude<Temp>()
                 }
@@ -116,6 +122,14 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 CargoTransportStationDataLookup = SystemAPI.GetComponentLookup<CargoTransportStationData>(true),
                 MaintenanceDepotDataLookup = SystemAPI.GetComponentLookup<MaintenanceDepotData>(true),
                 TransportStationDataLookup = SystemAPI.GetComponentLookup<TransportStationData>(true),
+                CityServiceUpkeepLookup = SystemAPI.GetComponentLookup<CityServiceUpkeep>(true),
+                ResourceConsumerLookup = SystemAPI.GetComponentLookup<Game.Buildings.ResourceConsumer>(true),
+                HospitalLookup = SystemAPI.GetComponentLookup<Game.Buildings.Hospital>(true),
+                ServiceDispatchLookup = SystemAPI.GetBufferLookup<ServiceDispatch>(true),
+                ServiceObjectDataLookup = SystemAPI.GetComponentLookup<ServiceObjectData>(true),
+                ServiceUpkeepDataLookup = SystemAPI.GetBufferLookup<ServiceUpkeepData>(true),
+                ResourceConsumerDataLookup = SystemAPI.GetComponentLookup<ResourceConsumerData>(true),
+                HospitalDataLookup = SystemAPI.GetComponentLookup<HospitalData>(true),
                 ABCWorkplaceOverrideLookup = SystemAPI.GetComponentLookup<ABCWorkplaceOverride>(true),
                 industry_avg_floor_height = Mod.m_Setting.industry_avg_floor_height,
                 warehouse_sqm_per_worker = Mod.m_Setting.warehouse_sqm_per_worker,
@@ -143,7 +157,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     propertyEntity = propertyRenter.m_Property;
                 }
 
-                if (IsTransportServiceTarget(storageEntity) || IsTransportServiceTarget(propertyEntity))
+                if (IsServiceOrTransportTarget(storageEntity) || IsServiceOrTransportTarget(propertyEntity))
                     continue;
 
                 if (!companyDataLookup.HasComponent(storageEntity) && propertyEntity != Entity.Null)
@@ -158,10 +172,18 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             storageEntities.Dispose();
         }
 
-        private bool IsTransportServiceTarget(Entity entity)
+        private bool IsServiceOrTransportTarget(Entity entity)
         {
             if (entity == Entity.Null)
                 return false;
+
+            if (EntityManager.HasComponent<CityServiceUpkeep>(entity) ||
+                EntityManager.HasComponent<Game.Buildings.ResourceConsumer>(entity) ||
+                EntityManager.HasComponent<Game.Buildings.Hospital>(entity) ||
+                EntityManager.HasBuffer<ServiceDispatch>(entity))
+            {
+                return true;
+            }
 
             if (EntityManager.HasComponent<Game.Buildings.TransportStation>(entity) ||
                 EntityManager.HasComponent<Game.Buildings.CargoTransportStation>(entity) ||
@@ -176,7 +198,11 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
             Entity prefab = EntityManager.GetComponentData<PrefabRef>(entity).m_Prefab;
             return prefab != Entity.Null &&
-                (EntityManager.HasComponent<TransportStationData>(prefab) ||
+                (EntityManager.HasComponent<ServiceObjectData>(prefab) ||
+                 EntityManager.HasBuffer<ServiceUpkeepData>(prefab) ||
+                 EntityManager.HasComponent<ResourceConsumerData>(prefab) ||
+                 EntityManager.HasComponent<HospitalData>(prefab) ||
+                 EntityManager.HasComponent<TransportStationData>(prefab) ||
                  EntityManager.HasComponent<CargoTransportStationData>(prefab) ||
                  EntityManager.HasComponent<TransportDepotData>(prefab) ||
                  EntityManager.HasComponent<MaintenanceDepotData>(prefab));
@@ -186,6 +212,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         {
             if (entity == Entity.Null ||
                 !EntityManager.HasComponent<PrefabRef>(entity) ||
+                IsServiceOrTransportTarget(entity) ||
                 EntityManager.HasComponent<Deleted>(entity) ||
                 EntityManager.HasComponent<Temp>(entity))
             {

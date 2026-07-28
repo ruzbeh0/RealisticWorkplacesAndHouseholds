@@ -28,6 +28,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         EntityQuery m_EconomyParamQuery;
         EntityQuery m_BuildingsQuery;
         EntityArchetype m_RentEventArchetype;
+        private const int kResidentialPropertyChecksPerDay = 16;
+        private const int kMaxEvictionsPerCheck = 100;
         private const int kMaxEvictionsPerBuildingPerCheck = 2;
         Unity.Mathematics.Random random;
         private bool m_WaitForInitialHouseholdReset = false;
@@ -89,7 +91,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         public override int GetUpdateInterval(SystemUpdatePhase phase)
         {
             // One day (or month) in-game is '262144' ticks
-            return 262144 / 8;
+            return 262144 / kResidentialPropertyChecksPerDay;
         }
 
         private void CheckBuildings(bool allowEvictions)
@@ -117,12 +119,14 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 m_RentEventArchetype = m_RentEventArchetype,
                 random = random,
                 allowEvictions = allowEvictions,
+                remainingEvictions = allowEvictions ? kMaxEvictionsPerCheck : 0,
                 maxEvictionsPerBuilding = kMaxEvictionsPerBuildingPerCheck,
                 m_CitizenBufs = SystemAPI.GetBufferLookup<HouseholdCitizen>(true),
                 m_HealthProblems = SystemAPI.GetComponentLookup<HealthProblem>(true)
 
             };
-            this.Dependency = job.ScheduleParallel(m_BuildingsQuery, this.Dependency);
+            // Sequential scheduling keeps the citywide eviction budget deterministic.
+            this.Dependency = job.Schedule(m_BuildingsQuery, this.Dependency);
             m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
         }
     }

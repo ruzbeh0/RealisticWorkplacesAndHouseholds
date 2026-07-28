@@ -33,6 +33,10 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 },
                 None = new[]
                 {
+                    ComponentType.Exclude<ServiceObjectData>(),
+                    ComponentType.Exclude<ServiceUpkeepData>(),
+                    ComponentType.Exclude<ResourceConsumerData>(),
+                    ComponentType.Exclude<HospitalData>(),
                     ComponentType.Exclude<Deleted>(),
                     ComponentType.Exclude<Temp>(),
                 }

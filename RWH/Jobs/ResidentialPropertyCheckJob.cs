@@ -51,6 +51,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public BufferLookup<HouseholdCitizen> m_CitizenBufs;
         public ComponentLookup<HealthProblem> m_HealthProblems;
         public bool allowEvictions;
+        public int remainingEvictions;
         public int maxEvictionsPerBuilding;
 
 
@@ -109,11 +110,20 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 }
                 else if (allowEvictions && householdsCount > propertyData.m_ResidentialProperties)
                 {
-                    int removed = RemoveHouseholds(
+                    int removalLimit = Math.Min(
                         Math.Min(householdsCount - propertyData.m_ResidentialProperties, Math.Max(1, maxEvictionsPerBuilding)),
+                        remainingEvictions);
+
+                    if (removalLimit <= 0)
+                        continue;
+
+                    int removed = RemoveHouseholds(
+                        removalLimit,
                         entity,
                         renters,
                         unfilteredChunkIndex);
+
+                    remainingEvictions = Math.Max(0, remainingEvictions - removed);
 
                     if (removed > 0 && resetType == ResetType.FindNewHome)
                     {

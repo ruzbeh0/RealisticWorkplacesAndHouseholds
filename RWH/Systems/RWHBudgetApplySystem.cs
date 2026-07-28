@@ -4,7 +4,6 @@ using Game.City;
 using Unity.Mathematics;
 using Game.Simulation;
 using System.Runtime.CompilerServices;
-using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -70,7 +69,8 @@ public partial class RWHBudgetApplySystem : GameSystemBase
     {
     }
 
-    [BurstCompile]
+    // Keep this managed so Harmony budget patches affect actual cash flow,
+    // matching the values shown by the budget UI.
     private struct BudgetApplyJob : IJob
     {
         public NativeArray<int> m_Income;
