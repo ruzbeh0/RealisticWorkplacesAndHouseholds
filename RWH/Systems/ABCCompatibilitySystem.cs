@@ -86,8 +86,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
             _abcDetected = IsABCInstalled();
             _reflectionReady = false;
-            if (!_abcDetected)
-                Enabled = false;
         }
 
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
@@ -96,7 +94,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
             if (mode == GameMode.Game)
             {
-                if (!_abcDetected)
+                if (!EnsureABCDetected())
                     return;
 
                 TryInitReflection();
@@ -106,11 +104,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
         protected override void OnUpdate()
         {
-            if (!_abcDetected)
-            {
-                Enabled = false;
+            if (!EnsureABCDetected())
                 return;
-            }
 
             if (!_reflectionReady)
                 TryInitReflection();
@@ -135,6 +130,18 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             }
 
             return TryResolveType("AdvancedBuildingControl.Components.ModifiedPrefab") != null;
+        }
+
+        private bool EnsureABCDetected()
+        {
+            if (_abcDetected)
+                return true;
+
+            _abcDetected = IsABCInstalled();
+            if (_abcDetected)
+                Mod.log.Info("[RWH] Advanced Building Control detected; starting compatibility tracking.");
+
+            return _abcDetected;
         }
 
         private static Type TryResolveType(string fullName)

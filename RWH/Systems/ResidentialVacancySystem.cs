@@ -57,6 +57,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
             HouseholdsCount = HousehodlsQuery.CalculateEntityCount();
             int3 freeProperties = this.m_ResidentialPropertyData.m_FreeProperties;
+            int3 totalProperties = this.m_ResidentialPropertyData.m_TotalProperties;
             FreeHomes = freeProperties.x + freeProperties.y + freeProperties.z;
             TotalHomes = HouseholdsCount + this.FreeHomes;
 
@@ -70,11 +71,15 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             {
                 DemandParameterData data = EntityManager.GetComponentData<DemandParameterData>(tsd);
 
-                data.m_FreeResidentialRequirement = new int3(Math.Max(5,(int)Math.Round(0.1* TotalHomes* freeHomesPct)), Math.Max(60, (int)Math.Round(0.4 * TotalHomes * freeHomesPct)), Math.Max(100, (int)Math.Round(0.5 * TotalHomes * freeHomesPct)));
+                int3 targetFreeHomes = new int3(Math.Max(5,(int)Math.Round(0.1* TotalHomes* freeHomesPct)), Math.Max(60, (int)Math.Round(0.4 * TotalHomes * freeHomesPct)), Math.Max(100, (int)Math.Round(0.5 * TotalHomes * freeHomesPct)));
+                data.m_FreeResidentialProportion = new float3(
+                    totalProperties.x > 0 ? targetFreeHomes.x / (float)totalProperties.x : 0f,
+                    totalProperties.y > 0 ? targetFreeHomes.y / (float)totalProperties.y : 0f,
+                    totalProperties.z > 0 ? targetFreeHomes.z / (float)totalProperties.z : 0f);
 
                 EntityManager.SetComponentData<DemandParameterData>(tsd, data);
 
-                //Mod.log.Info($"freeHomesPct: {freeHomesPct}, freeProperties:{freeProperties}, Free Homes: {FreeHomes}, Total Homes: {TotalHomes}, vacancy_rate: {vacancy_rate}, m_FreeResidentialRequirement:{data.m_FreeResidentialRequirement}");
+                //Mod.log.Info($"freeHomesPct: {freeHomesPct}, freeProperties:{freeProperties}, Free Homes: {FreeHomes}, Total Homes: {TotalHomes}, vacancy_rate: {vacancy_rate}, m_FreeResidentialProportion:{data.m_FreeResidentialProportion}");
 
             }
 
