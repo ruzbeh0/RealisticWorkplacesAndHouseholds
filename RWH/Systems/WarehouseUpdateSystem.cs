@@ -8,7 +8,6 @@ using Game.Simulation;
 using Game.Tools;
 using RealisticWorkplacesAndHouseholds.Components;
 using RealisticWorkplacesAndHouseholds.Jobs;
-using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -16,13 +15,11 @@ using UnityEngine.Scripting;
 
 namespace RealisticWorkplacesAndHouseholds.Systems
 {
-    //[BurstCompile]
     public partial class WarehouseUpdateSystem : GameSystemBase
     {
         private EntityQuery m_UpdateWarehouseJobQuery;
-        private EntityQuery m_ResetWarehouseJobQuery;
+        private EntityQuery m_RepairWarehouseQuery;
 
-        private bool m_TriggerInitialWarehouseUpdate = false;
         private EndFrameBarrier m_EndFrameBarrier;
 
         [Preserve]
@@ -30,81 +27,52 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         {
             base.OnCreate();
 
-            m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();   
+            m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 
-            // Query: excludes already updated entities
+            // Keep checking capacities so settings, prefab changes and ABC overrides
+            // take effect without reloading. Initialization uses a narrower query below.
             UpdateWarehouseJobQuery standardQuery = new();
             m_UpdateWarehouseJobQuery = GetEntityQuery(standardQuery.Query);
 
-            // Query: allows all entities (including already updated ones) for reset
-            EntityQueryDesc resetQuery = new()
-            {
-                All = new[]
-                {
-                    ComponentType.ReadOnly<PrefabRef>(),
-                    ComponentType.ReadOnly<Game.Companies.StorageCompany>(),
-                },
-                None = new[]
-                {
-                    ComponentType.Exclude<Game.Objects.OutsideConnection>(),
-                    ComponentType.Exclude<CityServiceUpkeep>(),
-                    ComponentType.Exclude<Game.Buildings.ResourceConsumer>(),
-                    ComponentType.Exclude<Game.Buildings.Hospital>(),
-                    ComponentType.Exclude<ServiceDispatch>(),
-                    ComponentType.Exclude<Deleted>(),
-                    ComponentType.Exclude<Temp>()
-                }
-            };
-            m_ResetWarehouseJobQuery = GetEntityQuery(resetQuery);
+            // OR query: fully initialized companies never enter the synchronous pass.
+            // Non-company renters also need their property target checked: another
+            // entity's components cannot be tested by a storage-entity query.
+            var propertyTargets = CreateRepairQuery(ComponentType.Exclude<CompanyData>());
+            System.Array.Resize(ref propertyTargets.All, propertyTargets.All.Length + 1);
+            propertyTargets.All[propertyTargets.All.Length - 1] = ComponentType.ReadOnly<PropertyRenter>();
+            m_RepairWarehouseQuery = GetEntityQuery(
+                CreateRepairQuery(ComponentType.Exclude<WorkProvider>()),
+                CreateRepairQuery(ComponentType.Exclude<Employee>()),
+                CreateRepairQuery(ComponentType.Exclude<RealisticWorkplaceData>()),
+                propertyTargets);
 
-            this.RequireForUpdate(m_ResetWarehouseJobQuery);
-        }
-
-        protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
-        {
-            base.OnGameLoadingComplete(purpose, mode);
-            m_TriggerInitialWarehouseUpdate = true;
+            RequireForUpdate(m_UpdateWarehouseJobQuery);
         }
 
         [Preserve]
         protected override void OnUpdate()
         {
-            //Mod.log.Info($"OnUpdate, Reset:{m_TriggerInitialWarehouseUpdate}");
-            if (m_TriggerInitialWarehouseUpdate)
-            {
-                UpdateWarehouse(true); // Reset mode
-                m_TriggerInitialWarehouseUpdate = false;
-            }
-            else
-            {
-                UpdateWarehouse(false); // Standard update
-            }
+            UpdateWarehouse();
         }
 
-        private void UpdateWarehouse(bool reset)
+        private static EntityQueryDesc CreateRepairQuery(ComponentType excludedComponent)
         {
-            var ecbSys = m_EndFrameBarrier;
+            // Derive every repair branch from the same service/deletion exclusions
+            // as the capacity query, rather than maintaining a second copy.
+            var query = new UpdateWarehouseJobQuery().Query[0];
+            System.Array.Resize(ref query.None, query.None.Length + 1);
+            query.None[query.None.Length - 1] = excludedComponent;
+            return query;
+        }
 
-            var activeQuery = reset ? m_ResetWarehouseJobQuery : m_UpdateWarehouseJobQuery;
-
-            //Mod.log.Info($"UpdateWarehouse, Reset:{reset}, Entities:{activeQuery.CalculateEntityCount()}");
-
-            if (reset)
-            {
-                activeQuery.ResetFilter(); // include all entities
-            }
-            else
-            {
-                activeQuery.ResetFilter();
-            }
-
+        private void UpdateWarehouse()
+        {
             EnsureWarehouseWorkProviderTargets();
 
             UpdateWarehouseJob updateZonableWarehouse = new UpdateWarehouseJob
             {
                 ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
-                PrefabRefHandle = SystemAPI.GetComponentTypeHandle<PrefabRef>(true),
                 PropertyRenterHandle = SystemAPI.GetComponentTypeHandle<PropertyRenter>(true),
                 CompanyDataLookup = SystemAPI.GetComponentLookup<CompanyData>(true),
                 WorkProviderLookup = SystemAPI.GetComponentLookup<WorkProvider>(true),
@@ -136,31 +104,36 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 global_reduction = Mod.m_Setting.results_reduction / 100f,
             };
 
-            this.Dependency = updateZonableWarehouse.ScheduleParallel(activeQuery, this.Dependency);
+            this.Dependency = updateZonableWarehouse.ScheduleParallel(m_UpdateWarehouseJobQuery, this.Dependency);
             m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
         }
 
         private void EnsureWarehouseWorkProviderTargets()
         {
+            // This query has no change/shared filters. The empty check needs no
+            // dependency completion or entity-array allocation in the common case.
+            if (m_RepairWarehouseQuery.IsEmptyIgnoreFilter)
+                return;
+
+            // Initialization must remain immediate: vanilla WorkProviderSystem runs
+            // before EndFrameBarrier playback, and property targets can be shared.
             Dependency.Complete();
 
-            var storageEntities = m_ResetWarehouseJobQuery.ToEntityArray(Allocator.Temp);
-            var propertyRenterLookup = SystemAPI.GetComponentLookup<PropertyRenter>(true);
-            var companyDataLookup = SystemAPI.GetComponentLookup<CompanyData>(true);
+            using var storageEntities = m_RepairWarehouseQuery.ToEntityArray(Allocator.Temp);
 
             foreach (var storageEntity in storageEntities)
             {
                 Entity targetEntity = storageEntity;
                 Entity propertyEntity = Entity.Null;
-                if (propertyRenterLookup.TryGetComponent(storageEntity, out var propertyRenter))
+                if (EntityManager.HasComponent<PropertyRenter>(storageEntity))
                 {
-                    propertyEntity = propertyRenter.m_Property;
+                    propertyEntity = EntityManager.GetComponentData<PropertyRenter>(storageEntity).m_Property;
                 }
 
                 if (IsServiceOrTransportTarget(storageEntity) || IsServiceOrTransportTarget(propertyEntity))
                     continue;
 
-                if (!companyDataLookup.HasComponent(storageEntity) && propertyEntity != Entity.Null)
+                if (!EntityManager.HasComponent<CompanyData>(storageEntity) && propertyEntity != Entity.Null)
                     targetEntity = propertyEntity;
 
                 EnsureTargetComponents(storageEntity);
@@ -168,8 +141,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 if (targetEntity != storageEntity)
                     EnsureTargetComponents(targetEntity);
             }
-
-            storageEntities.Dispose();
         }
 
         private bool IsServiceOrTransportTarget(Entity entity)
@@ -238,11 +209,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     max_workers = 1
                 });
             }
-        }
-
-        protected override void OnDestroy()
-        {
-            base.OnDestroy();
         }
     }
 }

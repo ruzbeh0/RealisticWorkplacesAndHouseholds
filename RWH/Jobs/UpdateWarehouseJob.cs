@@ -55,7 +55,6 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public EntityTypeHandle EntityTypeHandle;
         public EntityCommandBuffer.ParallelWriter ecb;
 
-        [ReadOnly] public ComponentTypeHandle<PrefabRef> PrefabRefHandle;
         [ReadOnly] public ComponentTypeHandle<PropertyRenter> PropertyRenterHandle;
 
         [ReadOnly] public ComponentLookup<CompanyData> CompanyDataLookup;
@@ -104,6 +103,11 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 ? chunk.GetNativeArray(ref PropertyRenterHandle)
                 : default;
 
+            // Reuse consecutive prefab calculations within this chunk only. Nothing
+            // survives Execute, so settings, meshes and footprint changes remain live.
+            Entity lastBuildingPrefab = Entity.Null;
+            int lastMaxWorkers = 1;
+
             for (int i = 0; i < entities.Length; i++)
             {
                 var storageEntity = entities[i];
@@ -115,7 +119,17 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 if (HasABCWorkplaceOverride(storageEntity) || HasABCWorkplaceOverride(propertyEntity))
                     continue;
 
-                int maxWorkers = CalculateWarehouseWorkers(propertyEntity);
+                Entity buildingPrefab = Entity.Null;
+                if (propertyEntity != Entity.Null && PrefabRefLookup.TryGetComponent(propertyEntity, out var propertyPrefabRef))
+                    buildingPrefab = propertyPrefabRef.m_Prefab;
+
+                if (buildingPrefab != lastBuildingPrefab)
+                {
+                    lastMaxWorkers = CalculateWarehouseWorkers(buildingPrefab);
+                    lastBuildingPrefab = buildingPrefab;
+                }
+
+                int maxWorkers = lastMaxWorkers;
                 Entity targetEntity = GetWorkProviderTarget(storageEntity, propertyEntity);
 
                 ApplyWarehouseWorkplaceData(storageEntity, maxWorkers, unfilteredChunkIndex);
@@ -182,15 +196,20 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
         private void ApplyWarehouseWorkplaceData(Entity entity, int maxWorkers, int sortKey)
         {
-            WorkProvider workProvider = WorkProviderLookup.HasComponent(entity)
-                ? WorkProviderLookup[entity]
-                : new WorkProvider { m_EfficiencyCooldown = 0 };
-            workProvider.m_MaxWorkers = maxWorkers;
-
-            if (WorkProviderLookup.HasComponent(entity))
-                ecb.SetComponent(sortKey, entity, workProvider);
+            if (WorkProviderLookup.TryGetComponent(entity, out var workProvider))
+            {
+                if (workProvider.m_MaxWorkers != maxWorkers)
+                {
+                    // Preserve the current cooldown and any other provider fields.
+                    workProvider.m_MaxWorkers = maxWorkers;
+                    ecb.SetComponent(sortKey, entity, workProvider);
+                }
+            }
             else
+            {
+                workProvider = new WorkProvider { m_MaxWorkers = maxWorkers, m_EfficiencyCooldown = 0 };
                 ecb.AddComponent(sortKey, entity, workProvider);
+            }
 
             if (!EmployeeLookup.HasBuffer(entity))
                 ecb.AddBuffer<Employee>(sortKey, entity);
@@ -200,18 +219,26 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 max_workers = maxWorkers
             };
 
-            if (RealisticWorkplaceDataLookup.HasComponent(entity))
-                ecb.SetComponent(sortKey, entity, realisticWorkplaceData);
+            if (RealisticWorkplaceDataLookup.TryGetComponent(entity, out var currentWorkplaceData))
+            {
+                // Preserve the old replacement semantics for all serialized fields,
+                // including normalization of version and space_multiplier.
+                if (currentWorkplaceData.max_workers != realisticWorkplaceData.max_workers ||
+                    currentWorkplaceData.version != realisticWorkplaceData.version ||
+                    currentWorkplaceData.space_multiplier != realisticWorkplaceData.space_multiplier)
+                {
+                    ecb.SetComponent(sortKey, entity, realisticWorkplaceData);
+                }
+            }
             else
                 ecb.AddComponent(sortKey, entity, realisticWorkplaceData);
         }
 
-        private int CalculateWarehouseWorkers(Entity propertyEntity)
+        private int CalculateWarehouseWorkers(Entity buildingPrefab)
         {
-            if (propertyEntity == Entity.Null || !PrefabRefLookup.TryGetComponent(propertyEntity, out var buildingPrefabRef))
+            if (buildingPrefab == Entity.Null)
                 return 1;
 
-            Entity buildingPrefab = buildingPrefabRef.m_Prefab;
             if (!PrefabSubMeshesLookup.TryGetBuffer(buildingPrefab, out var subMeshes))
                 return 1;
 
