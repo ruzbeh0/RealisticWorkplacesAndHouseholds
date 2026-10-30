@@ -54,6 +54,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
 
         public EntityTypeHandle EntityTypeHandle;
         const float HALLWAY_BUFFER = 1f; // 1 sq metres of space in front of the unit's door
+        const float ROOF_ALLOWANCE = 1.5f; // metres of mesh height taken by the roof, not a habitable floor
 
         public EntityCommandBuffer.ParallelWriter ecb;
         [ReadOnly]
@@ -205,12 +206,15 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             float width = size.x;
                             float length = size.z;
                             float height = size.y;
+                            // Mesh height includes the pitched roof, which is not a habitable floor
+                            height = Math.Max(height - ROOF_ALLOWANCE, residential_avg_floor_height);
                             int households = property.m_ResidentialProperties;
-                            float lotSize = buildingData.m_LotSize.x * buildingData.m_LotSize.y;
+                            float lotSize = buildingData.m_LotSize.x * buildingData.m_LotSize.y * 64f;
                             float uff = UffLookup.HasComponent(entity) ? UffLookup[entity].Value : 1f;
 
                             int original_households = property.m_ResidentialProperties;
                             bool isLowRent = group.m_AmbienceType == GroupAmbienceType.ResidentialLowRent;
+                            bool isLowDensityZone = group.m_AmbienceType == GroupAmbienceType.ResidentialLow;
                             float residentialApartmentArea = isLowRent ? sqm_per_apartment_lowrent : sqm_per_apartment;
 
                             uff = Math.Max(uff, 0.75f);
@@ -229,15 +233,16 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     height += residential_avg_floor_height;
                                 }
 
+                                uff = Math.Max(uff, 0.8f);
+                                width *= (float)Math.Sqrt(uff);
+                                length *= (float)Math.Sqrt(uff);
+
                                 float rowhome_area = residentialApartmentArea * (1 + hallway_pct);
                                 if (enable_rh_apt_per_floor)
                                 {
                                     rowhome_area = width * length / rowhome_apt_per_floor + HALLWAY_BUFFER;
                                 }
 
-                                uff = Math.Max(uff, 0.8f);
-                                width *= (float)Math.Sqrt(uff);
-                                length *= (float)Math.Sqrt(uff);
                                 households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, rowhome_area, 0, 0);
                                 //households = (int)(households * asset_pack_factor.y);
                             } else
@@ -268,11 +273,11 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                         floorOffset++;
                                     }
 
-                                    //If less than 5 floors, assuming low density
-                                    if (height/ residential_avg_floor_height < 5)
+                                    //Formula is chosen by zone density, not building height
+                                    if (isLowDensityZone)
                                     {
-                                        float lowRiseApartmentArea = isLowRent ? apt_area : sqm_per_apartment_lowdensity * (1 + hallway_pct);
-                                        households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, lowRiseApartmentArea, 0, 0);
+                                        float lowDensityArea = sqm_per_apartment_lowdensity * (1 + hallway_pct);
+                                        households = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, lowDensityArea, 0, 0);
                                         households = (int)(households*asset_pack_factor.x);
                                     } else
                                     {
@@ -281,7 +286,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     }
                                 }
                                 //Set low density households to 1 if they are higher than that and single family option is true
-                                bool isDetachedLowDensity = !isRowHome && (zonedata.m_ZoneFlags & ZoneFlags.SupportNarrow) != ZoneFlags.SupportNarrow;
+                                bool isDetachedLowDensity = isLowDensityZone && !isRowHome && (zonedata.m_ZoneFlags & ZoneFlags.SupportNarrow) != ZoneFlags.SupportNarrow;
                                 bool isSingleFamilyLowDensity = single_family && !isLowRent && property.m_AllowedSold == Resource.NoResource && isDetachedLowDensity &&
                                     height / residential_avg_floor_height < 3 && width * length / lotSize < 0.8f;
 
