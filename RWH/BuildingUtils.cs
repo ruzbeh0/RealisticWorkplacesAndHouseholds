@@ -37,6 +37,13 @@ namespace RealisticWorkplacesAndHouseholds
             return totalBounds;
         }
 
+        // Real extent of the bounds. ObjectUtils.GetSize doubles the farthest extent from the pivot,
+        // which inflates off-centre meshes (e.g. UK London townhouses: 48 m wide on an 8 m lot)
+        public static float3 GetBuildingSize(Bounds3 bounds)
+        {
+            return new float3(bounds.max.x - bounds.min.x, bounds.max.y, bounds.max.z - bounds.min.z);
+        }
+
         //Get number of people in the building (Students, workers or residents)
         public static int GetPeople(bool residential, float width, float length, float height, float floor_height, float sqm_per_unit, int floor_offset, int sqm_per_elevator, int floor_limit)
         {

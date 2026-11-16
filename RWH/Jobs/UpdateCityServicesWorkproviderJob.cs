@@ -259,7 +259,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     if (subMeshes.Length > 0)
                     {
                         var dimensions = BuildingUtils.GetBuildingDimensions(subMeshes, meshDataLookup);
-                        var size = ObjectUtils.GetSize(dimensions);
+                        var size = BuildingUtils.GetBuildingSize(dimensions);
                         float width = size.x;
                         float length = size.z;
                         float height = size.y;

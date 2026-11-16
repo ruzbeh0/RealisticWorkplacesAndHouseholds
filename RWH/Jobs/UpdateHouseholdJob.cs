@@ -202,7 +202,9 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             }
 
                             var dimensions = BuildingUtils.GetBuildingDimensions(subMeshes, meshDataLookup);
-                            var size = ObjectUtils.GetSize(dimensions);
+                            var size = BuildingUtils.GetBuildingSize(dimensions);
+                            // Some meshes reach into neighbouring lots: never count more floor than the lot
+                            size.xz = math.min(size.xz, (float2)buildingData.m_LotSize * 8f);
                             float width = size.x;
                             float length = size.z;
                             float height = size.y;

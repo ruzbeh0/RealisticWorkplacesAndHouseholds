@@ -309,7 +309,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 if (subMeshLookup.TryGetBuffer(entity, out var subMeshes) && subMeshes.Length > 0)
                 {
                     var dimensions = BuildingUtils.GetBuildingDimensions(subMeshes, meshDataLookup);
-                    var size = Game.Objects.ObjectUtils.GetSize(dimensions);
+                    var size = BuildingUtils.GetBuildingSize(dimensions);
                     width = size.x;
                     length = size.z;
                     height = size.y;

@@ -172,7 +172,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             if (_subMeshes.HasBuffer(prefab))
             {
                 var dims = BuildingUtils.GetBuildingDimensions(_subMeshes[prefab], _meshData);
-                float3 size = ObjectUtils.GetSize(dims);
+                float3 size = BuildingUtils.GetBuildingSize(dims);
                 bboxArea = math.max(0.0001f, size.x * size.z);
             }
             if (bboxArea <= 0f)
@@ -413,7 +413,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             if (_subMeshes.HasBuffer(prefab))
             {
                 var dims = BuildingUtils.GetBuildingDimensions(_subMeshes[prefab], _meshData);
-                float3 size = ObjectUtils.GetSize(dims);
+                float3 size = BuildingUtils.GetBuildingSize(dims);
                 float height = size.y;
 
                 if (minHeightMeters > 0f && height < minHeightMeters)
