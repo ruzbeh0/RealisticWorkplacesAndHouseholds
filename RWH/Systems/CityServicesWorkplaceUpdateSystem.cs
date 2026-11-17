@@ -143,7 +143,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 disable_fire = Mod.m_Setting.disable_fire,
                 disable_postoffice = Mod.m_Setting.disable_postoffice,
                 disable_garbage = Mod.m_Setting.disable_garbage,
-                disable_depot = Mod.m_Setting.disable_garbage,
+                disable_depot = Mod.m_Setting.disable_depot,
                 disable_hospital = Mod.m_Setting.disable_hospital,
                 disable_park = Mod.m_Setting.disable_park,
                 disable_transport = Mod.m_Setting.disable_transit,
