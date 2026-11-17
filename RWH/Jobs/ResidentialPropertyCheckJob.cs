@@ -74,7 +74,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 var building = buildings[i];
                 if (!propertyDataLookup.TryGetComponent(prefabRef.m_Prefab, out var propertyData))
                 {
-                    return;
+                    continue;
                 }
                 int householdsCount = CountBufferedHouseholdRenters(entity, renters);
                 if (householdsCount > propertyData.m_ResidentialProperties)
