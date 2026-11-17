@@ -57,6 +57,10 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             m_TriggerInitialWorkplaceUpdate = true;
         }
 
+        // Matches the vanilla spawn cadence; the change filter still catches everything
+        // that changed since the previous run, so running every tick only added job stalls.
+        public override int GetUpdateInterval(SystemUpdatePhase phase) => 16;
+
         [Preserve]
         protected override void OnUpdate()
         {
@@ -94,16 +98,16 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 PrefabRefHandle = SystemAPI.GetComponentTypeHandle<PrefabRef>(true),
                 PropertyRenterHandle = SystemAPI.GetComponentTypeHandle<PropertyRenter>(true),
                 CompanyDataHandle = SystemAPI.GetComponentTypeHandle<CompanyData>(true),
-                ServiceCompanyDataLookup = SystemAPI.GetComponentLookup<ServiceCompanyData>(false),
-                IndustrialProcessDataLookup = SystemAPI.GetComponentLookup<IndustrialProcessData>(false),
-                WorkplaceDataLookup = SystemAPI.GetComponentLookup<WorkplaceData>(false),
+                ServiceCompanyDataLookup = SystemAPI.GetComponentLookup<ServiceCompanyData>(true),
+                IndustrialProcessDataLookup = SystemAPI.GetComponentLookup<IndustrialProcessData>(true),
+                WorkplaceDataLookup = SystemAPI.GetComponentLookup<WorkplaceData>(true),
                 SpawnableBuildingDataLookup = SystemAPI.GetComponentLookup<SpawnableBuildingData>(true),
                 ZoneDataLookup = SystemAPI.GetComponentLookup<ZoneData>(true),
                 WorkProviderHandle = SystemAPI.GetComponentTypeHandle<WorkProvider>(false),
                 PrefabRefLookup = SystemAPI.GetComponentLookup<PrefabRef>(true),
                 PrefabSubMeshesLookup = SystemAPI.GetBufferLookup<SubMesh>(true),
                 meshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
-                BuildingPropertyDataLookup = SystemAPI.GetComponentLookup<BuildingPropertyData>(false),
+                BuildingPropertyDataLookup = SystemAPI.GetComponentLookup<BuildingPropertyData>(true),
                 ExtractorCompanyDataLookup = SystemAPI.GetComponentLookup<ExtractorCompanyData>(true),
                 RealisticWorkplaceDataLookup = SystemAPI.GetComponentLookup<RealisticWorkplaceData>(true),
                 StorageCompanyLookup = SystemAPI.GetComponentLookup<Game.Companies.StorageCompany>(true),

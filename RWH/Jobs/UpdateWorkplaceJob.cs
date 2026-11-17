@@ -58,16 +58,22 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
     {
         public EntityTypeHandle EntityTypeHandle;
         public EntityCommandBuffer.ParallelWriter ecb;
+        [ReadOnly]
         public ComponentLookup<RealisticWorkplacesAndHouseholds.Components.UsableFootprintFactor> UffLookup;
 
 
         [ReadOnly]
         public ComponentTypeHandle<CompanyData> CompanyDataHandle;
+        // Prefab lookups are read-only: prefab writes go through the ECB, and write
+        // access here would serialize every vanilla job that reads these prefabs.
+        [ReadOnly]
         public ComponentLookup<ServiceCompanyData> ServiceCompanyDataLookup;
         [ReadOnly]
         public ComponentTypeHandle<PropertyRenter> PropertyRenterHandle;
         public ComponentTypeHandle<WorkProvider> WorkProviderHandle;
+        [ReadOnly]
         public ComponentLookup<IndustrialProcessData> IndustrialProcessDataLookup;
+        [ReadOnly]
         public ComponentLookup<WorkplaceData> WorkplaceDataLookup;
         [ReadOnly]
         public ComponentLookup<PrefabRef> PrefabRefLookup;
@@ -83,6 +89,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public ComponentLookup<ZoneData> ZoneDataLookup;
         [ReadOnly]
         public ComponentLookup<RealisticWorkplaceData> RealisticWorkplaceDataLookup;
+        [ReadOnly]
         public ComponentLookup<BuildingPropertyData> BuildingPropertyDataLookup;
         [ReadOnly]
         public ComponentLookup<ExtractorCompanyData> ExtractorCompanyDataLookup;
@@ -318,11 +325,6 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         ecb.AddComponent(unfilteredChunkIndex, entity, realisticWorkplaceData);
                     }
                     
-                    if (hasBuildingPropertyData)
-                    {
-                        ecb.SetComponent(unfilteredChunkIndex, prefab2Entity, buildingPropertyData);
-                    }
-
                     if (hasWorkplaceData)
                     {
                         workplaceData.m_MaxWorkers = (int)(workplaceData.m_MaxWorkers * factor);
