@@ -22,6 +22,9 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
         private EndFrameBarrier m_EndFrameBarrier;
 
+        private const int kCapacityCheckInterval = 64;
+        private int m_TicksUntilCapacityCheck;
+
         [Preserve]
         protected override void OnCreate()
         {
@@ -35,18 +38,19 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             m_UpdateWarehouseJobQuery = GetEntityQuery(standardQuery.Query);
 
             // OR query: fully initialized companies never enter the synchronous pass.
-            // Non-company renters also need their property target checked: another
-            // entity's components cannot be tested by a storage-entity query.
-            var propertyTargets = CreateRepairQuery(ComponentType.Exclude<CompanyData>());
-            System.Array.Resize(ref propertyTargets.All, propertyTargets.All.Length + 1);
-            propertyTargets.All[propertyTargets.All.Length - 1] = ComponentType.ReadOnly<PropertyRenter>();
             m_RepairWarehouseQuery = GetEntityQuery(
                 CreateRepairQuery(ComponentType.Exclude<WorkProvider>()),
                 CreateRepairQuery(ComponentType.Exclude<Employee>()),
-                CreateRepairQuery(ComponentType.Exclude<RealisticWorkplaceData>()),
-                propertyTargets);
+                CreateRepairQuery(ComponentType.Exclude<RealisticWorkplaceData>()));
 
             RequireForUpdate(m_UpdateWarehouseJobQuery);
+        }
+
+        protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
+        {
+            base.OnGameLoadingComplete(purpose, mode);
+            // Rescan right after load so every warehouse in the save gets its capacity.
+            m_TicksUntilCapacityCheck = 0;
         }
 
         [Preserve]
@@ -57,8 +61,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
         private static EntityQueryDesc CreateRepairQuery(ComponentType excludedComponent)
         {
-            // Derive every repair branch from the same service/deletion exclusions
-            // as the capacity query, rather than maintaining a second copy.
+            // Derive every repair branch from the capacity query, rather than maintaining a second copy.
             var query = new UpdateWarehouseJobQuery().Query[0];
             System.Array.Resize(ref query.None, query.None.Length + 1);
             query.None[query.None.Length - 1] = excludedComponent;
@@ -67,14 +70,18 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
         private void UpdateWarehouse()
         {
-            EnsureWarehouseWorkProviderTargets();
+            // Repairs must stay immediate; the full capacity scan only needs to follow them
+            // or pick up setting/ABC changes, so it no longer runs on every simulation tick.
+            bool repaired = EnsureWarehouseWorkProviderTargets();
+            if (!repaired && --m_TicksUntilCapacityCheck > 0)
+                return;
+            m_TicksUntilCapacityCheck = kCapacityCheckInterval;
 
             UpdateWarehouseJob updateZonableWarehouse = new UpdateWarehouseJob
             {
                 ecb = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                 EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
                 PropertyRenterHandle = SystemAPI.GetComponentTypeHandle<PropertyRenter>(true),
-                CompanyDataLookup = SystemAPI.GetComponentLookup<CompanyData>(true),
                 WorkProviderLookup = SystemAPI.GetComponentLookup<WorkProvider>(true),
                 EmployeeLookup = SystemAPI.GetBufferLookup<Employee>(true),
                 PrefabRefLookup = SystemAPI.GetComponentLookup<PrefabRef>(true),
@@ -82,22 +89,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 MeshDataLookup = SystemAPI.GetComponentLookup<MeshData>(true),
                 UffLookup = SystemAPI.GetComponentLookup<UsableFootprintFactor>(true),
                 RealisticWorkplaceDataLookup = SystemAPI.GetComponentLookup<RealisticWorkplaceData>(true),
-                TransportDepotLookup = SystemAPI.GetComponentLookup<Game.Buildings.TransportDepot>(true),
-                CargoTransportStationLookup = SystemAPI.GetComponentLookup<Game.Buildings.CargoTransportStation>(true),
-                MaintenanceDepotLookup = SystemAPI.GetComponentLookup<Game.Buildings.MaintenanceDepot>(true),
-                TransportStationLookup = SystemAPI.GetComponentLookup<Game.Buildings.TransportStation>(true),
-                TransportDepotDataLookup = SystemAPI.GetComponentLookup<TransportDepotData>(true),
-                CargoTransportStationDataLookup = SystemAPI.GetComponentLookup<CargoTransportStationData>(true),
-                MaintenanceDepotDataLookup = SystemAPI.GetComponentLookup<MaintenanceDepotData>(true),
-                TransportStationDataLookup = SystemAPI.GetComponentLookup<TransportStationData>(true),
-                CityServiceUpkeepLookup = SystemAPI.GetComponentLookup<CityServiceUpkeep>(true),
-                ResourceConsumerLookup = SystemAPI.GetComponentLookup<Game.Buildings.ResourceConsumer>(true),
-                HospitalLookup = SystemAPI.GetComponentLookup<Game.Buildings.Hospital>(true),
-                ServiceDispatchLookup = SystemAPI.GetBufferLookup<ServiceDispatch>(true),
-                ServiceObjectDataLookup = SystemAPI.GetComponentLookup<ServiceObjectData>(true),
-                ServiceUpkeepDataLookup = SystemAPI.GetBufferLookup<ServiceUpkeepData>(true),
-                ResourceConsumerDataLookup = SystemAPI.GetComponentLookup<ResourceConsumerData>(true),
-                HospitalDataLookup = SystemAPI.GetComponentLookup<HospitalData>(true),
                 ABCWorkplaceOverrideLookup = SystemAPI.GetComponentLookup<ABCWorkplaceOverride>(true),
                 industry_avg_floor_height = Mod.m_Setting.industry_avg_floor_height,
                 warehouse_sqm_per_worker = Mod.m_Setting.warehouse_sqm_per_worker,
@@ -108,88 +99,27 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             m_EndFrameBarrier.AddJobHandleForProducer(this.Dependency);
         }
 
-        private void EnsureWarehouseWorkProviderTargets()
+        private bool EnsureWarehouseWorkProviderTargets()
         {
             // This query has no change/shared filters. The empty check needs no
             // dependency completion or entity-array allocation in the common case.
             if (m_RepairWarehouseQuery.IsEmptyIgnoreFilter)
-                return;
+                return false;
 
             // Initialization must remain immediate: vanilla WorkProviderSystem runs
-            // before EndFrameBarrier playback, and property targets can be shared.
+            // before EndFrameBarrier playback.
             Dependency.Complete();
 
+            // Every candidate is missing a component, so each one leaves the query here.
             using var storageEntities = m_RepairWarehouseQuery.ToEntityArray(Allocator.Temp);
-
             foreach (var storageEntity in storageEntities)
-            {
-                Entity targetEntity = storageEntity;
-                Entity propertyEntity = Entity.Null;
-                if (EntityManager.HasComponent<PropertyRenter>(storageEntity))
-                {
-                    propertyEntity = EntityManager.GetComponentData<PropertyRenter>(storageEntity).m_Property;
-                }
-
-                if (IsServiceOrTransportTarget(storageEntity) || IsServiceOrTransportTarget(propertyEntity))
-                    continue;
-
-                if (!EntityManager.HasComponent<CompanyData>(storageEntity) && propertyEntity != Entity.Null)
-                    targetEntity = propertyEntity;
-
                 EnsureTargetComponents(storageEntity);
 
-                if (targetEntity != storageEntity)
-                    EnsureTargetComponents(targetEntity);
-            }
-        }
-
-        private bool IsServiceOrTransportTarget(Entity entity)
-        {
-            if (entity == Entity.Null)
-                return false;
-
-            if (EntityManager.HasComponent<CityServiceUpkeep>(entity) ||
-                EntityManager.HasComponent<Game.Buildings.ResourceConsumer>(entity) ||
-                EntityManager.HasComponent<Game.Buildings.Hospital>(entity) ||
-                EntityManager.HasBuffer<ServiceDispatch>(entity))
-            {
-                return true;
-            }
-
-            if (EntityManager.HasComponent<Game.Buildings.TransportStation>(entity) ||
-                EntityManager.HasComponent<Game.Buildings.CargoTransportStation>(entity) ||
-                EntityManager.HasComponent<Game.Buildings.TransportDepot>(entity) ||
-                EntityManager.HasComponent<Game.Buildings.MaintenanceDepot>(entity))
-            {
-                return true;
-            }
-
-            if (!EntityManager.HasComponent<PrefabRef>(entity))
-                return false;
-
-            Entity prefab = EntityManager.GetComponentData<PrefabRef>(entity).m_Prefab;
-            return prefab != Entity.Null &&
-                (EntityManager.HasComponent<ServiceObjectData>(prefab) ||
-                 EntityManager.HasBuffer<ServiceUpkeepData>(prefab) ||
-                 EntityManager.HasComponent<ResourceConsumerData>(prefab) ||
-                 EntityManager.HasComponent<HospitalData>(prefab) ||
-                 EntityManager.HasComponent<TransportStationData>(prefab) ||
-                 EntityManager.HasComponent<CargoTransportStationData>(prefab) ||
-                 EntityManager.HasComponent<TransportDepotData>(prefab) ||
-                 EntityManager.HasComponent<MaintenanceDepotData>(prefab));
+            return true;
         }
 
         private void EnsureTargetComponents(Entity entity)
         {
-            if (entity == Entity.Null ||
-                !EntityManager.HasComponent<PrefabRef>(entity) ||
-                IsServiceOrTransportTarget(entity) ||
-                EntityManager.HasComponent<Deleted>(entity) ||
-                EntityManager.HasComponent<Temp>(entity))
-            {
-                return;
-            }
-
             if (!EntityManager.HasComponent<WorkProvider>(entity))
             {
                 EntityManager.AddComponentData(entity, new WorkProvider
@@ -200,7 +130,9 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             }
 
             if (!EntityManager.HasComponent<Employee>(entity))
+            {
                 EntityManager.AddBuffer<Employee>(entity);
+            }
 
             if (!EntityManager.HasComponent<RealisticWorkplaceData>(entity))
             {

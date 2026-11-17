@@ -20,11 +20,13 @@ There are no test framework or NuGet package dependencies.
 
 The cases exercise:
 
-- Repair OR-query membership: each missing component, initialized companies,
-  non-company property renters, and direct warehouse targets.
-- Outside connection, deleted/temp, service and transport entity/prefab protection.
+- Repair OR-query membership: each missing component and initialized companies.
+- Outside connection and deleted/temp exclusion; storage without `CompanyData`
+  (cargo stations) is never touched.
+- Zoned warehouses carrying a `ServiceDispatch` buffer get workplaces
+  (regression for ee38672; vanilla adds that buffer to every storage company).
 - Immediate component repair before deferred capacity jobs and ECB playback.
-- Shared property employee retention and independent property component loss.
+- Existing employees retained by the repair pass.
 - Zero commands for unchanged capacity, changed capacity and provider cooldown.
 - Preservation of prior workplace version/multiplier normalization semantics.
 - ABC overrides on storage and property prefabs, immediate default initialization
@@ -35,6 +37,8 @@ The cases exercise:
   sharing one prefab, with geometry reads counted through the lookup double.
 - A 1,000-company steady state that avoids synchronous dependency completion
   and repair-query materialization while retaining capacity updates.
+- Capacity-scan cadence: on the interval, immediately after a repair, and on
+  the first update after a save loads.
 
 ## Limits
 
@@ -49,7 +53,6 @@ performance are not measured, and these are not FPS measurements. Game component
 only the fields used by these production sources, so actual game assemblies and
 Burst compilation still need the official mod build.
 
-The real game remains necessary to validate vanilla system ordering, shared
-target behavior under parallel scheduling, saved cities, mod compatibility, and
+The real game remains necessary to validate vanilla system ordering, saved cities, mod compatibility, and
 benchmark performance. The harness provides repeatable coverage of the changed
 warehouse logic without pretending to replace those checks.

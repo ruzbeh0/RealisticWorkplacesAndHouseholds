@@ -25,11 +25,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 All = new[]
                 {
                     ComponentType.ReadOnly<PrefabData>(),
-                },
-                Any = new[]
-                {
+                    // Company prefabs only; WarehouseData would also match zoned building prefabs.
                     ComponentType.ReadOnly<StorageCompanyData>(),
-                    ComponentType.ReadOnly<WarehouseData>(),
                 },
                 None = new[]
                 {
@@ -58,7 +55,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
             var hasWorkplace = GetComponentLookup<WorkplaceData>(true);
             var hasProcess = GetComponentLookup<IndustrialProcessData>(true);
-            var storageCompanyDataLookup = GetComponentLookup<StorageCompanyData>(true);
 
             foreach (var p in prefabs)
             {
@@ -73,7 +69,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     });
                 }
 
-                if (storageCompanyDataLookup.HasComponent(p) && !hasProcess.HasComponent(p))
+                if (!hasProcess.HasComponent(p))
                     ecb.AddComponent<IndustrialProcessData>(p);                 // default struct; prevents stats crash
             }
 
