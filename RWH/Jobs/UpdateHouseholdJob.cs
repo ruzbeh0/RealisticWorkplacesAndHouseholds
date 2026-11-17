@@ -262,11 +262,13 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                     int sharedPotential = BuildingUtils.GetPeople(true, width, length, height, residential_avg_floor_height, lowDensityApartmentArea, 0, 0);
                                     sharedPotential = (int)(sharedPotential * asset_pack_factor.x);
 
-                                    if (sharedPotential > 1 && PassesStablePercent(entity, 104729, shared_single_family_home_rate))
+                                    // Key on mesh bounds, not the entity: prefab entity indices change between game sessions
+                                    uint prefabKey = math.hash(new float3x2(dimensions.min, dimensions.max));
+                                    if (sharedPotential > 1 && PassesStablePercent(prefabKey, 104729, shared_single_family_home_rate))
                                     {
                                         households = Math.Max(households, Math.Min(sharedPotential, 2));
 
-                                        if (sharedPotential > 2 && PassesStablePercent(entity, 130363, shared_single_family_home_rate / 4f))
+                                        if (sharedPotential > 2 && PassesStablePercent(prefabKey, 130363, shared_single_family_home_rate / 4f))
                                         {
                                             households = Math.Max(households, Math.Min(sharedPotential, 3));
                                         }
@@ -302,11 +304,11 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             }
         }
 
-        private static bool PassesStablePercent(Entity entity, int salt, float percent)
+        private static bool PassesStablePercent(uint key, int salt, float percent)
         {
             float clamped = math.clamp(percent, 0f, 100f);
             uint threshold = (uint)math.round(clamped * 100f);
-            uint hash = math.hash(new int3(entity.Index, entity.Version, salt));
+            uint hash = math.hash(new uint2(key, (uint)salt));
             return hash % 10000u < threshold;
         }
     }

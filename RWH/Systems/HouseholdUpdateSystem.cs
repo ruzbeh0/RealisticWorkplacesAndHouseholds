@@ -345,6 +345,11 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
             this.Dependency = job.ScheduleParallel(query, this.Dependency);
             commandBufferSystem.AddJobHandleForProducer(this.Dependency);
+
+            // Scheduled from OnGameLoadingComplete the job is invisible to ECS dependency tracking,
+            // so vanilla could read capacity before it is written. Finish it now.
+            if (reset)
+                this.Dependency.Complete();
         }
 
         protected override void OnDestroy()
