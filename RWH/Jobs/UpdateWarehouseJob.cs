@@ -50,6 +50,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
     [BurstCompile]
     public struct UpdateWarehouseJob : IJobChunk
     {
+        public const int MinWorkers = 1;
+
         public EntityTypeHandle EntityTypeHandle;
         public EntityCommandBuffer.ParallelWriter ecb;
 
@@ -64,7 +66,6 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly] public ComponentLookup<RealisticWorkplaceData> RealisticWorkplaceDataLookup;
         [ReadOnly] public ComponentLookup<ABCWorkplaceOverride> ABCWorkplaceOverrideLookup;
 
-        [ReadOnly] public float industry_avg_floor_height;
         [ReadOnly] public float warehouse_sqm_per_worker;
         [ReadOnly] public float global_reduction;
 
@@ -87,7 +88,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             // Reuse consecutive prefab calculations within this chunk only. Nothing
             // survives Execute, so settings, meshes and footprint changes remain live.
             Entity lastBuildingPrefab = Entity.Null;
-            int lastMaxWorkers = 1;
+            int lastMaxWorkers = MinWorkers;
 
             for (int i = 0; i < entities.Length; i++)
             {
@@ -162,25 +163,24 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         private int CalculateWarehouseWorkers(Entity buildingPrefab)
         {
             if (buildingPrefab == Entity.Null)
-                return 1;
+                return MinWorkers;
 
             if (!PrefabSubMeshesLookup.TryGetBuffer(buildingPrefab, out var subMeshes))
-                return 1;
+                return MinWorkers;
 
             var dimensions = BuildingUtils.GetBuildingDimensions(subMeshes, MeshDataLookup);
-            var size = BuildingUtils.GetBuildingSize(dimensions);
+            var size = ObjectUtils.GetSize(dimensions);
             float width = size.x;
             float length = size.z;
-            float height = size.y;
 
             float uff = UffLookup.HasComponent(buildingPrefab) ? UffLookup[buildingPrefab].Value : 1f;
             width *= (float)Math.Sqrt(uff);
             length *= (float)Math.Sqrt(uff);
 
-            int workers = BuildingUtils.depotWorkers(width, length, height, industry_avg_floor_height, warehouse_sqm_per_worker);
+            int workers = BuildingUtils.warehouseWorkers(width, length, warehouse_sqm_per_worker);
             workers = (int)(workers * (1f - global_reduction));
 
-            return Math.Max(1, workers);
+            return Math.Max(MinWorkers, workers);
         }
 
     }

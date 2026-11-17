@@ -90,7 +90,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 UffLookup = SystemAPI.GetComponentLookup<UsableFootprintFactor>(true),
                 RealisticWorkplaceDataLookup = SystemAPI.GetComponentLookup<RealisticWorkplaceData>(true),
                 ABCWorkplaceOverrideLookup = SystemAPI.GetComponentLookup<ABCWorkplaceOverride>(true),
-                industry_avg_floor_height = Mod.m_Setting.industry_avg_floor_height,
                 warehouse_sqm_per_worker = Mod.m_Setting.warehouse_sqm_per_worker,
                 global_reduction = Mod.m_Setting.results_reduction / 100f,
             };
@@ -124,7 +123,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             {
                 EntityManager.AddComponentData(entity, new WorkProvider
                 {
-                    m_MaxWorkers = 1,
+                    m_MaxWorkers = UpdateWarehouseJob.MinWorkers,
                     m_EfficiencyCooldown = 0
                 });
             }
@@ -138,7 +137,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             {
                 EntityManager.AddComponentData(entity, new RealisticWorkplaceData
                 {
-                    max_workers = 1
+                    max_workers = UpdateWarehouseJob.MinWorkers
                 });
             }
         }

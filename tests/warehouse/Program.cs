@@ -32,6 +32,7 @@ internal static class Program
         Run("settings, footprint and prefab changes apply on subsequent updates", Invalidation);
         Run("consecutive prefab reuse and per-execution mesh invalidation", ConsecutivePrefabReuse);
         Run("no property renter and missing mesh data retain minimum capacity", MinimumCapacity);
+        Run("one-floor formula matches the design table", FormulaTable);
         Run("capacity scan runs on its interval or right after a repair", CapacityCadence);
         Run("loading a save rescans capacity on the next update", ReloadRescansCapacity);
         Console.WriteLine($"PASS: {passed} warehouse behavioral regression cases.");
@@ -73,7 +74,7 @@ internal static class Program
         manager.AddComponentData(entity, new PropertyRenter { m_Property = property });
         return entity;
     }
-    private static void Initialize(EntityManager manager, Entity entity, int capacity = 40)
+    private static void Initialize(EntityManager manager, Entity entity, int capacity = 20)
     {
         manager.AddComponentData(entity, new WorkProvider { m_MaxWorkers = capacity, m_EfficiencyCooldown = 37 });
         manager.AddBuffer<Employee>(entity);
@@ -118,7 +119,7 @@ internal static class Program
         Update(system);
         Check(manager.HasComponent<WorkProvider>(storage), "Warehouse with ServiceDispatch must be repaired");
         Finish(system);
-        Equal(40, Workers(manager, storage), "Warehouse with ServiceDispatch receives capacity");
+        Equal(20, Workers(manager, storage), "Warehouse with ServiceDispatch receives capacity");
     }
     private static void CityServiceStorage()
     {
@@ -146,7 +147,7 @@ internal static class Program
         Equal(0, JobHandle.Completions, "Steady-state completion count");
         Equal(0, system.Queries[1].Materializations, "Steady-state repair array allocations");
         Finish(system);
-        Equal(40, Workers(manager, system.Queries[0].Entities.First()), "Capacity stays active");
+        Equal(20, Workers(manager, system.Queries[0].Entities.First()), "Capacity stays active");
     }
     private static void ImmediateRepair()
     {
@@ -161,7 +162,7 @@ internal static class Program
         Equal(1, Workers(manager, storage), "Calculated capacity remains deferred");
         Equal(2, system.World.Barrier.CommandCount, "Only two capacity sets needed after repair");
         system.World.Barrier.Playback();
-        Equal(40, Workers(manager, storage), "Expected capacity after playback");
+        Equal(20, Workers(manager, storage), "Expected capacity after playback");
         Update(system); Finish(system);
         Equal(1, JobHandle.Completions, "No subsequent repair completion");
     }
@@ -175,7 +176,7 @@ internal static class Program
         Check(ReferenceEquals(employees, manager.GetBuffer<Employee>(storage)), "Repair replaced employees");
         Finish(system);
         Equal(worker, manager.GetBuffer<Employee>(storage)[0].m_Worker, "Existing worker retained");
-        Equal(40, Workers(manager, storage), "Capacity after repair");
+        Equal(20, Workers(manager, storage), "Capacity after repair");
     }
     private static void ConditionalWrites()
     {
@@ -186,14 +187,14 @@ internal static class Program
         Mod.m_Setting.warehouse_sqm_per_worker = 200;
         Update(system); JobChunkExtensions.Drain();
         Equal(2, system.World.Barrier.CommandCount, "Changed capacity requires two sets"); system.World.Barrier.Playback();
-        Equal(20, Workers(manager, storage), "New capacity");
+        Equal(10, Workers(manager, storage), "New capacity");
         Equal(37, manager.GetComponentData<WorkProvider>(storage).m_EfficiencyCooldown, "Cooldown retained");
     }
     private static void WorkplaceNormalization()
     {
         var system = NewSystem(); var manager = system.EntityManager;
         var storage = Storage(manager, Building(manager, Prefab(manager))); Initialize(manager, storage);
-        manager.SetComponentData(storage, new RealisticWorkplaceData { max_workers = 40, version = 8, space_multiplier = 2 });
+        manager.SetComponentData(storage, new RealisticWorkplaceData { max_workers = 20, version = 8, space_multiplier = 2 });
         Update(system); JobChunkExtensions.Drain();
         Equal(1, system.World.Barrier.CommandCount, "Non-default serialized fields must be normalized"); system.World.Barrier.Playback();
         var data = manager.GetComponentData<RealisticWorkplaceData>(storage);
@@ -221,23 +222,23 @@ internal static class Program
             Equal(1, Workers(manager, uninitialized), "ABC initialized default retained until override removal");
             manager.RemoveComponent<ABCWorkplaceOverride>(overridePrefab);
             manager.RemoveComponent<ABCWorkplaceOverride>(uninitializedOverridePrefab);
-            Update(system); Finish(system); Equal(40, Workers(manager, storage), "Removing ABC override resumes capacity updates");
-            Equal(40, Workers(manager, uninitialized), "Removing ABC override updates initialized warehouse");
+            Update(system); Finish(system); Equal(20, Workers(manager, storage), "Removing ABC override resumes capacity updates");
+            Equal(20, Workers(manager, uninitialized), "Removing ABC override updates initialized warehouse");
         }
     }
     private static void Invalidation()
     {
         var system = NewSystem(); var manager = system.EntityManager; var prefab = Prefab(manager);
         var property = Building(manager, prefab); var storage = Storage(manager, property);
-        Update(system); Finish(system); Equal(40, Workers(manager, storage), "Baseline capacity");
+        Update(system); Finish(system); Equal(20, Workers(manager, storage), "Baseline capacity");
         Mod.m_Setting.results_reduction = 50;
-        Update(system); Finish(system); Equal(20, Workers(manager, storage), "Reduction settings applied");
+        Update(system); Finish(system); Equal(10, Workers(manager, storage), "Reduction settings applied");
         Mod.m_Setting.results_reduction = 0;
         manager.AddComponentData(prefab, new UsableFootprintFactor { Value = 0.25f });
-        Update(system); Finish(system); Equal(10, Workers(manager, storage), "Changed footprint applied");
+        Update(system); Finish(system); Equal(5, Workers(manager, storage), "Changed footprint applied");
         manager.RemoveComponent<UsableFootprintFactor>(prefab);
         Mod.m_Setting.industry_avg_floor_height = 10;
-        Update(system); Finish(system); Equal(20, Workers(manager, storage), "Floor-height settings applied");
+        Update(system); Finish(system); Equal(20, Workers(manager, storage), "Warehouses count one floor, whatever the floor height");
         manager.SetComponentData(property, new PrefabRef { m_Prefab = Prefab(manager, 20, 15, 50) });
         Update(system); Finish(system); Equal(10, Workers(manager, storage), "Property prefab reassignment applied");
     }
@@ -245,15 +246,25 @@ internal static class Program
     {
         var system = NewSystem(); var manager = system.EntityManager;
         var storage = Storage(manager, Entity.Null); manager.RemoveComponent<PropertyRenter>(storage);
-        Update(system); Finish(system); Equal(40, Workers(manager, storage), "Storage acts as own property without renter");
+        Update(system); Finish(system); Equal(20, Workers(manager, storage), "Storage acts as own property without renter");
         manager.SetComponentData(storage, new PrefabRef { m_Prefab = manager.Create() });
         Update(system); Finish(system); Equal(1, Workers(manager, storage), "Missing submesh fallback");
         manager.AddComponentData(storage, new PropertyRenter { m_Property = Entity.Null });
         Update(system); Finish(system); Equal(1, Workers(manager, storage), "Null property fallback");
         manager.SetComponentData(storage, new PropertyRenter { m_Property = manager.Create() });
         Update(system); Finish(system); Equal(1, Workers(manager, storage), "Live property without PrefabRef fallback");
+        manager.SetComponentData(storage, new PropertyRenter { m_Property = Building(manager, Prefab(manager)) });
         Mod.m_Setting.results_reduction = 100;
-        Update(system); Finish(system); Equal(1, Workers(manager, storage), "Capacity clamps to one");
+        Update(system); Finish(system); Equal(1, Workers(manager, storage), "Capacity clamps to the minimum after reduction");
+    }
+    // Expected sizes from research/warehouse_workplaces.md (default 100 m² per worker).
+    private static void FormulaTable()
+    {
+        Equal(24, BuildingUtils.warehouseWorkers(40, 60, 100), "40 x 60 m");
+        Equal(45, BuildingUtils.warehouseWorkers(80, 100, 100), "80 x 100 m, smoothed x1.79");
+        var system = NewSystem(); var manager = system.EntityManager;
+        var small = Storage(manager, Building(manager, Prefab(manager, 10, 15, 10)));
+        Update(system); Finish(system); Equal(1, Workers(manager, small), "Small warehouse gets the minimum");
     }
     private static void ConsecutivePrefabReuse()
     {
@@ -265,7 +276,7 @@ internal static class Program
         var storage = properties.Select(property => Storage(manager, property)).ToArray();
         ComponentLookup<MeshData>.IndexerReads = 0;
         Update(system); Finish(system);
-        int[] expected = [40, 40, 20, 40, 1, 1, 40];
+        int[] expected = [20, 20, 10, 20, 1, 1, 20];
         for (int i = 0; i < storage.Length; i++) Equal(expected[i], Workers(manager, storage[i]), $"A,A,B,A,Null,Null,A position {i}");
         Equal(4, ComponentLookup<MeshData>.IndexerReads, "Consecutive identical prefab should reuse geometry");
         var meshEntity = manager.GetBuffer<SubMesh>(prefabA)[0].m_SubMesh;
@@ -273,7 +284,7 @@ internal static class Program
         mesh.m_Bounds = new(0, new(20, 15, 50)); manager.SetComponentData(meshEntity, mesh);
         ComponentLookup<MeshData>.IndexerReads = 0;
         Update(system); Finish(system);
-        for (int i = 0; i < storage.Length; i++) Equal(i is 4 or 5 ? 1 : 20, Workers(manager, storage[i]), $"Mesh mutation position {i}");
+        for (int i = 0; i < storage.Length; i++) Equal(i is 4 or 5 ? 1 : 10, Workers(manager, storage[i]), $"Mesh mutation position {i}");
         Equal(4, ComponentLookup<MeshData>.IndexerReads, "Geometry must be read afresh on each execution");
     }
     private static void CapacityCadence()
@@ -281,15 +292,15 @@ internal static class Program
         var system = NewSystem(); var manager = system.EntityManager;
         var storage = Storage(manager, Building(manager, Prefab(manager))); Initialize(manager, storage, 7);
         system.UpdateForTest(); Equal(1, JobChunkExtensions.Pending.Count, "First update scans capacity"); Finish(system);
-        Equal(40, Workers(manager, storage), "First scan applies capacity");
+        Equal(20, Workers(manager, storage), "First scan applies capacity");
         Mod.m_Setting.warehouse_sqm_per_worker = 200;
         for (int i = 1; i < CapacityInterval; i++) system.UpdateForTest();
         Equal(0, JobChunkExtensions.Pending.Count, "No capacity scan before the interval");
         system.UpdateForTest(); Equal(1, JobChunkExtensions.Pending.Count, "Capacity scan on the interval"); Finish(system);
-        Equal(20, Workers(manager, storage), "Settings change applied on the interval");
+        Equal(10, Workers(manager, storage), "Settings change applied on the interval");
         var added = Storage(manager, Building(manager, Prefab(manager)));
         system.UpdateForTest(); Equal(1, JobChunkExtensions.Pending.Count, "Repair triggers an immediate capacity scan"); Finish(system);
-        Equal(20, Workers(manager, added), "Repaired warehouse receives capacity in the same frame");
+        Equal(10, Workers(manager, added), "Repaired warehouse receives capacity in the same frame");
     }
     private static void ReloadRescansCapacity()
     {
@@ -299,6 +310,6 @@ internal static class Program
         Mod.m_Setting.warehouse_sqm_per_worker = 200;
         system.UpdateForTest(); Equal(0, JobChunkExtensions.Pending.Count, "No scan mid-interval");
         system.LoadForTest(); system.UpdateForTest(); Equal(1, JobChunkExtensions.Pending.Count, "Scan right after load"); Finish(system);
-        Equal(20, Workers(manager, storage), "Capacity updated after load");
+        Equal(10, Workers(manager, storage), "Capacity updated after load");
     }
 }

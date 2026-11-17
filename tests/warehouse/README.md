@@ -32,7 +32,10 @@ The cases exercise:
 - ABC overrides on storage and property prefabs, immediate default initialization
   under an active override, and capacity updates after override removal.
 - Subsequent settings, footprint, property-prefab, and mesh changes.
-- Minimum capacity when property/prefab mesh data is absent.
+- Minimum capacity (1) when property/prefab mesh data is absent, for small
+  buildings, and after `results_reduction`.
+- The one-floor formula against the expected sizes in
+  `research/warehouse_workplaces.md`.
 - Consecutive prefab reuse for A,A,B,A,Null,Null,A, including distinct properties
   sharing one prefab, with geometry reads counted through the lookup double.
 - A 1,000-company steady state that avoids synchronous dependency completion
