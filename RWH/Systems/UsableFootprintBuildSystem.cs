@@ -107,7 +107,11 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             Enabled = true;
         }
 
-        protected override void OnUpdate()
+        protected override void OnUpdate() => EnsureBuilt();
+
+        // Also called by HouseholdUpdateSystem so the load-time household reset never has to
+        // wait for the PrefabUpdate phase while vanilla evicts against vanilla capacity.
+        public void EnsureBuilt()
         {
             if (_builtOnce)
                 return;

@@ -15,41 +15,10 @@ using Unity.Mathematics;
 namespace RealisticWorkplacesAndHouseholds.Jobs
 {
 
-    public struct UpdateHouseholdJobQuery
-    {
-        public EntityQueryDesc[] Query;
-
-        public UpdateHouseholdJobQuery()
-        {
-            Query =
-            [
-                new()
-                {
-                    All =
-                    [
-                        ComponentType.ReadOnly<PrefabData>(),
-                        ComponentType.ReadOnly<BuildingData>(),
-                        ComponentType.ReadOnly<BuildingPropertyData>(),
-                        ComponentType.ReadOnly<GroupAmbienceData>(),
-                        ComponentType.ReadWrite<SpawnableBuildingData>(),
-                        ComponentType.ReadWrite<SubMesh>(),
-                    ],
-                    Any = [
-                    ],
-                    None =
-                    [
-                        ComponentType.Exclude<RealisticHouseholdData>(),
-                        ComponentType.Exclude<Deleted>(),
-                        ComponentType.Exclude<Temp>()
-                    ],
-                }
-            ];
-        }
-    }
-
     [BurstCompile]
     public struct UpdateHouseholdJob : IJobChunk
     {
+        [ReadOnly]
         public ComponentLookup<RealisticWorkplacesAndHouseholds.Components.UsableFootprintFactor> UffLookup;
 
         public EntityTypeHandle EntityTypeHandle;
@@ -58,9 +27,6 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public EntityCommandBuffer.ParallelWriter ecb;
         [ReadOnly]
         public bool reset;
-        [ReadOnly]
-        public ComponentLookup<RealisticHouseholdData> RealisticHouseholdDataLookup;
-
         [ReadOnly]
         public ComponentTypeHandle<BuildingData> BuildingDataHandle;
         public ComponentTypeHandle<BuildingPropertyData> BuildingPropertyDataHandle;
@@ -327,14 +293,6 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                             property.m_SpaceMultiplier /= factor;
                             
                             buildingPropertyDataArr[i] = property;
-                            if (!RealisticHouseholdDataLookup.HasComponent(entity))
-                            {
-                                RealisticHouseholdData realisticHouseholdData = new()
-                                {
-                                    households = property.m_ResidentialProperties
-                                };
-                                ecb.AddComponent<RealisticHouseholdData>(unfilteredChunkIndex, entity, realisticHouseholdData);
-                            }      
 
                         }
 
