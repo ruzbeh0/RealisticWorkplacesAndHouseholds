@@ -55,6 +55,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         public EntityTypeHandle EntityTypeHandle;
         const float HALLWAY_BUFFER = 1f; // 1 sq metres of space in front of the unit's door
         const float ROOF_ALLOWANCE = 1.5f; // metres of mesh height taken by the roof, not a habitable floor
+        const float MAX_ROWHOME_WIDTH = 20f; // metres of mesh width (2 cells + overhang slack); wider "row homes" are treated as medium density
 
         public EntityCommandBuffer.ParallelWriter ecb;
         [ReadOnly]
@@ -228,6 +229,12 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                                 ((zonedata.m_ZoneFlags & ZoneFlags.SupportNarrow) == ZoneFlags.SupportNarrow);
                             if(asset_pack_factor.y != 1f)
                                 isRowHome = RowHomeLikeLookup.HasComponent(entity);
+                            // Row homes this wide (e.g. Sapphire) are apartment blocks: use the medium density formula
+                            if (isRowHome && size.x > MAX_ROWHOME_WIDTH)
+                            {
+                                isRowHome = false;
+                                isLowDensityZone = false;
+                            }
                             if (isRowHome && height / residential_avg_floor_height < 5)
                             {
                                 if (rowhome_basement)
