@@ -382,24 +382,24 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 }
 
                 // This is the common data string shared by all CSV files for a single asset.
-                string commonLine = $"{name},{type},{theme},{assetPack},{level},{height:F1},{width:F1},{length:F1},{isSignature}";
+                string commonLine = FormattableString.Invariant($"{name},{type},{theme},{assetPack},{level},{height:F1},{width:F1},{length:F1},{isSignature}");
 
                 // --- 4. Append Data to the correct CSV Builders ---
 
                 // Handle specialized service buildings first, as they have unique capacity types.
                 if (schoolLookup.TryGetComponent(entity, out var school))
                 {
-                    schoolCsv.AppendLine($"{commonLine},{school.m_StudentCapacity},{(school.m_StudentCapacity / area):F2}");
+                    schoolCsv.AppendLine(FormattableString.Invariant($"{commonLine},{school.m_StudentCapacity},{(school.m_StudentCapacity / area):F2}"));
                     countSchool++;
                 }
                 if (hospitalLookup.TryGetComponent(entity, out var hospital))
                 {
-                    hospitalCsv.AppendLine($"{commonLine},{hospital.m_PatientCapacity},{(hospital.m_PatientCapacity / area):F2}");
+                    hospitalCsv.AppendLine(FormattableString.Invariant($"{commonLine},{hospital.m_PatientCapacity},{(hospital.m_PatientCapacity / area):F2}"));
                     countHosp++;
                 }
                 if (prisonLookup.TryGetComponent(entity, out var prison))
                 {
-                    prisonCsv.AppendLine($"{commonLine},{prison.m_PrisonerCapacity},{(prison.m_PrisonerCapacity / area):F2}");
+                    prisonCsv.AppendLine(FormattableString.Invariant($"{commonLine},{prison.m_PrisonerCapacity},{(prison.m_PrisonerCapacity / area):F2}"));
                     countPrison++;
                 }
 
@@ -408,7 +408,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 {
                     if (prop.m_ResidentialProperties > 0)
                     {
-                        resCsv.AppendLine($"{commonLine},{prop.m_ResidentialProperties},{(prop.m_ResidentialProperties / area):F2}");
+                        resCsv.AppendLine(FormattableString.Invariant($"{commonLine},{prop.m_ResidentialProperties},{(prop.m_ResidentialProperties / area):F2}"));
                         countRes++;
                     }
                 }
@@ -445,7 +445,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     // If a valid number of workers was found or calculated, add an entry to the workplaces CSV.
                     if (workers > 0)
                     {
-                        workCsv.AppendLine($"{commonLine},{workers},{(workers / area):F2}");
+                        workCsv.AppendLine(FormattableString.Invariant($"{commonLine},{workers},{(workers / area):F2}"));
                         countWork++;
                     }
                     // Also add an entry if it was a RICO building that calculated to 0 workers.
