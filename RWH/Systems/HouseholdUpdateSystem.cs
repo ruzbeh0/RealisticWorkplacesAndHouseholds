@@ -19,8 +19,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
     [BurstCompile]
     public partial class HouseholdUpdateSystem : GameSystemBase
     {
-        private EntityQuery m_UpdateHouseholdJobQuery;
-        private EntityQuery m_ResetHouseholdJobQuery;
+        private EntityQuery m_HouseholdJobQuery;
         private EntityQuery m_AssetPackQuery;
         private PrefabSystem _prefabSystem;
         private NativeParallelHashMap<Entity, FixedString64Bytes> _prefabNames;
@@ -39,12 +38,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         {
             base.OnCreate();
 
-            // Normal query — excludes already processed buildings
-            UpdateHouseholdJobQuery updateQuery = new();
-            m_UpdateHouseholdJobQuery = GetEntityQuery(updateQuery.Query);
-
-            // Reset query — includes all buildings
-            EntityQueryDesc resetQuery = new()
+            EntityQueryDesc householdQuery = new()
             {
                 All = new[]
                 {
@@ -61,7 +55,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     ComponentType.Exclude<Temp>()
                 }
             };
-            m_ResetHouseholdJobQuery = GetEntityQuery(resetQuery);
+            m_HouseholdJobQuery = GetEntityQuery(householdQuery);
 
             EntityQueryDesc query = new()
             {
@@ -78,7 +72,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             };
             m_AssetPackQuery = GetEntityQuery(query);
 
-            this.RequireForUpdate(m_ResetHouseholdJobQuery);
+            this.RequireForUpdate(m_HouseholdJobQuery);
 
             _prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
             _prefabNames = new NativeParallelHashMap<Entity, FixedString64Bytes>(1024, Allocator.Persistent);
@@ -233,6 +227,10 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             if (mode == GameMode.Game)
             {
                 m_TriggerInitialHouseholdUpdate = true;
+                // Reset before the first simulation tick: prefabs still hold vanilla capacity
+                // here, and vanilla PropertyRenterSystem/PropertyRenterRemoveSystem drop every
+                // renter above it with no limit.
+                RunPendingReset();
             }
             else
             {
@@ -240,13 +238,26 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             }
         }
 
+        // The job writes prefab BuildingPropertyData, so every run stalls all vanilla jobs that
+        // read it. Prefab data rarely changes; the change filter covers the gap. The load-time
+        // reset does not wait for this: it runs from OnGameLoadingComplete.
+        public override int GetUpdateInterval(SystemUpdatePhase phase) => 64;
+
         [Preserve]
         protected override void OnUpdate()
         {
+            if (!RunPendingReset() && !m_TriggerInitialHouseholdUpdate)
+                UpdateHouseholds(reset: false);
+        }
+
+        // Returns true when a reset was scheduled.
+        private bool RunPendingReset()
+        {
             int packCountNow = m_AssetPackQuery.CalculateEntityCount();
 
-            // Rebuild if empty OR if the set of packs changed since we last built
-            if (_prefabNames.IsEmpty || _lastAssetPackCount != packCountNow)
+            // Rebuild when the set of packs changed since we last built (-1 forces the first build);
+            // an empty map is not a trigger, or setups without packs would reset every run.
+            if (_lastAssetPackCount != packCountNow)
             {
                 Mod.log.Info($"(Re)building Asset Pack maps. last={_lastAssetPackCount}, now={packCountNow}");
                 BuildPrefabMaps(m_AssetPackQuery);
@@ -255,34 +266,34 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                     m_TriggerInitialHouseholdUpdate = true;
             }
 
-            if (m_TriggerInitialHouseholdUpdate)
-            {
-                if (!UsableFootprintBuildSystem.IsBuilt)
-                {
-                    if (!_loggedWaitingForFootprintBuild)
-                    {
-                        Mod.log.Info("[RWH] Waiting for usable footprint data before household reset.");
-                        _loggedWaitingForFootprintBuild = true;
-                    }
+            if (!m_TriggerInitialHouseholdUpdate)
+                return false;
 
-                    return;
+            if (!UsableFootprintBuildSystem.IsBuilt)
+                World.GetExistingSystemManaged<UsableFootprintBuildSystem>()?.EnsureBuilt();
+
+            if (!UsableFootprintBuildSystem.IsBuilt)
+            {
+                if (!_loggedWaitingForFootprintBuild)
+                {
+                    Mod.log.Info("[RWH] Waiting for usable footprint data before household reset.");
+                    _loggedWaitingForFootprintBuild = true;
                 }
 
-                UpdateHouseholds(reset: true);
-                m_TriggerInitialHouseholdUpdate = false;
-                _hasRunInitialHouseholdReset = true;
-                _loggedWaitingForFootprintBuild = false;
+                return false;
             }
-            else
-            {
-                UpdateHouseholds(reset: false);
-            }
+
+            UpdateHouseholds(reset: true);
+            m_TriggerInitialHouseholdUpdate = false;
+            _hasRunInitialHouseholdReset = true;
+            _loggedWaitingForFootprintBuild = false;
+            return true;
         }
 
 
         private void UpdateHouseholds(bool reset)
         {
-            var query = reset ? m_ResetHouseholdJobQuery : m_UpdateHouseholdJobQuery;
+            var query = m_HouseholdJobQuery;
 
             if (reset)
                 InitialResetQueuedThisLoad = true;
@@ -308,7 +319,6 @@ namespace RealisticWorkplacesAndHouseholds.Systems
                 BuildingPropertyDataHandle = SystemAPI.GetComponentTypeHandle<BuildingPropertyData>(false),
                 ZoneDataLookup = SystemAPI.GetComponentLookup<ZoneData>(true),
                 GroupAmbienceDataHandle = SystemAPI.GetComponentTypeHandle<GroupAmbienceData>(true),
-                RealisticHouseholdDataLookup = SystemAPI.GetComponentLookup<RealisticHouseholdData>(true),
                 ABCHouseholdOverrideLookup = SystemAPI.GetComponentLookup<RealisticWorkplacesAndHouseholds.Components.ABCHouseholdOverride>(true),
                 sqm_per_apartment = Mod.m_Setting.residential_sqm_per_apartment,
                 sqm_per_apartment_lowrent = Mod.m_Setting.residential_lowrent_sqm_per_apartment,
@@ -335,6 +345,11 @@ namespace RealisticWorkplacesAndHouseholds.Systems
 
             this.Dependency = job.ScheduleParallel(query, this.Dependency);
             commandBufferSystem.AddJobHandleForProducer(this.Dependency);
+
+            // Scheduled from OnGameLoadingComplete the job is invisible to ECS dependency tracking,
+            // so vanilla could read capacity before it is written. Finish it now.
+            if (reset)
+                this.Dependency.Complete();
         }
 
         protected override void OnDestroy()
