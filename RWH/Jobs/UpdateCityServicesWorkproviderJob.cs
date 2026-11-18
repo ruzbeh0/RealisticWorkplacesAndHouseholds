@@ -273,7 +273,7 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                         {
                             workers = BuildingUtils.parkWorkers(width, length, height, industry_avg_floor_height, park_sqm_per_worker);
                         }
-                        if (!disable_depot && TransportDepotLookup.HasComponent(entity) || MaintenanceDepotLookup.HasComponent(entity))
+                        if (!disable_depot && (TransportDepotLookup.HasComponent(entity) || MaintenanceDepotLookup.HasComponent(entity)))
                         {
                             workers = BuildingUtils.depotWorkers(width, length, height, industry_avg_floor_height, depot_sqm_per_worker);
                         }
