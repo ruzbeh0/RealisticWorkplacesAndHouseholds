@@ -98,6 +98,8 @@ Applying this mod to an existing save (or changing settings) can **increase or d
 
 This mod overlaps in purpose with other “realistic occupancy/density” mods. Don’t run multiple mods that all overwrite household/workplace capacities at the same time.
 
+**Advanced Building Control (ABC):** explicit household and workplace capacity overrides are respected; RWH continues calculating capacities for buildings without those overrides. Both the current and older ABC enum namespaces are supported.
+
 ## Credits
 
 Inspired by:
@@ -108,6 +110,8 @@ Inspired by:
 Additional credits:
 
 * **Logiteee** — implementation work for the **Export to CSV** button / export feature.
+* **jimocool2** — CSV locale fixes, depot and residential logic fixes, workplace update improvements, and household load-time initialization and stability fixes contributed in PRs #8, #9, and #10.
+* **qstar-inc** — Advanced Building Control author; identified the namespace change needed to restore ABC compatibility.
 	</LongDescription>
 	<!--Thumbnail-->
 	<Thumbnail Value="Properties/Thumbnail.jpg" />
@@ -122,13 +126,19 @@ Additional credits:
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/realistic-workplaces-and-households.1699586/" />
 	<!--Version of the mod-->
-	<ModVersion Value="2.3.7" />
+	<ModVersion Value="2.3.8" />
 	<!--Recommended version of the base game to use the mod-->
 	<GameVersion Value="1.6.*" />
 	<!--Dependency for the mod, can be set multiple times-->
 	<Dependency Id="" />
 	<ChangeLog>
-* Refactored warehouse functionality and improved the mod's performance.
+* Fixed building-statistics CSV exports in locales that use a comma as the decimal separator.
+* Fixed the depot disable setting and maintenance-depot condition, and prevented one building with missing prefab data from skipping the rest of a residential check.
+* Reduced workplace recalculation frequency and unnecessary prefab write access; removed a redundant building-property write.
+* Applied household capacities during loading before simulation starts, reduced household update frequency, and stabilized shared-home selection across reloads.
+* Fixed repeated asset-pack map resets when no packs are present.
+* Restored compatibility with the updated Advanced Building Control enum namespace while retaining support for older ABC versions.
+* Thanks to jimocool2 for PRs #8, #9, and #10, and to qstar-inc for identifying the ABC namespace change.
 	</ChangeLog>
 	<!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon-->
 	<ExternalLink Type="github" Url="https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/" />

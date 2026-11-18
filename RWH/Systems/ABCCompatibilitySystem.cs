@@ -171,7 +171,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             try
             {
                 _modifiedPrefabType = TryResolveType("AdvancedBuildingControl.Components.ModifiedPrefab");
-                _updateValueTypeEnum = TryResolveType("AdvancedBuildingControl.Variables.UpdateValueType");
+                _updateValueTypeEnum = TryResolveType("AdvancedBuildingControl.Enums.UpdateValueType")
+                    ?? TryResolveType("AdvancedBuildingControl.Variables.UpdateValueType");
 
                 if (_modifiedPrefabType == null || _updateValueTypeEnum == null)
                 {

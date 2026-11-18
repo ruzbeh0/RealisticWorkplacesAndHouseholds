@@ -75,16 +75,20 @@ Changing settings in an existing save can increase or decrease capacities. In ca
 
 Avoid running multiple mods that overwrite household/workplace capacities at the same time.
 
+Advanced Building Control (ABC) household and workplace capacity overrides are respected. RWH calculates capacities for buildings without those overrides and supports both current and older ABC enum namespaces.
+
 ## Credits
 
 - Inspired by Realistic Population (CS1), Realistic Building Occupancy, and Realistic Density (CS2) concepts.
 - Thanks to Trejak, Mimonsi, and 89pleasure for ideas/reference implementations.
 - Export CSV implementation by Logiteee.
+- CSV locale fixes, depot and residential logic fixes, workplace update improvements, and household initialization/stability fixes by [jimocool2](https://github.com/jimocool2) in PRs [#8](https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/pull/8), [#9](https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/pull/9), and [#10](https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/pull/10).
+- Thanks to [qstar-inc](https://github.com/qstar-inc), the ABC author, for identifying the namespace change needed to restore compatibility.
 
 ## Mod metadata
 
 - **Mod ID**: 87755
-- **Version**: 2.3.5
+- **Version**: 2.3.8
 - **Game version target**: 1.6.*
 - **Forum**: [Realistic Workplaces and Households](https://forum.paradoxplaza.com/forum/threads/realistic-workplaces-and-households.1699586/)
 - **GitHub**: [github.com/ruzbeh0/RealisticWorkplacesAndHouseholds](https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds)
