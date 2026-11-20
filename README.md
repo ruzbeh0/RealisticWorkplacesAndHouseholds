@@ -11,6 +11,8 @@ This keeps building capacity behavior more consistent across different asset typ
 - Adds balance offsets for side effects (rent, upkeep, utility use, and noise).
 - Allows per-asset-pack density tuning and CSV persistence.
 - Exports building statistics for analysis.
+- Zoned warehouses use one floor of usable footprint for staffing, with periodic capacity checks and immediate repair of missing workplace components.
+- The 1.5 m residential roof allowance applies only to detached, low-density houses; row homes, apartments, and mixed-use buildings retain their full measured height.
 
 ## Building types covered
 
@@ -83,12 +85,13 @@ Advanced Building Control (ABC) household and workplace capacity overrides are r
 - Thanks to Trejak, Mimonsi, and 89pleasure for ideas/reference implementations.
 - Export CSV implementation by Logiteee.
 - CSV locale fixes, depot and residential logic fixes, workplace update improvements, and household initialization/stability fixes by [jimocool2](https://github.com/jimocool2) in PRs [#8](https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/pull/8), [#9](https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/pull/9), and [#10](https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/pull/10).
+- Warehouse workplace fixes and building-size/household formula improvements by jimocool2 in PRs [#11](https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/pull/11) and [#12](https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/pull/12), with the roof allowance restricted during integration to detached, low-density houses.
 - Thanks to [qstar-inc](https://github.com/qstar-inc), the ABC author, for identifying the namespace change needed to restore compatibility.
 
 ## Mod metadata
 
 - **Mod ID**: 87755
-- **Version**: 2.3.8
+- **Version**: 2.4.1
 - **Game version target**: 1.6.*
 - **Forum**: [Realistic Workplaces and Households](https://forum.paradoxplaza.com/forum/threads/realistic-workplaces-and-households.1699586/)
 - **GitHub**: [github.com/ruzbeh0/RealisticWorkplacesAndHouseholds](https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds)

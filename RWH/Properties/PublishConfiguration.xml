@@ -77,6 +77,8 @@ Because changing building capacity can indirectly change city costs and resource
 * **Residential Rent Discount**
 * **Global Workplace/Households reduction (%)**
 
+Zoned warehouses use one floor of usable footprint for staffing. Residential calculations reserve 1.5 m of roof height only for detached, low-density houses; row homes, apartments, and mixed-use buildings retain their full measured height.
+
 ## Enable/disable controls
 
 You can disable major parts independently:
@@ -110,8 +112,6 @@ Inspired by:
 Additional credits:
 
 * **Logiteee** — implementation work for the **Export to CSV** button / export feature.
-* **jimocool2** — CSV locale fixes, depot and residential logic fixes, workplace update improvements, and household load-time initialization and stability fixes contributed in PRs #8, #9, and #10.
-* **qstar-inc** — Advanced Building Control author; identified the namespace change needed to restore ABC compatibility.
 	</LongDescription>
 	<!--Thumbnail-->
 	<Thumbnail Value="Properties/Thumbnail.jpg" />
@@ -126,19 +126,19 @@ Additional credits:
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/realistic-workplaces-and-households.1699586/" />
 	<!--Version of the mod-->
-	<ModVersion Value="2.3.8" />
+	<ModVersion Value="2.4.1" />
 	<!--Recommended version of the base game to use the mod-->
 	<GameVersion Value="1.6.*" />
 	<!--Dependency for the mod, can be set multiple times-->
 	<Dependency Id="" />
 	<ChangeLog>
-* Fixed building-statistics CSV exports in locales that use a comma as the decimal separator.
-* Fixed the depot disable setting and maintenance-depot condition, and prevented one building with missing prefab data from skipping the rest of a residential check.
-* Reduced workplace recalculation frequency and unnecessary prefab write access; removed a redundant building-property write.
-* Applied household capacities during loading before simulation starts, reduced household update frequency, and stabilized shared-home selection across reloads.
-* Fixed repeated asset-pack map resets when no packs are present.
-* Restored compatibility with the updated Advanced Building Control enum namespace while retaining support for older ABC versions.
-* Thanks to jimocool2 for PRs #8, #9, and #10, and to qstar-inc for identifying the ABC namespace change.
+* Fixed zoned warehouses being excluded from workplace calculations, while keeping city-service storage out of the warehouse update.
+* Warehouse staffing now uses one floor of usable footprint. Capacity scans run every 64 ticks and after loading; missing workplace components are repaired immediately.
+* Improved off-center mesh sizing across households, workplaces, city services, usable-footprint calculations, and CSV exports.
+* Corrected residential lot-area units and selected household formulas by zone density rather than building height.
+* Improved wide row-home classification and the usable-footprint adjustment for the apartments-per-floor calculation.
+* Limited the 1.5 m roof allowance to detached, low-density houses. Row homes, apartments, and mixed-use buildings retain their full measured height.
+* Existing cities may receive different capacities after loading; households above a reduced capacity may need to relocate.
 	</ChangeLog>
 	<!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon-->
 	<ExternalLink Type="github" Url="https://github.com/ruzbeh0/RealisticWorkplacesAndHouseholds/" />
