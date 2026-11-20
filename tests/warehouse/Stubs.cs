@@ -136,6 +136,7 @@ namespace Unity.Entities
             (desc.Any.Length == 0 || desc.Any.Any(c => manager.Has(entity, c.Type))) &&
             desc.None.All(c => !manager.Has(entity, c.Type))));
         public bool IsEmptyIgnoreFilter => !Entities.Any();
+        public int CalculateEntityCountWithoutFiltering() => Entities.Count();
         public void ResetFilter() { }
         public void SetChangedVersionFilter(Type type) { }
         public NativeArray<Entity> ToEntityArray(Allocator allocator)
@@ -234,13 +235,10 @@ namespace Game.City { }
 namespace Game.Companies { public struct StorageCompany { } public struct CompanyData { } }
 namespace Game.Buildings
 {
-    public struct CityServiceUpkeep { }
     public struct PropertyRenter { public Entity m_Property; }
     public struct WorkProvider { public int m_MaxWorkers; public int m_EfficiencyCooldown; }
     public struct Employee { public Entity m_Worker; }
-    public struct ResourceConsumer { } public struct Hospital { }
-    public struct TransportDepot { } public struct CargoTransportStation { }
-    public struct MaintenanceDepot { } public struct TransportStation { }
+    public struct CargoTransportStation { }
 }
 namespace Game.Prefabs
 {
@@ -263,10 +261,6 @@ namespace Game.Prefabs
         public Colossal.Mathematics.Bounds3 m_Bounds;
     }
     public enum MeshFlags { Base = 1 }
-    public struct TransportDepotData { } public struct CargoTransportStationData { }
-    public struct MaintenanceDepotData { } public struct TransportStationData { }
-    public struct ServiceObjectData { } public struct ServiceUpkeepData { }
-    public struct ResourceConsumerData { } public struct HospitalData { }
 }
 namespace Game.Rendering { public enum DecalLayers { Buildings = 1 } }
 namespace Game.Objects

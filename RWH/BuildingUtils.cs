@@ -199,6 +199,13 @@ namespace RealisticWorkplacesAndHouseholds
             return BuildingUtils.GetPeople(width, length, height, industry_avg_floor_height, depot_sqm_per_worker * area_factor, 1, 0, 2);
         }
 
+        //Calculates number of workers for zoned warehouses: one floor of usable footprint, office space folded into sqm_per_worker
+        public static int warehouseWorkers(float width, float length, float warehouse_sqm_per_worker)
+        {
+            float area_factor = smooth_area_factor(50 * 50, width, length);
+            return (int)Math.Round(width * length / (warehouse_sqm_per_worker * area_factor));
+        }
+
         //Calculates number of workers for garbage facilities
         public static int garbageWorkers(float width, float length, float height, float industry_avg_floor_height, float garbage_sqm_per_worker)
         {

@@ -30,6 +30,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     [
                         ComponentType.ReadOnly<PrefabRef>(),
                         ComponentType.ReadOnly<Game.Companies.StorageCompany>(),
+                        // Zoned warehouses only: city-service storage (cargo stations) never has CompanyData.
+                        ComponentType.ReadOnly<CompanyData>(),
                     ],
                     Any = [
                
@@ -37,10 +39,6 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     None =
                     [
                         ComponentType.Exclude<Game.Objects.OutsideConnection>(),
-                        ComponentType.Exclude<CityServiceUpkeep>(),
-                        ComponentType.Exclude<Game.Buildings.ResourceConsumer>(),
-                        ComponentType.Exclude<Game.Buildings.Hospital>(),
-                        ComponentType.Exclude<ServiceDispatch>(),
                         ComponentType.Exclude<Deleted>(),
                         ComponentType.Exclude<Temp>()
                     ],
@@ -52,12 +50,13 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
     [BurstCompile]
     public struct UpdateWarehouseJob : IJobChunk
     {
+        public const int MinWorkers = 1;
+
         public EntityTypeHandle EntityTypeHandle;
         public EntityCommandBuffer.ParallelWriter ecb;
 
         [ReadOnly] public ComponentTypeHandle<PropertyRenter> PropertyRenterHandle;
 
-        [ReadOnly] public ComponentLookup<CompanyData> CompanyDataLookup;
         [ReadOnly] public ComponentLookup<WorkProvider> WorkProviderLookup;
         [ReadOnly] public BufferLookup<Employee> EmployeeLookup;
         [ReadOnly] public ComponentLookup<PrefabRef> PrefabRefLookup;
@@ -65,25 +64,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         [ReadOnly] public ComponentLookup<MeshData> MeshDataLookup;
         [ReadOnly] public ComponentLookup<UsableFootprintFactor> UffLookup;
         [ReadOnly] public ComponentLookup<RealisticWorkplaceData> RealisticWorkplaceDataLookup;
-        [ReadOnly] public ComponentLookup<Game.Buildings.TransportDepot> TransportDepotLookup;
-        [ReadOnly] public ComponentLookup<Game.Buildings.CargoTransportStation> CargoTransportStationLookup;
-        [ReadOnly] public ComponentLookup<Game.Buildings.MaintenanceDepot> MaintenanceDepotLookup;
-        [ReadOnly] public ComponentLookup<Game.Buildings.TransportStation> TransportStationLookup;
-        [ReadOnly] public ComponentLookup<TransportDepotData> TransportDepotDataLookup;
-        [ReadOnly] public ComponentLookup<CargoTransportStationData> CargoTransportStationDataLookup;
-        [ReadOnly] public ComponentLookup<MaintenanceDepotData> MaintenanceDepotDataLookup;
-        [ReadOnly] public ComponentLookup<TransportStationData> TransportStationDataLookup;
-        [ReadOnly] public ComponentLookup<CityServiceUpkeep> CityServiceUpkeepLookup;
-        [ReadOnly] public ComponentLookup<Game.Buildings.ResourceConsumer> ResourceConsumerLookup;
-        [ReadOnly] public ComponentLookup<Game.Buildings.Hospital> HospitalLookup;
-        [ReadOnly] public BufferLookup<ServiceDispatch> ServiceDispatchLookup;
-        [ReadOnly] public ComponentLookup<ServiceObjectData> ServiceObjectDataLookup;
-        [ReadOnly] public BufferLookup<ServiceUpkeepData> ServiceUpkeepDataLookup;
-        [ReadOnly] public ComponentLookup<ResourceConsumerData> ResourceConsumerDataLookup;
-        [ReadOnly] public ComponentLookup<HospitalData> HospitalDataLookup;
         [ReadOnly] public ComponentLookup<ABCWorkplaceOverride> ABCWorkplaceOverrideLookup;
 
-        [ReadOnly] public float industry_avg_floor_height;
         [ReadOnly] public float warehouse_sqm_per_worker;
         [ReadOnly] public float global_reduction;
 
@@ -106,15 +88,12 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
             // Reuse consecutive prefab calculations within this chunk only. Nothing
             // survives Execute, so settings, meshes and footprint changes remain live.
             Entity lastBuildingPrefab = Entity.Null;
-            int lastMaxWorkers = 1;
+            int lastMaxWorkers = MinWorkers;
 
             for (int i = 0; i < entities.Length; i++)
             {
                 var storageEntity = entities[i];
                 var propertyEntity = hasPropertyRenter ? propertyRenters[i].m_Property : storageEntity;
-
-                if (IsServiceOrTransportTarget(storageEntity) || IsServiceOrTransportTarget(propertyEntity))
-                    continue;
 
                 if (HasABCWorkplaceOverride(storageEntity) || HasABCWorkplaceOverride(propertyEntity))
                     continue;
@@ -129,25 +108,8 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                     lastBuildingPrefab = buildingPrefab;
                 }
 
-                int maxWorkers = lastMaxWorkers;
-                Entity targetEntity = GetWorkProviderTarget(storageEntity, propertyEntity);
-
-                ApplyWarehouseWorkplaceData(storageEntity, maxWorkers, unfilteredChunkIndex);
-
-                if (targetEntity != storageEntity)
-                    ApplyWarehouseWorkplaceData(targetEntity, maxWorkers, unfilteredChunkIndex);
+                ApplyWarehouseWorkplaceData(storageEntity, lastMaxWorkers, unfilteredChunkIndex);
             }
-        }
-
-        private Entity GetWorkProviderTarget(Entity storageEntity, Entity propertyEntity)
-        {
-            if (CompanyDataLookup.HasComponent(storageEntity))
-                return storageEntity;
-
-            if (propertyEntity != Entity.Null && PrefabRefLookup.HasComponent(propertyEntity))
-                return propertyEntity;
-
-            return storageEntity;
         }
 
         private bool HasABCWorkplaceOverride(Entity entity)
@@ -156,42 +118,6 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
                 return false;
 
             return ABCWorkplaceOverrideLookup.HasComponent(prefabRef.m_Prefab);
-        }
-
-        private bool IsServiceOrTransportTarget(Entity entity)
-        {
-            if (entity == Entity.Null)
-                return false;
-
-            if (CityServiceUpkeepLookup.HasComponent(entity) ||
-                ResourceConsumerLookup.HasComponent(entity) ||
-                HospitalLookup.HasComponent(entity) ||
-                ServiceDispatchLookup.HasBuffer(entity))
-            {
-                return true;
-            }
-
-            if (TransportStationLookup.HasComponent(entity) ||
-                CargoTransportStationLookup.HasComponent(entity) ||
-                TransportDepotLookup.HasComponent(entity) ||
-                MaintenanceDepotLookup.HasComponent(entity))
-            {
-                return true;
-            }
-
-            if (!PrefabRefLookup.TryGetComponent(entity, out var prefabRef))
-                return false;
-
-            Entity prefab = prefabRef.m_Prefab;
-            return prefab != Entity.Null &&
-                (ServiceObjectDataLookup.HasComponent(prefab) ||
-                 ServiceUpkeepDataLookup.HasBuffer(prefab) ||
-                 ResourceConsumerDataLookup.HasComponent(prefab) ||
-                 HospitalDataLookup.HasComponent(prefab) ||
-                 TransportStationDataLookup.HasComponent(prefab) ||
-                 CargoTransportStationDataLookup.HasComponent(prefab) ||
-                 TransportDepotDataLookup.HasComponent(prefab) ||
-                 MaintenanceDepotDataLookup.HasComponent(prefab));
         }
 
         private void ApplyWarehouseWorkplaceData(Entity entity, int maxWorkers, int sortKey)
@@ -237,25 +163,24 @@ namespace RealisticWorkplacesAndHouseholds.Jobs
         private int CalculateWarehouseWorkers(Entity buildingPrefab)
         {
             if (buildingPrefab == Entity.Null)
-                return 1;
+                return MinWorkers;
 
             if (!PrefabSubMeshesLookup.TryGetBuffer(buildingPrefab, out var subMeshes))
-                return 1;
+                return MinWorkers;
 
             var dimensions = BuildingUtils.GetBuildingDimensions(subMeshes, MeshDataLookup);
             var size = ObjectUtils.GetSize(dimensions);
             float width = size.x;
             float length = size.z;
-            float height = size.y;
 
             float uff = UffLookup.HasComponent(buildingPrefab) ? UffLookup[buildingPrefab].Value : 1f;
             width *= (float)Math.Sqrt(uff);
             length *= (float)Math.Sqrt(uff);
 
-            int workers = BuildingUtils.depotWorkers(width, length, height, industry_avg_floor_height, warehouse_sqm_per_worker);
+            int workers = BuildingUtils.warehouseWorkers(width, length, warehouse_sqm_per_worker);
             workers = (int)(workers * (1f - global_reduction));
 
-            return Math.Max(1, workers);
+            return Math.Max(MinWorkers, workers);
         }
 
     }
