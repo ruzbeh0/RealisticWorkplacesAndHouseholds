@@ -224,7 +224,7 @@ namespace RealisticWorkplacesAndHouseholds.Systems
             if (_assetPackFactors.IsCreated)
                 _assetPackFactors.Clear();
 
-            if (mode == GameMode.Game)
+            if (mode == GameMode.Game && !Mod.m_Setting.disable_households_calculations)
             {
                 m_TriggerInitialHouseholdUpdate = true;
                 // Reset before the first simulation tick: prefabs still hold vanilla capacity

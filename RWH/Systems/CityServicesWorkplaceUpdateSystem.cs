@@ -53,6 +53,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
+
+            if (Mod.m_Setting.disable_cityservices_calculations) return;
             UpdateCityServices();
             //Mod.log.Info("City Services Work Provider calculations loaded");
         }

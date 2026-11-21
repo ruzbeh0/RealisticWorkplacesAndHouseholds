@@ -38,6 +38,8 @@ namespace RealisticWorkplacesAndHouseholds.Systems
         {
             base.OnGameLoadingComplete(purpose, mode);
             //Mod.log.Info("City Services Work Provider calculations loaded");
+
+            if (Mod.m_Setting.disable_cityservices_calculations) return;
             UpdateCityServicesWorkplace();
         }
 
